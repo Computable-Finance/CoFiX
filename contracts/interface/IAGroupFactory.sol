@@ -6,14 +6,14 @@ interface IAGroupFactory {
     /// @dev Create a new token pair for trading
     /// @param  tokenA the address of token A
     /// @param  tokenB the address of token B
-    /// @param  amountA the amount of token A
-    /// @param  amountB the amount of token B
+    // / @param  amountA the amount of token A
+    // / @param  amountB the amount of token B
     /// @return pair the address of token pair
     function createPair(
         address tokenA,
-        address tokenB,
-        uint256 amountA,
-        uint256 amountB
+        address tokenB
+        // uint256 amountA,
+        // uint256 amountB
         )
         external
         returns (address pair);

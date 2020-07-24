@@ -1,6 +1,8 @@
 pragma solidity ^0.6.6;
 
 interface IAGroupPair {
+    // All pairs: {ETH <-> ERC20 Token}
+    
     // event Approval(address indexed owner, address indexed spender, uint value);
     // event Transfer(address indexed from, address indexed to, uint value);
 
@@ -39,9 +41,9 @@ interface IAGroupPair {
     function token1() external view returns (address);
     function getReserves() external view returns (uint112 reserve0, uint112 reserve1);
 
-    function mint(address to) external returns (uint liquidity);
-    function burn(address outToken, address to) external returns (uint outAmount);
-    function swap(uint amountInMax, uint amountOutMin, address outToken, address to) external;
+    function mint(address to) external payable returns (uint liquidity);
+    function burn(address outToken, address to) external payable returns (uint outAmount);
+    function swap(uint amountInMax, uint amountOutMin, address outToken, address to) external payable;
     function skim(address to) external;
     function sync() external;
 

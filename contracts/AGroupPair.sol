@@ -5,7 +5,6 @@ import './AGroupERC20.sol';
 import './lib/Math.sol';
 import './interface/IERC20.sol';
 import './interface/IAGroupFactory.sol';
-import './interface/INest_3_OfferPrice.sol';
 
 contract AGroupPair is IAGroupPair, AGroupERC20 {
     using SafeMath  for uint;
@@ -17,7 +16,7 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
     address public override token0; // WETH token
     address public override token1; // any ERC20 token
 
-    INest_3_OfferPrice public priceOracle;
+    // INest_3_OfferPrice public priceOracle;
 
     uint112 private reserve0;           // uses single storage slot, accessible via getReserves
     uint112 private reserve1;           // uses single storage slot, accessible via getReserves
@@ -54,7 +53,6 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
 
     constructor(address offerPrice) public {
         factory = msg.sender;
-        priceOracle = INest_3_OfferPrice(offerPrice);
     }
 
     // called once by the factory at time of deployment
@@ -73,15 +71,16 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function mint(address to) external override lock returns (uint liquidity) {
+    function mint(address to) external payable override lock returns (uint liquidity) {
         (uint112 _reserve0, uint112 _reserve1) = getReserves(); // gas savings
         uint balance0 = IERC20(token0).balanceOf(address(this));
         uint balance1 = IERC20(token1).balanceOf(address(this));
         uint amount0 = balance0.sub(_reserve0);
         uint amount1 = balance1.sub(_reserve1);
 
+        uint256 _ethBalanceBefore = address(this).balance;
         // query price
-        (uint256 ethAmount, uint256 erc20Amount, uint256 blockNum) = priceOracle.updateAndCheckPriceNow(token1);
+        (uint256 ethAmount, uint256 erc20Amount, uint256 blockNum) = IAGroupFactory(factory).updateAndCheckPriceNow{value: msg.value}(token1);
         // TODO: validate
         uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
 
@@ -100,10 +99,14 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
 
         _update(balance0, balance1);
         emit Mint(msg.sender, amount0, amount1);
+
+        uint256 _cost = address(this).balance - _ethBalanceBefore;
+        msg.sender.transfer(msg.value - _cost); // TODO: maybe use call for transferring ETH to contract account
+        // TODO: return the small change amount, so the router could send it back to the user
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function burn(address outToken, address to) external override lock returns (uint outAmount) {
+    function burn(address outToken, address to) external payable override lock returns (uint outAmount) {
         address _token0 = token0;                                // gas savings
         address _token1 = token1;                                // gas savings
         uint balance0 = IERC20(_token0).balanceOf(address(this));
@@ -111,7 +114,7 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
         uint liquidity = balanceOf[address(this)];
 
         // query price
-        (uint256 ethAmount, uint256 erc20Amount, uint256 blockNum) = priceOracle.updateAndCheckPriceNow(token1);
+        (uint256 ethAmount, uint256 erc20Amount, uint256 blockNum) = IAGroupFactory(factory).updateAndCheckPriceNow{value: msg.value}(token1);
         // TODO: validate
         uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
 
@@ -138,7 +141,7 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function swap(uint amountInMax, uint amountOutMin, address outToken, address to) external override lock {
+    function swap(uint amountInMax, uint amountOutMin, address outToken, address to) external payable override lock {
         (uint112 _reserve0, uint112 _reserve1) = getReserves(); // gas savings
         address _token0 = token0;
         address _token1 = token1;
@@ -146,7 +149,7 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
         uint256 balance1 = IERC20(_token1).balanceOf(address(this));
 
         // query price
-        (uint256 ethAmount, uint256 erc20Amount, uint256 blockNum) = priceOracle.updateAndCheckPriceNow(_token1);
+        (uint256 ethAmount, uint256 erc20Amount, uint256 blockNum) = IAGroupFactory(factory).updateAndCheckPriceNow{value: msg.value}(_token1);
         // TODO: validate
 
         uint256 amountIn;

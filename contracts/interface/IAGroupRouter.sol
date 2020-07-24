@@ -6,7 +6,7 @@ interface IAGroupRouter {
 
     // All pairs: {ETH <-> ERC20 Token}
 
-    /// @dev Maker add liquidity to pool, get pool token (mint sToken to maker)
+    /// @dev Maker add liquidity to pool, get pool token (mint sToken to maker) (notice: msg.value = amountETH + oracle fee)
     /// @param  token The address of ERC20 Token
     /// @param  amountETH The amount of ETH added to pool
     /// @param  amountToken The amount of Token added to pool
@@ -23,7 +23,7 @@ interface IAGroupRouter {
         uint deadline
     ) external payable returns (uint liquidity);
 
-    /// @dev Maker remove liquidity from pool to get ERC20 Token back (maker burn sToken)
+    /// @dev Maker remove liquidity from pool to get ERC20 Token back (maker burn sToken) (notice: msg.value = oracle fee)
     /// @param  token The address of ERC20 Token
     /// @param  liquidity The amount of liquidity (sToken) sent to pool, or the liquidity to remove
     /// @param  amountTokenMin The minimum amount of Token wanted to get from pool
@@ -38,7 +38,7 @@ interface IAGroupRouter {
         uint deadline
     ) external payable returns (uint amountToken);
 
-    /// @dev Maker remove liquidity from pool to get ETH back (maker burn sToken)
+    /// @dev Maker remove liquidity from pool to get ETH back (maker burn sToken) (notice: msg.value = oracle fee)
     /// @param  token The address of ERC20 Token
     /// @param  liquidity The amount of liquidity (sToken) sent to pool, or the liquidity to remove
     /// @param  amountETHMin The minimum amount of ETH wanted to get from pool

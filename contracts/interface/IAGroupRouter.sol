@@ -38,7 +38,7 @@ interface IAGroupRouter {
         uint deadline
     ) external payable returns (uint amountToken);
 
-    /// @dev Maker remove liquidity from pool to get ETH back
+    /// @dev Maker remove liquidity from pool to get ETH back (maker burn sToken)
     /// @param  token The address of ERC20 Token
     /// @param  liquidity The amount of liquidity (sToken) sent to pool, or the liquidity to remove
     /// @param  amountETHMin The minimum amount of ETH wanted to get from pool
@@ -53,7 +53,7 @@ interface IAGroupRouter {
         uint deadline
     ) external payable returns (uint amountETH);
 
-    /// @dev Trader swap exact amount of ETH for ERC20 Tokens, notice: msg.value = amountIn + oracle fee
+    /// @dev Trader swap exact amount of ETH for ERC20 Tokens (notice: msg.value = amountIn + oracle fee)
     /// @param  token The address of ERC20 Token
     /// @param  amountIn The exact amount of ETH a trader want to swap into pool
     /// @param  amountOutMin The minimum amount of Token a trader want to swap out of pool
@@ -69,7 +69,7 @@ interface IAGroupRouter {
         uint deadline
     ) external payable returns (uint _amountIn, uint _amountOut);
 
-    /// @dev Trader swap exact amount of ERC20 Tokens for ETH, notice: msg.value = oracle fee
+    /// @dev Trader swap exact amount of ERC20 Tokens for ETH (notice: msg.value = oracle fee)
     /// @param  token The address of ERC20 Token
     /// @param  amountIn The exact amount of Token a trader want to swap into pool
     /// @param  amountOutMin The mininum amount of ETH a trader want to swap out of pool
@@ -85,7 +85,7 @@ interface IAGroupRouter {
         uint deadline
     ) external payable returns (uint _amountIn, uint _amountOut);
 
-    /// @dev Trader swap ETH for exact amount of ERC20 Tokens, notice: msg.value = amountInMax + oracle fee
+    /// @dev Trader swap ETH for exact amount of ERC20 Tokens (notice: msg.value = amountInMax + oracle fee)
     /// @param  token The address of ERC20 Token
     /// @param  amountInMax The max amount of ETH a trader want to swap into pool
     /// @param  amountOut The exact amount of Token a trader want to swap out of pool
@@ -101,7 +101,7 @@ interface IAGroupRouter {
         uint deadline
     ) external payable returns (uint _amountIn, uint _amountOut);
 
-    /// @dev Trader swap ERC20 Tokens for exact amount of ETH, notice: msg.value = oracle fee
+    /// @dev Trader swap ERC20 Tokens for exact amount of ETH (notice: msg.value = oracle fee)
     /// @param  token The address of ERC20 Token
     /// @param  amountInMax The max amount of Token a trader want to swap into pool
     /// @param  amountOut The exact amount of ETH a trader want to swap out of pool

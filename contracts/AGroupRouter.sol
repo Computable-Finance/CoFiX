@@ -50,6 +50,10 @@ contract AGroupRouter is IAGroupRouter {
         uint deadline
     ) external override payable ensure(deadline) returns (uint liquidity)
     {
+        // create the pair if it doesn't exist yet
+        if (IAGroupFactory(factory).getPair(token) == address(0)) {
+            IAGroupFactory(factory).createPair(token);
+        }
         require(msg.value > amountETH, "insufficient msg.value");
         uint256 _oracleFee = msg.value.sub(amountETH);
         address pair = pairFor(factory, token);

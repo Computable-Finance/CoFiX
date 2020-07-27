@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 pragma solidity ^0.6.6;
 
 import './interface/IAGroupPair.sol';
@@ -51,7 +53,7 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
     event Sync(uint112 reserve0, uint112 reserve1);
     
 
-    constructor(address offerPrice) public {
+    constructor() public {
         factory = msg.sender;
     }
 
@@ -71,28 +73,33 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function mint(address to) external payable override lock returns (uint liquidity) {
+    function mint(address to) external payable override lock returns (uint liquidity, uint feeChange) {
+        address _token0 = token0;                                // gas savings
+        address _token1 = token1;                                // gas savings
         (uint112 _reserve0, uint112 _reserve1) = getReserves(); // gas savings
-        uint balance0 = IERC20(token0).balanceOf(address(this));
-        uint balance1 = IERC20(token1).balanceOf(address(this));
+        uint balance0 = IERC20(_token0).balanceOf(address(this));
+        uint balance1 = IERC20(_token1).balanceOf(address(this));
         uint amount0 = balance0.sub(_reserve0);
         uint amount1 = balance1.sub(_reserve1);
 
         uint256 _ethBalanceBefore = address(this).balance;
-        // query price
-        (uint256 ethAmount, uint256 erc20Amount, uint256 blockNum) = IAGroupFactory(factory).updateAndCheckPriceNow{value: msg.value}(token1);
-        // TODO: validate
-        uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
+        { // scope for ethAmount/erc20Amount/blockNum to avoid stack too deep error
+            // query price
+            OraclePrice memory _op;
+            (_op.ethAmount, _op.erc20Amount, _op.blockNum) = IAGroupFactory(factory).updateAndCheckPriceNow{value: msg.value}(_token1);
+            // TODO: validate
+            uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
 
-        uint256 share;
-        // TODO: handle decimals
-        if (_totalSupply == 0) {
-            share = 10000;
-        } else {
-            share = 10000*(balance0*erc20Amount/ethAmount + balance1) / _totalSupply;
+            uint256 share;
+            // TODO: handle decimals, safe math op
+            if (_totalSupply == 0) {
+                share = 10000;
+            } else {
+                share = 10000*(balance0*_op.erc20Amount/_op.ethAmount + balance1) / _totalSupply;
+            }
+            liquidity = (10000*amount0*_op.erc20Amount/_op.ethAmount)/share;
         }
-
-        liquidity = (10000*amount0*erc20Amount/ethAmount)/share;
+        feeChange = msg.value.sub(address(this).balance.sub(_ethBalanceBefore));
 
         require(liquidity > 0, 'AGroupV1: INSUFFICIENT_LIQUIDITY_MINTED');
         _mint(to, liquidity);
@@ -100,36 +107,41 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
         _update(balance0, balance1);
         emit Mint(msg.sender, amount0, amount1);
 
-        uint256 _cost = address(this).balance - _ethBalanceBefore;
-        msg.sender.transfer(msg.value - _cost); // TODO: maybe use call for transferring ETH to contract account
-        // TODO: return the small change amount, so the router could send it back to the user
+        msg.sender.transfer(feeChange); // TODO: maybe use call for transferring ETH to contract account
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function burn(address outToken, address to) external payable override lock returns (uint outAmount) {
+    function burn(address outToken, address to) external payable override lock returns (uint outAmount, uint feeChange) {
         address _token0 = token0;                                // gas savings
         address _token1 = token1;                                // gas savings
         uint balance0 = IERC20(_token0).balanceOf(address(this));
         uint balance1 = IERC20(_token1).balanceOf(address(this));
         uint liquidity = balanceOf[address(this)];
 
-        // query price
-        (uint256 ethAmount, uint256 erc20Amount, uint256 blockNum) = IAGroupFactory(factory).updateAndCheckPriceNow{value: msg.value}(token1);
-        // TODO: validate
-        uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
+        uint256 _ethBalanceBefore = address(this).balance;
+        {
+            // query price
+            OraclePrice memory _op;
+            (_op.ethAmount, _op.erc20Amount, _op.blockNum) = IAGroupFactory(factory).updateAndCheckPriceNow{value: msg.value}(_token1);
+            // TODO: validate
+            uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
 
-        uint256 share;
-        // TODO: handle decimals
-        if (_totalSupply == 0) {
-            share = 10000;
-        } else {
-            share = 10000*(balance0*erc20Amount/ethAmount + balance1) / _totalSupply;
+            uint256 share;
+            // TODO: handle decimals
+            if (_totalSupply == 0) {
+                share = 10000;
+            } else {
+                share = 10000*(balance0*_op.erc20Amount/_op.ethAmount + balance1) / _totalSupply;
+            }
+            if (outToken == _token0) {
+                outAmount = liquidity*share*_op.erc20Amount/_op.ethAmount/10000;
+            } else if (outToken == _token1) {
+                outAmount = liquidity*share/10000;
+            }  else {
+                revert("wrong outToken");
+            }
         }
-        if (outToken == _token0) {
-            outAmount = liquidity*share*erc20Amount/ethAmount/10000;
-        } else if (outToken == _token1) {
-            outAmount = liquidity*share/10000;
-        }
+        feeChange = msg.value.sub(address(this).balance.sub(_ethBalanceBefore));
 
         _burn(address(this), liquidity);
         _safeTransfer(outToken, to, outAmount);
@@ -137,36 +149,102 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
         balance1 = IERC20(_token1).balanceOf(address(this));
 
         _update(balance0, balance1);
+        msg.sender.transfer(feeChange); // TODO: maybe use call for transferring ETH to contract account
         emit Burn(msg.sender, outToken, outAmount, to);
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function swap(uint amountInMax, uint amountOutMin, address outToken, address to) external payable override lock {
-        (uint112 _reserve0, uint112 _reserve1) = getReserves(); // gas savings
+    function swapForExact(address outToken, uint _amountOut, address to)
+        external
+        payable override lock
+        returns (uint amountIn, uint amountOut, uint feeChange)
+    {
+        address _token0 = token0;
+        address _token1 = token1;
+        OraclePrice memory _op;
+
+        { // scope for ethAmount/erc20Amount/blockNum to avoid stack too deep error
+            uint256 _ethBalanceBefore = address(this).balance;
+
+            // query price
+            (_op.ethAmount, _op.erc20Amount, _op.blockNum) = IAGroupFactory(factory).updateAndCheckPriceNow{value: msg.value}(_token1);
+            // TODO: validate
+
+            feeChange = msg.value.sub(address(this).balance.sub(_ethBalanceBefore));
+        }
+
+        {
+            uint256 balance0 = IERC20(_token0).balanceOf(address(this));
+            uint256 balance1 = IERC20(_token1).balanceOf(address(this));
+            (uint112 _reserve0, uint112 _reserve1) = getReserves(); // gas savings
+            uint _amountInNeeded;
+     
+            if (outToken == _token1) {
+                amountIn = balance0 - _reserve0;
+                require(amountIn > 0, "wrong amount0In");
+                // amountOut = amountIn*erc20Amount*1000/ethAmount/1005;
+                // amountIn = amountOut*ethAmount*1005/1000/erc20Amount
+                _amountInNeeded = _amountOut*_op.ethAmount*1005/1000/_op.erc20Amount;
+                _safeTransfer(_token0, to, amountIn.sub(_amountInNeeded)); // send back the token change
+            } else if (outToken == _token0) {
+                amountIn = balance1 - _reserve1;
+                require(amountIn > 0, "wrong amount1In");
+                // amountOut = amountIn*ethAmount*1000/erc20Amount/1005;
+                // amountIn = amountOut*erc20Amount*1005/1000/ethAmount
+                _amountInNeeded = _amountOut*_op.erc20Amount*1005/1000/_op.ethAmount;
+                _safeTransfer(_token1, to, amountIn.sub(_amountInNeeded)); // TODO: think about a better payee than to
+            } else {
+                revert("wrong outToken");
+            }
+            require(_amountInNeeded <= amountIn, "wrong amountIn");
+        }
+        
+        {
+            require(to != _token0 && to != _token1, 'AGroupV1: INVALID_TO');
+
+            amountOut = _amountOut;
+            _safeTransfer(outToken, to, _amountOut); // optimistically transfer tokens
+
+            uint256 balance0 = IERC20(_token0).balanceOf(address(this));
+            uint256 balance1 = IERC20(_token1).balanceOf(address(this));
+
+            _update(balance0, balance1);
+            msg.sender.transfer(feeChange); // TODO: maybe use call for transferring ETH to contract account
+        }
+
+        emit Swap(msg.sender, amountIn, amountOut, outToken, to);
+    }
+
+    // this low-level function should be called from a contract which performs important safety checks
+    function swapWithExact(address outToken, address to) external payable override lock returns (uint amountIn, uint amountOut, uint feeChange) {
         address _token0 = token0;
         address _token1 = token1;
         uint256 balance0 = IERC20(_token0).balanceOf(address(this));
         uint256 balance1 = IERC20(_token1).balanceOf(address(this));
 
-        // query price
-        (uint256 ethAmount, uint256 erc20Amount, uint256 blockNum) = IAGroupFactory(factory).updateAndCheckPriceNow{value: msg.value}(_token1);
-        // TODO: validate
+        { // scope for ethAmount/erc20Amount/blockNum to avoid stack too deep error
+            uint256 _ethBalanceBefore = address(this).balance;
+            // query price
+            OraclePrice memory _op;
+            (_op.ethAmount, _op.erc20Amount, _op.blockNum) = IAGroupFactory(factory).updateAndCheckPriceNow{value: msg.value}(_token1);
+            // TODO: validate
 
-        uint256 amountIn;
-        uint256 amountOut;
-        if (outToken == _token1) {
-            amountIn = balance0 - _reserve0;
-            require(amountIn > 0, "wrong amount0In");
-            amountOut = amountIn*erc20Amount*1000/ethAmount/1005;
-        } else if (outToken == _token0) {
-            amountIn = balance1 - _reserve1;
-            require(amountIn > 0, "wrong amount1In");
-            amountOut = amountIn*ethAmount*1000/erc20Amount/1005;
-        } else {
-            revert("wrong inToken");
+            (uint112 _reserve0, uint112 _reserve1) = getReserves(); // gas savings
+
+            if (outToken == _token1) {
+                amountIn = balance0 - _reserve0;
+                require(amountIn > 0, "wrong amount0In");
+                amountOut = amountIn*_op.erc20Amount*1000/_op.ethAmount/1005;
+            } else if (outToken == _token0) {
+                amountIn = balance1 - _reserve1;
+                require(amountIn > 0, "wrong amount1In");
+                amountOut = amountIn*_op.ethAmount*1000/_op.erc20Amount/1005;
+            } else {
+                revert("wrong outToken");
+            }
+            feeChange = msg.value.sub(address(this).balance.sub(_ethBalanceBefore));
         }
-
-        require(amountIn <= amountInMax && amountOut >= amountOutMin, "wrong match");
+        
         require(to != _token0 && to != _token1, 'AGroupV1: INVALID_TO');
 
         _safeTransfer(outToken, to, amountOut); // optimistically transfer tokens
@@ -175,6 +253,7 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
         balance1 = IERC20(_token1).balanceOf(address(this));
 
         _update(balance0, balance1);
+        msg.sender.transfer(feeChange); // TODO: maybe use call for transferring ETH to contract account
         emit Swap(msg.sender, amountIn, amountOut, outToken, to);
     }
 

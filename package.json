@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "test": "truffle test",
+    "solium": "node_modules/.bin/solium -d contracts/ --fix-dry-run"
+  },
+  "dependencies": {
+    "ethlint": "^1.2.5"
+  },
+  "devDependencies": {}
+}

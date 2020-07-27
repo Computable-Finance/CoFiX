@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 pragma solidity ^0.6.6;
 
 import './interface/IAGroupFactory.sol';
@@ -28,175 +30,149 @@ contract AGroupRouter is IAGroupRouter {
         assert(msg.sender == WETH); // only accept ETH via fallback from the WETH contract
     }
 
-    // returns sorted token addresses, used to handle return values from pairs sorted in this order
-    function sortTokens(address tokenA, address tokenB) internal pure returns (address token0, address token1) {
-        require(tokenA != tokenB, 'AGroupV1Router: IDENTICAL_ADDRESSES');
-        (token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        require(token0 != address(0), 'AGroupV1Router: ZERO_ADDRESS');
-    }
-
     // calculates the CREATE2 address for a pair without making any external calls
-    function pairFor(address _factory, address tokenA, address tokenB) internal pure returns (address pair) {
-        (address token0, address token1) = sortTokens(tokenA, tokenB);
+    function pairFor(address _factory, address token) internal pure returns (address pair) {
         pair = address(uint(keccak256(abi.encodePacked(
                 hex'ff',
                 _factory,
-                keccak256(abi.encodePacked(token0, token1)),
+                keccak256(abi.encodePacked(token)),
                 hex'96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f' // init code hash
-            ))));
+            )))); // TODO: calc the real init code hash
     }
 
-    // **** ADD LIQUIDITY ****
-    function _addLiquidity(
-        address tokenA,
-        address tokenB,
-        uint amountADesired,
-        uint amountBDesired,
-        uint amountAMin,
-        uint amountBMin
-    ) internal virtual returns (uint amountA, uint amountB) {
-
-    }
+    // msg.value = amountETH + oracle fee
     function addLiquidity(
-        address tokenA,
-        address tokenB,
-        uint amountADesired,
-        uint amountBDesired,
-        uint amountAMin,
-        uint amountBMin,
-        address to,
-        uint deadline
-    ) external virtual override ensure(deadline) returns (uint amountA, uint amountB, uint liquidity) {
-        (amountA, amountB) = _addLiquidity(tokenA, tokenB, amountADesired, amountBDesired, amountAMin, amountBMin);
-        address pair = pairFor(factory, tokenA, tokenB);
-        TransferHelper.safeTransferFrom(tokenA, msg.sender, pair, amountA);
-        TransferHelper.safeTransferFrom(tokenB, msg.sender, pair, amountB);
-        liquidity = IAGroupPair(pair).mint(to);
-    }
-    function addLiquidityETH(
         address token,
-        uint amountTokenDesired,
-        uint amountTokenMin,
-        uint amountETHMin,
+        uint amountETH,
+        uint amountToken,
+        uint liquidityMin,
         address to,
         uint deadline
-    ) external virtual override payable ensure(deadline) returns (uint amountToken, uint amountETH, uint liquidity) {
-        (amountToken, amountETH) = _addLiquidity(
-            token,
-            WETH,
-            amountTokenDesired,
-            msg.value,
-            amountTokenMin,
-            amountETHMin
-        );
-        address pair = pairFor(factory, token, WETH);
+    ) external override payable ensure(deadline) returns (uint liquidity)
+    {
+        require(msg.value > amountETH, "insufficient msg.value");
+        uint256 _oracleFee = msg.value.sub(amountETH);
+        address pair = pairFor(factory, token);
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountToken);
         IWETH(WETH).deposit{value: amountETH}();
         assert(IWETH(WETH).transfer(pair, amountETH));
-        liquidity = IAGroupPair(pair).mint(to);
-        // refund dust eth, if any
-        if (msg.value > amountETH) TransferHelper.safeTransferETH(msg.sender, msg.value - amountETH);
+        uint256 feeChange;
+        (liquidity, feeChange) = IAGroupPair(pair).mint{value: _oracleFee}(to);
+        require(liquidity >= liquidityMin, "less liquidity than expected");
+        // refund eth, if any
+        if (feeChange > 0) TransferHelper.safeTransferETH(msg.sender, feeChange);
     }
 
-    // **** REMOVE LIQUIDITY ****
-    function removeLiquidity(
-        address tokenA,
-        address tokenB,
-        uint liquidity,
-        uint amountAMin,
-        uint amountBMin,
-        address to,
-        uint deadline
-    ) public virtual override ensure(deadline) returns (uint amountA, uint amountB) {
-        address pair = pairFor(factory, tokenA, tokenB);
-        IAGroupPair(pair).transferFrom(msg.sender, pair, liquidity); // send liquidity to pair
-        (uint amount0, uint amount1) = IAGroupPair(pair).burn(to);
-        (address token0,) = sortTokens(tokenA, tokenB);
-        (amountA, amountB) = tokenA == token0 ? (amount0, amount1) : (amount1, amount0);
-        require(amountA >= amountAMin, 'AGroupV1Router: INSUFFICIENT_A_AMOUNT');
-        require(amountB >= amountBMin, 'AGroupV1Router: INSUFFICIENT_B_AMOUNT');
-    }
-    function removeLiquidityETH(
+    // msg.value = oracle fee
+    function removeLiquidityGetToken(
         address token,
         uint liquidity,
         uint amountTokenMin,
+        address to,
+        uint deadline
+    ) external override payable ensure(deadline) returns (uint amountToken)
+    {
+        require(msg.value > 0, "insufficient msg.value");
+        address pair = pairFor(factory, token);
+        IAGroupPair(pair).transferFrom(msg.sender, pair, liquidity); // send liquidity to pair
+        uint feeChange; 
+        (amountToken, feeChange) = IAGroupPair(pair).burn{value: msg.value}(token, to);
+        require(amountToken >= amountTokenMin, "got less than expected");
+        if (feeChange > 0) TransferHelper.safeTransferETH(msg.sender, feeChange);
+    }
+
+    // msg.value = oracle fee
+    function removeLiquidityGetETH(
+        address token,
+        uint liquidity,
         uint amountETHMin,
         address to,
         uint deadline
-    ) public virtual override ensure(deadline) returns (uint amountToken, uint amountETH) {
-        (amountToken, amountETH) = removeLiquidity(
-            token,
-            WETH,
-            liquidity,
-            amountTokenMin,
-            amountETHMin,
-            address(this),
-            deadline
-        );
-        TransferHelper.safeTransfer(token, to, amountToken);
+    ) external override payable ensure(deadline) returns (uint amountETH)
+    {
+        require(msg.value > 0, "insufficient msg.value");
+        address pair = pairFor(factory, token);
+        IAGroupPair(pair).transferFrom(msg.sender, pair, liquidity); // send liquidity to pair
+        uint feeChange; 
+        (amountETH, feeChange) = IAGroupPair(pair).burn{value: msg.value}(WETH, address(this));
+        require(amountETH >= amountETHMin, "got less than expected");
         IWETH(WETH).withdraw(amountETH);
-        TransferHelper.safeTransferETH(to, amountETH);
+        TransferHelper.safeTransferETH(to, amountETH.add(feeChange));
     }
 
-    // **** SWAP ****
-    // requires the initial amount to have already been sent to the first pair
-    function _swap(uint[] memory amounts, address[] memory path, address _to) internal virtual {
-
-    }
-    // function swapExactTokensForTokens(
-    //     uint amountIn,
-    //     uint amountOutMin,
-    //     address[] calldata path,
-    //     address to,
-    //     uint deadline
-    // ) external virtual override ensure(deadline) returns (uint[] memory amounts) {
-
-    // }
-    // function swapTokensForExactTokens(
-    //     uint amountOut,
-    //     uint amountInMax,
-    //     address[] calldata path,
-    //     address to,
-    //     uint deadline
-    // ) external virtual override ensure(deadline) returns (uint[] memory amounts) {
-
-    // }
-    function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline)
-        external
-        virtual
-        override
-        payable
-        ensure(deadline)
-        returns (uint[] memory amounts)
+    // msg.value = amountIn + oracle fee
+    function swapExactETHForTokens(
+        address token,
+        uint amountIn,
+        uint amountOutMin,
+        address to,
+        uint deadline
+    ) external override payable ensure(deadline) returns (uint _amountIn, uint _amountOut)
     {
-
+        require(msg.value > amountIn, "insufficient msg.value");
+        IWETH(WETH).deposit{value: amountIn}();
+        address pair = pairFor(factory, token);
+        assert(IWETH(WETH).transfer(pair, amountIn));
+        uint feeChange; 
+        (_amountIn, _amountOut, feeChange) = IAGroupPair(pair).swapWithExact{value: msg.value.sub(amountIn)}(token, to);
+        require(_amountOut >= amountOutMin, "got less than expected");
+        if (feeChange > 0) TransferHelper.safeTransferETH(msg.sender, feeChange);
     }
-    function swapTokensForExactETH(uint amountOut, uint amountInMax, address[] calldata path, address to, uint deadline)
-        external
-        virtual
-        override
-        ensure(deadline)
-        returns (uint[] memory amounts)
-    {
 
+    // msg.value = oracle fee
+    function swapExactTokensForETH(
+        address token,
+        uint amountIn,
+        uint amountOutMin,
+        address to,
+        uint deadline
+    ) external override payable ensure(deadline) returns (uint _amountIn, uint _amountOut)
+    {
+        require(msg.value > 0, "insufficient msg.value");
+        address pair = pairFor(factory, token);
+        TransferHelper.safeTransferFrom(token, msg.sender, pair, amountIn);
+        uint feeChange; 
+        (_amountIn, _amountOut, feeChange) = IAGroupPair(pair).swapWithExact{value: msg.value}(token, address(this));
+        require(_amountOut >= amountOutMin, "got less than expected");
+        IWETH(WETH).withdraw(_amountOut);
+        TransferHelper.safeTransferETH(to, _amountOut.add(feeChange));
     }
-    function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline)
-        external
-        virtual
-        override
-        ensure(deadline)
-        returns (uint[] memory amounts)
-    {
 
+    // msg.value = amountInMax + oracle fee
+    function swapETHForExactTokens(
+        address token,
+        uint amountInMax,
+        uint amountOut,
+        address to,
+        uint deadline
+    ) external override payable ensure(deadline) returns (uint _amountIn, uint _amountOut)
+    {
+        require(msg.value > amountInMax, "insufficient msg.value");
+        IWETH(WETH).deposit{value: amountInMax}();
+        address pair = pairFor(factory, token);
+        assert(IWETH(WETH).transfer(pair, amountInMax));
+        uint feeChange; 
+        (_amountIn, _amountOut, feeChange) = IAGroupPair(pair).swapForExact{value: msg.value.sub(amountInMax)}(token, amountOut, to); // TODO: handle two *amountOut
+        require(_amountIn <= amountInMax, "spend more than expected");
+        if (feeChange > 0) TransferHelper.safeTransferETH(msg.sender, feeChange);
     }
-    function swapETHForExactTokens(uint amountOut, address[] calldata path, address to, uint deadline)
-        external
-        virtual
-        override
-        payable
-        ensure(deadline)
-        returns (uint[] memory amounts)
-    {
 
+    // msg.value = oracle fee
+    function swapTokensForExactETH(
+        address token,
+        uint amountInMax,
+        uint amountOut,
+        address to,
+        uint deadline
+    ) external override payable ensure(deadline) returns (uint _amountIn, uint _amountOut)
+    {
+        require(msg.value > 0, "insufficient msg.value");
+        address pair = pairFor(factory, token);
+        TransferHelper.safeTransferFrom(token, msg.sender, pair, amountInMax);
+        uint feeChange; 
+        (_amountIn, _amountOut, feeChange) = IAGroupPair(pair).swapForExact{value: msg.value}(token, amountOut, address(this));  // TODO: handle two *amountOut
+        require(_amountIn <= amountInMax, "got less than expected");
+        IWETH(WETH).withdraw(_amountOut);
+        TransferHelper.safeTransferETH(to, amountOut.add(feeChange));
     }
 }

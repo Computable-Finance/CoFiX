@@ -1,8 +1,10 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 pragma solidity ^0.6.6;
 
 interface IAGroupFactory {
     // All pairs: {ETH <-> ERC20 Token}
-    event PairCreated(address indexed token0, address indexed token1, address pair, uint256);
+    event PairCreated(address indexed token, address pair, uint256);
 
     /// @dev Create a new token pair for trading
     /// @param  token the address of token to trade

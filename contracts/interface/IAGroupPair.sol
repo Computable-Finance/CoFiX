@@ -1,28 +1,17 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 pragma solidity ^0.6.6;
+import './IAGroupERC20.sol';
 
-interface IAGroupPair {
-    // All pairs: {ETH <-> ERC20 Token}
+interface IAGroupPair is IAGroupERC20 {
+
+    struct OraclePrice {
+        uint256 ethAmount;
+        uint256 erc20Amount;
+        uint256 blockNum;
+    }
     
-    // event Approval(address indexed owner, address indexed spender, uint value);
-    // event Transfer(address indexed from, address indexed to, uint value);
-
-    // function name() external pure returns (string memory);
-    // function symbol() external pure returns (string memory);
-    // function decimals() external pure returns (uint8);
-    // function totalSupply() external view returns (uint);
-    // function balanceOf(address owner) external view returns (uint);
-    // function allowance(address owner, address spender) external view returns (uint);
-
-    // function approve(address spender, uint value) external returns (bool);
-    // function transfer(address to, uint value) external returns (bool);
-    function transferFrom(address from, address to, uint value) external returns (bool);
-
-    // function DOMAIN_SEPARATOR() external view returns (bytes32);
-    // function PERMIT_TYPEHASH() external pure returns (bytes32);
-    // function nonces(address owner) external view returns (uint);
-
-    // function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
-
+    // All pairs: {ETH <-> ERC20 Token}
     event Mint(address indexed sender, uint amount0, uint amount1);
     event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
     event Swap(
@@ -41,9 +30,10 @@ interface IAGroupPair {
     function token1() external view returns (address);
     function getReserves() external view returns (uint112 reserve0, uint112 reserve1);
 
-    function mint(address to) external payable returns (uint liquidity);
-    function burn(address outToken, address to) external payable returns (uint outAmount);
-    function swap(uint amountInMax, uint amountOutMin, address outToken, address to) external payable;
+    function mint(address to) external payable returns (uint liquidity, uint feeChange);
+    function burn(address outToken, address to) external payable returns (uint outAmount, uint feeChange);
+    function swapWithExact(address outToken, address to) external payable returns (uint amountIn, uint amountOut, uint feeChange);
+    function swapForExact(address outToken, uint _amountOut, address to) external payable returns (uint amountIn, uint amountOut, uint feeChange);
     function skim(address to) external;
     function sync() external;
 

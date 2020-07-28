@@ -57,6 +57,10 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
         factory = msg.sender;
     }
 
+    receive() external payable {
+        // require(msg.sender == address(factory), "AGroupFactory: invalid eth sender");
+    }
+
     // called once by the factory at time of deployment
     function initialize(address _token0, address _token1) external override {
         require(msg.sender == factory, 'AGroupV1: FORBIDDEN'); // sufficient check
@@ -97,9 +101,9 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
             } else {
                 share = 10000*(balance0*_op.erc20Amount/_op.ethAmount + balance1) / _totalSupply;
             }
-            liquidity = (10000*amount0*_op.erc20Amount/_op.ethAmount)/share;
+            liquidity = (10000*amount0*_op.erc20Amount/_op.ethAmount)/share*1000/1005;
         }
-        feeChange = msg.value.sub(address(this).balance.sub(_ethBalanceBefore));
+        feeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
 
         require(liquidity > 0, 'AGroupV1: INSUFFICIENT_LIQUIDITY_MINTED');
         _mint(to, liquidity);
@@ -134,14 +138,14 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
                 share = 10000*(balance0*_op.erc20Amount/_op.ethAmount + balance1) / _totalSupply;
             }
             if (outToken == _token0) {
-                outAmount = liquidity*share*_op.erc20Amount/_op.ethAmount/10000;
+                outAmount = liquidity*share*_op.ethAmount/_op.erc20Amount*1000/10000/1005;
             } else if (outToken == _token1) {
                 outAmount = liquidity*share/10000;
             }  else {
                 revert("wrong outToken");
             }
         }
-        feeChange = msg.value.sub(address(this).balance.sub(_ethBalanceBefore));
+        feeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
 
         _burn(address(this), liquidity);
         _safeTransfer(outToken, to, outAmount);
@@ -170,7 +174,7 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
             (_op.ethAmount, _op.erc20Amount, _op.blockNum) = IAGroupFactory(factory).updateAndCheckPriceNow{value: msg.value}(_token1);
             // TODO: validate
 
-            feeChange = msg.value.sub(address(this).balance.sub(_ethBalanceBefore));
+            feeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
         }
 
         {
@@ -242,7 +246,7 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
             } else {
                 revert("wrong outToken");
             }
-            feeChange = msg.value.sub(address(this).balance.sub(_ethBalanceBefore));
+            feeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
         }
         
         require(to != _token0 && to != _token1, 'AGroupV1: INVALID_TO');

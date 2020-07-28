@@ -5,9 +5,11 @@ pragma solidity ^0.6.6;
 import './interface/IAGroupFactory.sol';
 import './AGroupPair.sol';
 import './interface/INest_3_OfferPrice.sol';
+import './lib/SafeMath.sol';
 
 
 contract AGroupFactory is IAGroupFactory {
+    using SafeMath for uint;
 
     mapping(address => address) public override getPair;
     address[] public override allPairs;
@@ -21,14 +23,25 @@ contract AGroupFactory is IAGroupFactory {
         WETH = _WETH;
     }
 
+    receive() external payable {
+        // require(msg.sender == address(priceOracle), "AGroupFactory: invalid eth sender");
+        // TODO: strict check here
+    }
+
     function allPairsLength() external override view returns (uint256) {
         return allPairs.length;
     }
+
+    // For Debug
+    event ByteCode(bytes _bytes);
+    event ByteCodeHash(bytes32 _hash);
 
     function createPair(address token) external override returns (address pair) {
         require(token != address(0), 'AGroupV1: ZERO_ADDRESS');
         require(getPair[token] == address(0), 'AGroupV1: PAIR_EXISTS');
         bytes memory bytecode = type(AGroupPair).creationCode;
+        // emit ByteCode(bytecode);
+        emit ByteCodeHash(keccak256(bytecode));
         bytes32 salt = keccak256(abi.encodePacked(token));
         assembly {
             pair := create2(0, add(bytecode, 32), mload(bytecode), salt)
@@ -45,8 +58,7 @@ contract AGroupFactory is IAGroupFactory {
     function updateAndCheckPriceNow(address tokenAddress) external payable override returns(uint256 ethAmount, uint256 erc20Amount, uint256 blockNum) {
         uint256 _balanceBefore = address(this).balance;
         (ethAmount, erc20Amount, blockNum) = priceOracle.updateAndCheckPriceNow{value: msg.value}(tokenAddress);
-        uint256 _cost = address(this).balance - _balanceBefore;
-        msg.sender.transfer(msg.value - _cost); // TODO: maybe use call for transferring ETH to contract account
+        msg.sender.transfer(msg.value.sub(_balanceBefore.sub(address(this).balance))); // TODO: maybe use call for transferring ETH to contract account
     }
 
 

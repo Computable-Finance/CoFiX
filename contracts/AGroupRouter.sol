@@ -27,7 +27,8 @@ contract AGroupRouter is IAGroupRouter {
     }
 
     receive() external payable {
-        assert(msg.sender == WETH); // only accept ETH via fallback from the WETH contract
+        // assert(msg.sender == WETH); // only accept ETH via fallback from the WETH contract
+        // TODO: strict limit
     }
 
     // calculates the CREATE2 address for a pair without making any external calls
@@ -36,7 +37,7 @@ contract AGroupRouter is IAGroupRouter {
                 hex'ff',
                 _factory,
                 keccak256(abi.encodePacked(token)),
-                hex'96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f' // init code hash
+                hex'fb0c5470b7fbfce7f512b5035b5c35707fd5c7bd43c8d81959891b0296030118' // init code hash
             )))); // TODO: calc the real init code hash
     }
 
@@ -52,7 +53,8 @@ contract AGroupRouter is IAGroupRouter {
     {
         // create the pair if it doesn't exist yet
         if (IAGroupFactory(factory).getPair(token) == address(0)) {
-            IAGroupFactory(factory).createPair(token);
+            address _pair = IAGroupFactory(factory).createPair(token);
+            require(_pair == pairFor(factory, token), "wrong pair address");
         }
         require(msg.value > amountETH, "insufficient msg.value");
         uint256 _oracleFee = msg.value.sub(amountETH);
@@ -136,7 +138,7 @@ contract AGroupRouter is IAGroupRouter {
         address pair = pairFor(factory, token);
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountIn);
         uint feeChange; 
-        (_amountIn, _amountOut, feeChange) = IAGroupPair(pair).swapWithExact{value: msg.value}(token, address(this));
+        (_amountIn, _amountOut, feeChange) = IAGroupPair(pair).swapWithExact{value: msg.value}(WETH, address(this));
         require(_amountOut >= amountOutMin, "got less than expected");
         IWETH(WETH).withdraw(_amountOut);
         TransferHelper.safeTransferETH(to, _amountOut.add(feeChange));
@@ -174,7 +176,7 @@ contract AGroupRouter is IAGroupRouter {
         address pair = pairFor(factory, token);
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountInMax);
         uint feeChange; 
-        (_amountIn, _amountOut, feeChange) = IAGroupPair(pair).swapForExact{value: msg.value}(token, amountOut, address(this));  // TODO: handle two *amountOut
+        (_amountIn, _amountOut, feeChange) = IAGroupPair(pair).swapForExact{value: msg.value}(WETH, amountOut, address(this));  // TODO: handle two *amountOut
         require(_amountIn <= amountInMax, "got less than expected");
         IWETH(WETH).withdraw(_amountOut);
         TransferHelper.safeTransferETH(to, amountOut.add(feeChange));

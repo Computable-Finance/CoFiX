@@ -32,13 +32,14 @@ contract AGroupRouter is IAGroupRouter {
     }
 
     // calculates the CREATE2 address for a pair without making any external calls
-    function pairFor(address _factory, address token) internal pure returns (address pair) {
-        pair = address(uint(keccak256(abi.encodePacked(
-                hex'ff',
-                _factory,
-                keccak256(abi.encodePacked(token)),
-                hex'fb0c5470b7fbfce7f512b5035b5c35707fd5c7bd43c8d81959891b0296030118' // init code hash
-            )))); // TODO: calc the real init code hash
+    function pairFor(address _factory, address token) internal view returns (address pair) {
+        // pair = address(uint(keccak256(abi.encodePacked(
+        //         hex'ff',
+        //         _factory,
+        //         keccak256(abi.encodePacked(token)),
+        //         hex'fb0c5470b7fbfce7f512b5035b5c35707fd5c7bd43c8d81959891b0296030118' // init code hash
+        //     )))); // TODO: calc the real init code hash
+        return IAGroupFactory(_factory).getPair(token);
     }
 
     // msg.value = amountETH + oracle fee

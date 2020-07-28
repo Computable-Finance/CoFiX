@@ -101,7 +101,7 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
             } else {
                 share = 10000*(balance0*_op.erc20Amount/_op.ethAmount + balance1) / _totalSupply;
             }
-            liquidity = (10000*amount0*_op.erc20Amount/_op.ethAmount)/share*1000/1005;
+            liquidity = 1000*10000*(amount0*_op.erc20Amount/_op.ethAmount + amount1)/share/1005; // TODO: optimize calc
         }
         feeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
 
@@ -138,7 +138,7 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
                 share = 10000*(balance0*_op.erc20Amount/_op.ethAmount + balance1) / _totalSupply;
             }
             if (outToken == _token0) {
-                outAmount = liquidity*share*_op.ethAmount/_op.erc20Amount*1000/10000/1005;
+                outAmount = 1000*liquidity*share*_op.ethAmount/_op.erc20Amount/10000/1005;
             } else if (outToken == _token1) {
                 outAmount = liquidity*share/10000;
             }  else {

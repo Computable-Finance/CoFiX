@@ -17,6 +17,7 @@ contract NEST3PriceOracleMock {
         public view
         returns (uint256 ethAmount, uint256 erc20Amount, uint256 blockNum)
     {
+        // 10 Ether <=> 3,255 USDT
         return (10000000000000000000, 3255000000, block.number);
     }
 }

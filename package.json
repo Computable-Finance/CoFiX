@@ -4,7 +4,9 @@
     "solium": "node_modules/.bin/solium -d contracts/ --fix-dry-run"
   },
   "dependencies": {
-    "ethlint": "^1.2.5"
+    "@truffle/hdwallet-provider": "^1.0.40",
+    "ethlint": "^1.2.5",
+    "truffle-assertions": "^0.9.2"
   },
   "devDependencies": {}
 }

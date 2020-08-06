@@ -1,40 +1,45 @@
-const AGroupRouter = artifacts.require("AGroupRouter");
-const ERC20 = artifacts.require("test/ERC20");
-const AGroupFactory = artifacts.require("AGroupFactory");
-const AGroupPair = artifacts.require("AGroupPair");
-const WETH9 = artifacts.require("test/WETH9");
-const { getWeb3 } = require("./helpers");
-const web3 = getWeb3();
-const truffleAssert = require('truffle-assertions');
+const { accounts, contract, web3 } = require('@openzeppelin/test-environment');
+const { expect } = require('chai');
+require('chai').should();
+const { BN, constants, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
+const AGroupRouter = contract.fromArtifact("AGroupRouter");
+const ERC20 = contract.fromArtifact("ERC20");
+const AGroupFactory = contract.fromArtifact("AGroupFactory");
+const AGroupPair = contract.fromArtifact("AGroupPair");
+const WETH9 = contract.fromArtifact("WETH9");
+const NEST3PriceOracleMock = contract.fromArtifact("NEST3PriceOracleMock");
 
+describe('AGroupRouter', function () {
+    const [ owner ] = accounts;
+    let deployer = owner;
+    let LP = owner;
+    let trader = owner;
 
-contract("AGroutRouter", async (accounts) => {
+    // let totalSupply_ = "10000000000000000";
+    const totalSupply_ = new BN("10000000000000000");
 
-    let deployer = accounts[0];
-    let LP = accounts[0]; // liquidity provider
-    let trader = accounts[0];
-
-    let totalSupply_ = "10000000000000000";
-
+    
     before(async () => {
-        AGRouter = await AGroupRouter.deployed();
-        USDT = await ERC20.deployed();
-        AGFactory = await AGroupFactory.deployed();
-        WETH = await WETH9.deployed();
+        USDT = await ERC20.new("10000000000000000", "USDT Test Token", "USDT", 6, {from: deployer});
+        WETH = await WETH9.new();
+        PriceOracle = await NEST3PriceOracleMock.new();
+        AGFactory = await AGroupFactory.new(PriceOracle.address, WETH.address)
+        AGRouter = await AGroupRouter.new(AGFactory.address, WETH.address);
     });
 
     it("should USDT totalSupply equals", async () => {
         let totalSupply = await USDT.totalSupply();
-        assert.equal(totalSupply, totalSupply_);
+        expect(totalSupply).to.bignumber.equal(totalSupply_);
     })
 
     it("should run correctly", async () => {
         // approve USDT to router
-        await USDT.approve(AGRouter.address, totalSupply_);
+        await USDT.approve(AGRouter.address, totalSupply_, {from: LP});
 
         // approve successfully
-        let allowance = await USDT.allowance(deployer, AGRouter.address);
-        assert.equal(allowance, totalSupply_);
+        let allowance = await USDT.allowance(LP, AGRouter.address);
+        console.log("allowance: ", allowance.toString());
+        expect(allowance).to.bignumber.equal(totalSupply_);
 
         // addLiquidity (create pair included)
         //  - address token,
@@ -46,7 +51,7 @@ contract("AGroutRouter", async (accounts) => {
         let _amountETH = web3.utils.toWei('1', 'ether');
         let _msgValue = web3.utils.toWei('1.1', 'ether');
         let _amountToken = "1000000000";
-        await AGRouter.addLiquidity(USDT.address, _amountETH, _amountToken, 0, LP, "99999999999", {value: _msgValue}); // create pair automatically if not exists
+        await AGRouter.addLiquidity(USDT.address, _amountETH, _amountToken, 0, LP, "99999999999", {from: LP, value: _msgValue}); // create pair automatically if not exists
 
         // check token balance
         let pairAddr = await AGFactory.getPair(USDT.address);
@@ -67,7 +72,7 @@ contract("AGroutRouter", async (accounts) => {
         // - uint deadline
         let _amountIn = "100000000";
         _msgValue = web3.utils.toWei('1.1', 'ether');
-        await AGRouter.swapExactTokensForETH(USDT.address, _amountIn, 0, trader, "99999999999", {value: _msgValue});
+        await AGRouter.swapExactTokensForETH(USDT.address, _amountIn, 0, trader, "99999999999", {from: trader, value: _msgValue});
         console.log("------------swapExactTokensForETH------------");
         usdtInPool = await USDT.balanceOf(pairAddr);
         wethInPool = await WETH.balanceOf(pairAddr);
@@ -84,7 +89,7 @@ contract("AGroutRouter", async (accounts) => {
         // - uint deadline
         _amountIn = web3.utils.toWei('0.2', 'ether');
         _msgValue = web3.utils.toWei('0.3', 'ether');
-        await AGRouter.swapExactETHForTokens(USDT.address, _amountIn, 0, trader, "99999999999", {value: _msgValue});
+        await AGRouter.swapExactETHForTokens(USDT.address, _amountIn, 0, trader, "99999999999", {from: trader, value: _msgValue});
         console.log("------------swapExactETHForTokens------------");
         usdtInPool = await USDT.balanceOf(pairAddr);
         wethInPool = await WETH.balanceOf(pairAddr);
@@ -100,10 +105,10 @@ contract("AGroutRouter", async (accounts) => {
         // - address to,
         // - uint deadline
         // approve liquidity to router
-        await USDTPair.approve(AGRouter.address, liquidity);
+        await USDTPair.approve(AGRouter.address, liquidity, {from: LP});
         let partLiquidity = liquidity.div(new web3.utils.BN('5'));
         _msgValue = web3.utils.toWei('0.1', 'ether');
-        await AGRouter.removeLiquidityGetETH(USDT.address, partLiquidity, 0, LP, "99999999999", {value: _msgValue});
+        await AGRouter.removeLiquidityGetETH(USDT.address, partLiquidity, 0, LP, "99999999999", {from: LP, value: _msgValue});
         console.log("------------removeLiquidityGetETH------------");
         usdtInPool = await USDT.balanceOf(pairAddr);
         wethInPool = await WETH.balanceOf(pairAddr);
@@ -120,7 +125,7 @@ contract("AGroutRouter", async (accounts) => {
         // - uint deadline
         let mostLeftLiquidity = liquidity.mul(new web3.utils.BN('3')).div(new web3.utils.BN('5'));
         _msgValue = web3.utils.toWei('0.1', 'ether');
-        await AGRouter.removeLiquidityGetToken(USDT.address, mostLeftLiquidity, 0, LP, "99999999999", {value: _msgValue});
+        await AGRouter.removeLiquidityGetToken(USDT.address, mostLeftLiquidity, 0, LP, "99999999999", {from: LP, value: _msgValue});
         console.log("------------removeLiquidityGetToken------------");
         usdtInPool = await USDT.balanceOf(pairAddr);
         wethInPool = await WETH.balanceOf(pairAddr);

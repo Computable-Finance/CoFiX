@@ -1,12 +1,23 @@
 {
   "scripts": {
-    "test": "truffle test",
+    "clean": "rm -rf build",
+    "ozc": "oz compile",
+    "tc": "truffle compile",
+    "test": "oz compile && npx mocha --exit --recursive",
+    "tctest": "truffle compile && npx mocha --exit --recursive",
     "solium": "node_modules/.bin/solium -d contracts/ --fix-dry-run"
   },
   "dependencies": {
     "@truffle/hdwallet-provider": "^1.0.40",
     "ethlint": "^1.2.5",
+    "ganache-cli": "^6.9.1",
     "truffle-assertions": "^0.9.2"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@openzeppelin/cli": "^2.8.2",
+    "@openzeppelin/test-environment": "^0.1.4",
+    "@openzeppelin/test-helpers": "^0.5.6",
+    "chai": "^4.2.0",
+    "mocha": "^8.0.1"
+  }
 }

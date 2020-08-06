@@ -60,9 +60,13 @@ contract AGroupRouter is IAGroupRouter {
         require(msg.value > amountETH, "insufficient msg.value");
         uint256 _oracleFee = msg.value.sub(amountETH);
         address pair = pairFor(factory, token);
-        TransferHelper.safeTransferFrom(token, msg.sender, pair, amountToken);
-        IWETH(WETH).deposit{value: amountETH}();
-        assert(IWETH(WETH).transfer(pair, amountETH));
+        if (amountToken > 0 ) { // support for tokens which do not allow to transfer zero values
+            TransferHelper.safeTransferFrom(token, msg.sender, pair, amountToken);
+        }
+        if (amountETH > 0) {
+            IWETH(WETH).deposit{value: amountETH}();
+            assert(IWETH(WETH).transfer(pair, amountETH));
+        }
         uint256 feeChange;
         (liquidity, feeChange) = IAGroupPair(pair).mint{value: _oracleFee}(to);
         require(liquidity >= liquidityMin, "less liquidity than expected");

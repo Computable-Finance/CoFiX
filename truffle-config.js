@@ -70,6 +70,15 @@ module.exports = {
       skipDryRun: false     // Skip dry run before migrations? (default: false for public nets )
     },
 
+    kovan: {
+      provider: () => new HDWalletProvider(process.env.mnemonic, `wss://kovan.infura.io/ws/v3/`+ process.env.INFURA_PROJECT_ID),
+      network_id: '42',
+      gas: 7000000,
+      confirmations: 2,
+      timeoutBlocks: 200,
+      skipDryRun: false
+    },
+
     // Useful for private networks
     // private: {
       // provider: () => new HDWalletProvider(mnemonic, `https://network.io`),

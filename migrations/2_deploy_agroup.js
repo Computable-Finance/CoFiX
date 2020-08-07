@@ -3,6 +3,7 @@ const WETH9 = artifacts.require("test/WETH9");
 const NEST3PriceOracleMock = artifacts.require("mock/NEST3PriceOracleMock");
 const AGroupFactory = artifacts.require("AGroupFactory");
 const AGroupRouter = artifacts.require("AGroupRouter");
+const DeviationRatio = artifacts.require("DeviationRatio");
 
 module.exports = async function(deployer) {
 
@@ -21,5 +22,8 @@ module.exports = async function(deployer) {
 
     // AGroupRouter
     await deployer.deploy(AGroupRouter, AGroupFactory.address, WETH9.address);
+
+
+    await deployer.deploy(DeviationRatio);
 
 };

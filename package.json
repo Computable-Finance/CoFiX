@@ -18,6 +18,7 @@
     "@openzeppelin/test-environment": "^0.1.4",
     "@openzeppelin/test-helpers": "^0.5.6",
     "chai": "^4.2.0",
+    "husky": "^4.2.5",
     "mocha": "^8.0.1"
   }
 }

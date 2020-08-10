@@ -88,7 +88,7 @@ contract DeviationRatio {
             _variance = ABDKMath64x64.add(_variance, ABDKMath64x64.pow(_tmp, 2));
         }
         // volatility in doc
-        _variance = ABDKMath64x64.div(_variance, ABDKMath64x64.fromUInt(_cnt.sub(1))); // _cnt > 1 TODO: why sub 1 here, Bessel's Correction?
+        _variance = ABDKMath64x64.div(_variance, ABDKMath64x64.fromUInt(_cnt)); // _cnt > 1 TODO: why sub 1 here, Bessel's Correction?
 
         // variance -> standard deviation
         return ABDKMath64x64.sqrt(_variance); // sample standard deviation or standard deviation here?

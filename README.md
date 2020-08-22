@@ -10,9 +10,13 @@ npm install
 npm run test
 ```
 
-### compile
+### Compile
 
-run `truffle compile`, get build results in `build/contracts` folder, including `ABI` json files.
+Run `truffle compile`, get build results in `build/contracts` folder, including `ABI` json files.
+
+or
+
+Use `npx oz compile` to adopt `@openzeppelin/cli` toolchain.
 
 ### Deploy
 

@@ -27,8 +27,8 @@ contract CofiXPair is ICofiXPair, CofiXERC20 {
     uint112 private reserve0;           // uses single storage slot, accessible via getReserves
     uint112 private reserve1;           // uses single storage slot, accessible via getReserves
 
-    uint256 constant K_BASE = 100000;
-    uint256 constant SHARE_BASE = 10000;
+    uint256 constant public K_BASE = 100000;
+    uint256 constant public SHARE_BASE = 10000;
 
     uint private unlocked = 1;
     modifier lock() {

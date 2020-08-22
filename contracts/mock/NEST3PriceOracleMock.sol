@@ -14,15 +14,15 @@ contract NEST3PriceOracleMock {
     struct PriceInfo {
         uint256 ethAmount;
         uint256 erc20Amount;
-        uint256 blockNumber;
+        uint256 blockNum;
     }
 
     function updateAndCheckPriceNow(address token)
         external payable
         returns(uint256 ethAmount, uint256 erc20Amount, uint256 blockNum)
     {
-        require(priceInfoList_[token].length > 0, "no price available");
-        require(msg.value > 0.001 ether, "insufficient oracle fee");
+        require(priceInfoList_[token].length > 0, "oracleMock: no price available");
+        require(msg.value > 0.001 ether, "oracleMock: insufficient oracle fee");
         msg.sender.transfer(msg.value - 0.001 ether); // return back
         return checkPriceNow(token);
     }
@@ -31,7 +31,7 @@ contract NEST3PriceOracleMock {
         external payable
         returns (uint256[] memory)
     {
-        require(msg.value > 0.001 ether, "insufficient oracle fee");
+        require(msg.value > 0.001 ether, "oracleMock: insufficient oracle fee");
         return checkPriceList(token, num);
     }
 
@@ -41,7 +41,7 @@ contract NEST3PriceOracleMock {
         returns (uint256[] memory)
     {
         uint256 priceLength = priceInfoList_[token].length;
-        require(priceLength >= num, "num too large");
+        require(priceLength >= num, "oracleMock: num too large");
         uint256 length = num*3;
         uint256 i = 0;
         uint256[] memory data = new uint256[](length);
@@ -49,7 +49,7 @@ contract NEST3PriceOracleMock {
             uint _idx = priceLength - 1 - (i/3);
             data[i++] = priceInfoList_[token][_idx].ethAmount;
             data[i++] = priceInfoList_[token][_idx].erc20Amount;
-            data[i++] = priceInfoList_[token][_idx].blockNumber;
+            data[i++] = priceInfoList_[token][_idx].blockNum;
         }
         return data;
     }
@@ -78,11 +78,11 @@ contract NEST3PriceOracleMock {
         if (_blockNum == 0) {
             _blockNum = block.number;
         }
-        require(_blockNum > lastBlockNum, "wrong block number index");
+        require(_blockNum > lastBlockNum, "oracleMock: wrong block number index");
         priceInfoList_[token].push(PriceInfo({
             ethAmount: _ethAmount,
             erc20Amount: _erc20Amount,
-            blockNumber: _blockNum
+            blockNum: _blockNum
         }));
     }
 
@@ -97,7 +97,7 @@ contract NEST3PriceOracleMock {
         // return the newest price
         ethAmount = priceInfoList_[token][_len - 1].ethAmount;
         erc20Amount = priceInfoList_[token][_len - 1].erc20Amount;
-        blockNum = priceInfoList_[token][_len - 1].blockNumber;
+        blockNum = priceInfoList_[token][_len - 1].blockNum;
     }
 
     function getPriceLength(address token)

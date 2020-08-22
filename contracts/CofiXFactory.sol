@@ -13,22 +13,19 @@ contract CofiXFactory is ICofiXFactory {
 
     mapping(address => address) public override getPair;
     address[] public override allPairs;
-    // INest_3_OfferPrice public priceOracle;
     address public governance;
     address public controller;
     address public immutable WETH;
 
     event PairCreated(address indexed token, address pair, uint);
 
-    constructor(address _priceOracle, address _WETH, address _controller) public {
-        // priceOracle = INest_3_OfferPrice(_priceOracle);
+    constructor(address _controller, address _WETH) public {
         governance = msg.sender;
         controller = _controller;
         WETH = _WETH;
     }
 
     receive() external payable {
-        // require(msg.sender == address(priceOracle), "CFactory: invalid eth sender");
         // TODO: strict check here
     }
 
@@ -69,14 +66,4 @@ contract CofiXFactory is ICofiXFactory {
     function getController() external view override returns (address) {
         return controller;
     }
-
-    // // act as proxy contract to access the NEST Price Oracle
-    // // TODO: only pair
-    // function updateAndCheckPriceNow(address tokenAddress) external payable override returns(uint256 ethAmount, uint256 erc20Amount, uint256 blockNum) {
-    //     uint256 _balanceBefore = address(this).balance;
-    //     (ethAmount, erc20Amount, blockNum) = priceOracle.updateAndCheckPriceNow{value: msg.value}(tokenAddress);
-    //     msg.sender.transfer(msg.value.sub(_balanceBefore.sub(address(this).balance))); // TODO: maybe use call for transferring ETH to contract account
-    // }
-
-
 }

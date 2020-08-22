@@ -17,13 +17,13 @@ module.exports = async function(deployer) {
     // NEST3 Price Oracle Mock
     await deployer.deploy(NEST3PriceOracleMock, WETH9.address);
 
+    // CofiXController
+    await deployer.deploy(CofiXController, NEST3PriceOracleMock.address);
+
     // CofiXFactory
-    await deployer.deploy(CofiXFactory, NEST3PriceOracleMock.address, WETH9.address);
+    await deployer.deploy(CofiXFactory, CofiXController.address, WETH9.address);
 
     // CofiXRouter
     await deployer.deploy(CofiXRouter, CofiXFactory.address, WETH9.address);
-
-
-    await deployer.deploy(CofiXController);
 
 };

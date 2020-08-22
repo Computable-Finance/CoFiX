@@ -19,5 +19,7 @@ interface ICofiXFactory {
     function allPairs(uint256) external view returns (address pair);
     function allPairsLength() external view returns (uint256);
 
-    function updateAndCheckPriceNow(address tokenAddress) external payable returns(uint256 ethAmount, uint256 erc20Amount, uint256 blockNum);
+    function setGovernance(address _new) external;
+    function setController(address _new) external;
+    function getController() external view returns (address controller);
 }

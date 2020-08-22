@@ -31,6 +31,7 @@ contract NEST3PriceOracleMock {
         external payable
         returns (uint256[] memory)
     {
+        require(msg.value > 0.001 ether, "insufficient oracle fee");
         return checkPriceList(token, num);
     }
 

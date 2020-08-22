@@ -9,6 +9,7 @@ interface ICofiXPair is ICofiXERC20 {
         uint256 ethAmount;
         uint256 erc20Amount;
         uint256 blockNum;
+        uint256 K;
     }
     
     // All pairs: {ETH <-> ERC20 Token}
@@ -31,9 +32,9 @@ interface ICofiXPair is ICofiXERC20 {
     function getReserves() external view returns (uint112 reserve0, uint112 reserve1);
 
     function mint(address to) external payable returns (uint liquidity, uint feeChange);
-    function burn(address outToken, address to) external payable returns (uint outAmount, uint feeChange);
+    function burn(address outToken, address to) external payable returns (uint amountOut, uint feeChange);
     function swapWithExact(address outToken, address to) external payable returns (uint amountIn, uint amountOut, uint feeChange);
-    function swapForExact(address outToken, uint _amountOut, address to) external payable returns (uint amountIn, uint amountOut, uint feeChange);
+    function swapForExact(address outToken, uint amountOutExact, address to) external payable returns (uint amountIn, uint amountOut, uint feeChange);
     function skim(address to) external;
     function sync() external;
 

@@ -8,7 +8,7 @@ const CofiXFactory = contract.fromArtifact("CofiXFactory");
 const CofiXPair = contract.fromArtifact("CofiXPair");
 const WETH9 = contract.fromArtifact("WETH9");
 const NEST3PriceOracleMock = contract.fromArtifact("NEST3PriceOracleMock");
-const DeviationRatio = contract.fromArtifact("DeviationRatio");
+const CofiXController = contract.fromArtifact("CofiXController");
 
 describe('CofiXRouter', function () {
     const [owner] = accounts;
@@ -26,7 +26,7 @@ describe('CofiXRouter', function () {
         PriceOracle = await NEST3PriceOracleMock.new();
         AGFactory = await CofiXFactory.new(PriceOracle.address, WETH.address)
         AGRouter = await CofiXRouter.new(AGFactory.address, WETH.address);
-        KCalc = await DeviationRatio.new();
+        CofiXCtrl = await CofiXController.new();
     });
 
     it("should USDT totalSupply equals", async () => {
@@ -47,9 +47,9 @@ describe('CofiXRouter', function () {
         let priceLen = await PriceOracle.getPriceLength(USDT.address);
         console.log("priceLen:", priceLen.toString(), ", tokenAmount:", tokenAmount.toString());
         expect(priceLen).to.bignumber.equal(new BN("50"));
-        // let gas = await KCalc.methods['calcK(address,address)'].estimateGas(PriceOracle.address, USDT.address, { from: deployer })
+        // let gas = await CofiXCtrl.methods['queryOracle(address,address)'].estimateGas(PriceOracle.address, USDT.address, { from: deployer })
         // console.log("estimateGas:", gas.toString())
-        let result = await KCalc.calcK(PriceOracle.address, USDT.address, { from: deployer });
+        let result = await CofiXCtrl.queryOracle(PriceOracle.address, USDT.address, { from: deployer });
         console.log("receipt.gasUsed:", result.receipt.gasUsed); // 494562
         let evtArgs0 = result.receipt.logs[0].args;
         console.log("evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString())
@@ -63,7 +63,7 @@ describe('CofiXRouter', function () {
         priceLen = await PriceOracle.getPriceLength(USDT.address);
         console.log("priceLen:", priceLen.toString(), ", tokenAmount:", tokenAmount.toString());
         expect(priceLen).to.bignumber.equal(new BN("100"));
-        result = await KCalc.calcK(PriceOracle.address, USDT.address, { from: deployer });
+        result = await CofiXCtrl.queryOracle(PriceOracle.address, USDT.address, { from: deployer });
         console.log("receipt.gasUsed:", result.receipt.gasUsed); // 544914
         evtArgs0 = result.receipt.logs[0].args;
         console.log("evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString())

@@ -3,7 +3,7 @@ const WETH9 = artifacts.require("test/WETH9");
 const NEST3PriceOracleMock = artifacts.require("mock/NEST3PriceOracleMock");
 const CofiXFactory = artifacts.require("CofiXFactory");
 const CofiXRouter = artifacts.require("CofiXRouter");
-const DeviationRatio = artifacts.require("DeviationRatio");
+const CofiXController = artifacts.require("CofiXController");
 
 module.exports = async function(deployer) {
 
@@ -24,6 +24,6 @@ module.exports = async function(deployer) {
     await deployer.deploy(CofiXRouter, CofiXFactory.address, WETH9.address);
 
 
-    await deployer.deploy(DeviationRatio);
+    await deployer.deploy(CofiXController);
 
 };

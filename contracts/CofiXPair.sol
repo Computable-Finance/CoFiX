@@ -28,7 +28,7 @@ contract CofiXPair is ICofiXPair, CofiXERC20 {
     uint112 private reserve1;           // uses single storage slot, accessible via getReserves
 
     uint256 constant public K_BASE = 100000;
-    uint256 constant public SHARE_BASE = 10000;
+    uint256 constant public NAVPS_BASE = 10000; // NAVPS (Net Asset Value Per Share)
 
     uint private unlocked = 1;
     modifier lock() {
@@ -98,8 +98,8 @@ contract CofiXPair is ICofiXPair, CofiXERC20 {
             OraclePrice memory _op;
             (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum) = queryOracle(_token1, to);
             // TODO: validate
-            uint256 share = calcShare(balance0, balance1, _op);
-            liquidity = calcLiquidity(amount0, amount1, share, _op);
+            uint256 navps = calcNAVPerShare(balance0, balance1, _op);
+            liquidity = calcLiquidity(amount0, amount1, navps, _op);
         }
         feeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
 
@@ -126,11 +126,11 @@ contract CofiXPair is ICofiXPair, CofiXERC20 {
             OraclePrice memory _op;
             (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum) = queryOracle(_token1, to);
             // TODO: validate
-            uint256 share = calcShare(balance0, balance1, _op);
+            uint256 navps = calcNAVPerShare(balance0, balance1, _op);
             if (outToken == _token0) {
-                amountOut = calcOutToken0ForBurn(liquidity, share, _op);
+                amountOut = calcOutToken0ForBurn(liquidity, navps, _op);
             } else if (outToken == _token1) {
-                amountOut = calcOutToken1ForBurn(liquidity, share, _op);
+                amountOut = calcOutToken1ForBurn(liquidity, navps, _op);
             }  else {
                 revert("CPair: wrong outToken");
             }
@@ -258,47 +258,49 @@ contract CofiXPair is ICofiXPair, CofiXERC20 {
         _update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
     }
 
+    // calc Net Asset Value Per Share
     // use it in this contract, for optimized gas usage
-    function calcShare(uint256 balance0, uint256 balance1, OraclePrice memory _op) public view returns (uint256 share) {
+    function calcNAVPerShare(uint256 balance0, uint256 balance1, OraclePrice memory _op) public view returns (uint256 navps) {
         uint _totalSupply = totalSupply;
         // TODO: handle decimals, safe math op
         if (_totalSupply == 0) {
-            share = SHARE_BASE; // TODO: think about extreme small share, e.g. 1e-18
+            navps = NAVPS_BASE; // TODO: think about extreme small navps, e.g. 1e-18
         } else {
-            // share = SHARE_BASE*(balance0*_op.erc20Amount/_op.ethAmount + balance1)/(_totalSupply);
-            share = SHARE_BASE.mul((balance0.mul(_op.erc20Amount)).add(balance1.mul(_op.ethAmount))).div(_totalSupply).div(_op.ethAmount);
+            // navps = NAVPS_BASE*(balance0*_op.erc20Amount/_op.ethAmount + balance1)/(_totalSupply);
+            navps = NAVPS_BASE.mul((balance0.mul(_op.erc20Amount)).add(balance1.mul(_op.ethAmount))).div(_totalSupply).div(_op.ethAmount);
         }
     }
 
     // use it in this contract, for optimized gas usage
-    function calcLiquidity(uint256 amount0, uint256 amount1, uint256 share, OraclePrice memory _op) public pure returns (uint256 liquidity) {
-        // liquidity = 1000*SHARE_BASE*(amount0*_op.erc20Amount/_op.ethAmount + amount1)/share/1005; // TODO: optimize calc
+    function calcLiquidity(uint256 amount0, uint256 amount1, uint256 navps, OraclePrice memory _op) public pure returns (uint256 liquidity) {
+        // liquidity = 1000*NAVPS_BASE*(amount0*_op.erc20Amount/_op.ethAmount + amount1)/navps/1005; // TODO: optimize calc
         // s=  a*[p*(1-k)]/n
-        // liquidity = SHARE_BASE.mul(K_BASE.sub(_op.K)).mul((amount0.mul(_op.erc20Amount)).add(amount1.mul(_op.ethAmount))).div(share).div(_op.ethAmount).div(K_BASE);
-        return SHARE_BASE.mul(K_BASE.sub(_op.K)).mul((amount0.mul(_op.erc20Amount)).add(amount1.mul(_op.ethAmount))).div(share).div(_op.ethAmount).div(K_BASE);
+        // liquidity = NAVPS_BASE.mul(K_BASE.sub(_op.K)).mul((amount0.mul(_op.erc20Amount)).add(amount1.mul(_op.ethAmount))).div(navps).div(_op.ethAmount).div(K_BASE);
+        return NAVPS_BASE.mul(K_BASE.sub(_op.K)).mul((amount0.mul(_op.erc20Amount)).add(amount1.mul(_op.ethAmount))).div(navps).div(_op.ethAmount).div(K_BASE);
     }
 
+    // get Net Asset Value Per Share
     // only for read, could cost more gas if use it directly in contract
-    function getShare(OraclePrice memory _op) public view returns (uint256 share) {
-        return calcShare(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), _op);
+    function getNAVPerShare(OraclePrice memory _op) public view returns (uint256 navps) {
+        return calcNAVPerShare(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), _op);
     }
 
     // only for read, could cost more gas if use it directly in contract
     function getLiquidity(uint256 amount0, uint256 amount1, OraclePrice memory _op) public view returns (uint256 liquidity) {
-        uint256 share = calcShare(IERC20(token0).balanceOf(address(this)).add(amount0), IERC20(token1).balanceOf(address(this)).add(amount1), _op);
-        return calcLiquidity(amount0, amount1, share, _op);
+        uint256 navps = calcNAVPerShare(IERC20(token0).balanceOf(address(this)).add(amount0), IERC20(token1).balanceOf(address(this)).add(amount1), _op);
+        return calcLiquidity(amount0, amount1, navps, _op);
     }
 
-    function calcOutToken0ForBurn(uint256 liquidity, uint256 share, OraclePrice memory _op) public pure returns (uint256 amountOut) {
-        // outAmount = 1000*liquidity*share*_op.ethAmount/_op.erc20Amount/SHARE_BASE/1005;
+    function calcOutToken0ForBurn(uint256 liquidity, uint256 navps, OraclePrice memory _op) public pure returns (uint256 amountOut) {
+        // outAmount = 1000*liquidity*navps*_op.ethAmount/_op.erc20Amount/NAVPS_BASE/1005;
         // b=s*n/[p*(1+k)]
-        return liquidity.mul(K_BASE).mul(share).mul(_op.ethAmount).div(_op.erc20Amount).div(SHARE_BASE).div(K_BASE.add(_op.K));
+        return liquidity.mul(K_BASE).mul(navps).mul(_op.ethAmount).div(_op.erc20Amount).div(NAVPS_BASE).div(K_BASE.add(_op.K));
     }
 
-    function calcOutToken1ForBurn(uint256 liquidity, uint256 share, OraclePrice memory _op) public pure returns (uint256 amountOut) {
-        // amountOut = liquidity.mul(K_BASE).mul(share).div(SHARE_BASE).div(K_BASE.add(_op.K)); // TODO: how about extreme small share value
+    function calcOutToken1ForBurn(uint256 liquidity, uint256 navps, OraclePrice memory _op) public pure returns (uint256 amountOut) {
+        // amountOut = liquidity.mul(K_BASE).mul(navps).div(NAVPS_BASE).div(K_BASE.add(_op.K)); // TODO: how about extreme small navps value
         // b=s*n/[p*(1+k)]
-        return liquidity.mul(K_BASE).mul(share).div(SHARE_BASE).div(K_BASE.add(_op.K));
+        return liquidity.mul(K_BASE).mul(navps).div(NAVPS_BASE).div(K_BASE.add(_op.K));
     }
 
     function calcOutToken0(uint256 amountIn, OraclePrice memory _op) public pure returns (uint256 amountOut) {

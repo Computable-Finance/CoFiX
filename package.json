@@ -3,8 +3,8 @@
     "clean": "rm -rf build",
     "ozc": "oz compile",
     "tc": "truffle compile",
-    "test": "oz compile && npx mocha --exit --recursive",
-    "tctest": "truffle compile && npx mocha --exit --recursive",
+    "test": "oz compile && npx mocha --timeout 10000 --exit --recursive",
+    "tctest": "truffle compile && npx mocha --timeout 10000 --exit --recursive",
     "solium": "node_modules/.bin/solium -d contracts/ --fix-dry-run"
   },
   "dependencies": {

@@ -21,6 +21,7 @@ contract NEST3PriceOracleMock {
         external payable
         returns(uint256 ethAmount, uint256 erc20Amount, uint256 blockNum)
     {
+        require(priceInfoList_[token].length > 0, "no price available");
         require(msg.value > 0.001 ether, "insufficient oracle fee");
         msg.sender.transfer(msg.value - 0.001 ether); // return back
         return checkPriceNow(token);
@@ -28,6 +29,14 @@ contract NEST3PriceOracleMock {
 
     function updateAndCheckPriceList(address token, uint256 num)
         external payable
+        returns (uint256[] memory)
+    {
+        return checkPriceList(token, num);
+    }
+
+    function checkPriceList(address token, uint256 num)
+        public
+        view
         returns (uint256[] memory)
     {
         uint256 priceLength = priceInfoList_[token].length;
@@ -81,10 +90,19 @@ contract NEST3PriceOracleMock {
         returns (uint256 ethAmount, uint256 erc20Amount, uint256 blockNum)
     {
         uint256 _len = priceInfoList_[token].length;
-        require(_len > 0, "no price available");
+        if (_len == 0) {
+            return (0, 0, 0);
+        }
         // return the newest price
         ethAmount = priceInfoList_[token][_len - 1].ethAmount;
         erc20Amount = priceInfoList_[token][_len - 1].erc20Amount;
         blockNum = priceInfoList_[token][_len - 1].blockNumber;
+    }
+
+    function getPriceLength(address token)
+        public view
+        returns (uint256)
+    {
+        return priceInfoList_[token].length;
     }
 }

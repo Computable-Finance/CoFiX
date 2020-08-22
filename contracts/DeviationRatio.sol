@@ -7,6 +7,8 @@ import "./interface/INest_3_OfferPrice.sol";
 contract DeviationRatio {
 
     using SafeMath for uint256;
+    
+    event newK(address token, int128 K, int128 sigma, uint256 T, uint256 ethAmount, uint256 erc20Amount);
 
     struct NestPrice {
         uint256 price;
@@ -51,7 +53,7 @@ contract DeviationRatio {
 
     // TODO: oracle & token could be state varaibles
      // calc Variance, a.k.a. sigma squared
-    function calcVariance(address oracle, address token) public returns (int128 _variance, uint256 _T) {
+    function calcVariance(address oracle, address token) public returns (int128 _variance, uint256 _T, uint256 _ethAmount, uint256 _erc20Amount) {
 
         // query raw price list from nest oracle (newest to oldest)
         uint256[] memory _rawPriceList = INest_3_OfferPrice(oracle).updateAndCheckPriceList(token, 50);
@@ -100,12 +102,13 @@ contract DeviationRatio {
         //     _variance = ABDKMath64x64.add(_variance, ABDKMath64x64.pow(_tmp, 2));
         // }
         // _variance = ABDKMath64x64.div(_variance, ABDKMath64x64.fromUInt(49));
-        _T = block.timestamp.sub(_rawPriceList[2]).mul(timespan_);
-        return (_variance, _T);
+        
+        _T = block.number.sub(_rawPriceList[2]).mul(timespan_);
+        return (_variance, _T, _rawPriceList[0], _rawPriceList[1]);
     }
 
-    function calcK(address oracle, address token) public returns (int128) {
-        (int128 _variance, uint256 _T) = calcVariance(oracle, token);
+    function calcK(address oracle, address token) public returns (int128, uint256, uint256) {
+        (int128 _variance, uint256 _T, uint256 _ethAmount, uint256 _erc20Amount) = calcVariance(oracle, token);
         // int128 _volatility = ABDKMath64x64.sqrt(_variance);
         // int128 _sigma = ABDKMath64x64.div(_volatility, ABDKMath64x64.sqrt(ABDKMath64x64.fromUInt(timespan_)));
         int128 _sigma = ABDKMath64x64.sqrt(ABDKMath64x64.div(_variance, ABDKMath64x64.fromUInt(timespan_))); // combined into one sqrt
@@ -117,6 +120,7 @@ contract DeviationRatio {
                             ABDKMath64x64.mul(BETA_TWO, ABDKMath64x64.fromUInt(_T))
                         )
                     );
-        return K;
+        emit newK(token, K, _sigma, _T, _ethAmount, _erc20Amount);
+        return (K, _ethAmount, _erc20Amount);
     }
 }

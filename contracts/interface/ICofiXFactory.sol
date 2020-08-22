@@ -2,7 +2,7 @@
 
 pragma solidity ^0.6.6;
 
-interface IAGroupFactory {
+interface ICofiXFactory {
     // All pairs: {ETH <-> ERC20 Token}
     event PairCreated(address indexed token, address pair, uint256);
 

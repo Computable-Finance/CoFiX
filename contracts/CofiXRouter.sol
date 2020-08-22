@@ -2,22 +2,22 @@
 
 pragma solidity ^0.6.6;
 
-import './interface/IAGroupFactory.sol';
+import './interface/ICofiXFactory.sol';
 import './lib/TransferHelpers.sol';
-import './interface/IAGroupRouter.sol';
+import './interface/ICofiXRouter.sol';
 import './lib/SafeMath.sol';
 import './interface/IERC20.sol';
 import './interface/IWETH.sol';
-import './interface/IAGroupPair.sol';
+import './interface/ICofiXPair.sol';
 
-contract AGroupRouter is IAGroupRouter {
+contract CofiXRouter is ICofiXRouter {
     using SafeMath for uint;
 
     address public immutable override factory;
     address public immutable override WETH;
 
     modifier ensure(uint deadline) {
-        require(deadline >= block.timestamp, 'AGroupV1Router: EXPIRED');
+        require(deadline >= block.timestamp, 'CRouter: EXPIRED');
         _;
     }
 
@@ -39,7 +39,7 @@ contract AGroupRouter is IAGroupRouter {
         //         keccak256(abi.encodePacked(token)),
         //         hex'fb0c5470b7fbfce7f512b5035b5c35707fd5c7bd43c8d81959891b0296030118' // init code hash
         //     )))); // TODO: calc the real init code hash
-        return IAGroupFactory(_factory).getPair(token);
+        return ICofiXFactory(_factory).getPair(token);
     }
 
     // msg.value = amountETH + oracle fee
@@ -53,11 +53,11 @@ contract AGroupRouter is IAGroupRouter {
     ) external override payable ensure(deadline) returns (uint liquidity)
     {
         // create the pair if it doesn't exist yet
-        if (IAGroupFactory(factory).getPair(token) == address(0)) {
-            address _pair = IAGroupFactory(factory).createPair(token);
-            require(_pair == pairFor(factory, token), "wrong pair address");
+        if (ICofiXFactory(factory).getPair(token) == address(0)) {
+            address _pair = ICofiXFactory(factory).createPair(token);
+            require(_pair == pairFor(factory, token), "CRouter: wrong pair address");
         }
-        require(msg.value > amountETH, "insufficient msg.value");
+        require(msg.value > amountETH, "CRouter: insufficient msg.value");
         uint256 _oracleFee = msg.value.sub(amountETH);
         address pair = pairFor(factory, token);
         if (amountToken > 0 ) { // support for tokens which do not allow to transfer zero values
@@ -68,8 +68,8 @@ contract AGroupRouter is IAGroupRouter {
             assert(IWETH(WETH).transfer(pair, amountETH));
         }
         uint256 feeChange;
-        (liquidity, feeChange) = IAGroupPair(pair).mint{value: _oracleFee}(to);
-        require(liquidity >= liquidityMin, "less liquidity than expected");
+        (liquidity, feeChange) = ICofiXPair(pair).mint{value: _oracleFee}(to);
+        require(liquidity >= liquidityMin, "CRouter: less liquidity than expected");
         // refund eth, if any
         if (feeChange > 0) TransferHelper.safeTransferETH(msg.sender, feeChange);
     }
@@ -83,12 +83,12 @@ contract AGroupRouter is IAGroupRouter {
         uint deadline
     ) external override payable ensure(deadline) returns (uint amountToken)
     {
-        require(msg.value > 0, "insufficient msg.value");
+        require(msg.value > 0, "CRouter: insufficient msg.value");
         address pair = pairFor(factory, token);
-        IAGroupPair(pair).transferFrom(msg.sender, pair, liquidity); // send liquidity to pair
+        ICofiXPair(pair).transferFrom(msg.sender, pair, liquidity); // send liquidity to pair
         uint feeChange; 
-        (amountToken, feeChange) = IAGroupPair(pair).burn{value: msg.value}(token, to);
-        require(amountToken >= amountTokenMin, "got less than expected");
+        (amountToken, feeChange) = ICofiXPair(pair).burn{value: msg.value}(token, to);
+        require(amountToken >= amountTokenMin, "CRouter: got less than expected");
         if (feeChange > 0) TransferHelper.safeTransferETH(msg.sender, feeChange);
     }
 
@@ -101,12 +101,12 @@ contract AGroupRouter is IAGroupRouter {
         uint deadline
     ) external override payable ensure(deadline) returns (uint amountETH)
     {
-        require(msg.value > 0, "insufficient msg.value");
+        require(msg.value > 0, "CRouter: insufficient msg.value");
         address pair = pairFor(factory, token);
-        IAGroupPair(pair).transferFrom(msg.sender, pair, liquidity); // send liquidity to pair
+        ICofiXPair(pair).transferFrom(msg.sender, pair, liquidity); // send liquidity to pair
         uint feeChange; 
-        (amountETH, feeChange) = IAGroupPair(pair).burn{value: msg.value}(WETH, address(this));
-        require(amountETH >= amountETHMin, "got less than expected");
+        (amountETH, feeChange) = ICofiXPair(pair).burn{value: msg.value}(WETH, address(this));
+        require(amountETH >= amountETHMin, "CRouter: got less than expected");
         IWETH(WETH).withdraw(amountETH);
         TransferHelper.safeTransferETH(to, amountETH.add(feeChange));
     }
@@ -120,13 +120,13 @@ contract AGroupRouter is IAGroupRouter {
         uint deadline
     ) external override payable ensure(deadline) returns (uint _amountIn, uint _amountOut)
     {
-        require(msg.value > amountIn, "insufficient msg.value");
+        require(msg.value > amountIn, "CRouter: insufficient msg.value");
         IWETH(WETH).deposit{value: amountIn}();
         address pair = pairFor(factory, token);
         assert(IWETH(WETH).transfer(pair, amountIn));
         uint feeChange; 
-        (_amountIn, _amountOut, feeChange) = IAGroupPair(pair).swapWithExact{value: msg.value.sub(amountIn)}(token, to);
-        require(_amountOut >= amountOutMin, "got less than expected");
+        (_amountIn, _amountOut, feeChange) = ICofiXPair(pair).swapWithExact{value: msg.value.sub(amountIn)}(token, to);
+        require(_amountOut >= amountOutMin, "CRouter: got less than expected");
         if (feeChange > 0) TransferHelper.safeTransferETH(msg.sender, feeChange);
     }
 
@@ -139,12 +139,12 @@ contract AGroupRouter is IAGroupRouter {
         uint deadline
     ) external override payable ensure(deadline) returns (uint _amountIn, uint _amountOut)
     {
-        require(msg.value > 0, "insufficient msg.value");
+        require(msg.value > 0, "CRouter: insufficient msg.value");
         address pair = pairFor(factory, token);
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountIn);
         uint feeChange; 
-        (_amountIn, _amountOut, feeChange) = IAGroupPair(pair).swapWithExact{value: msg.value}(WETH, address(this));
-        require(_amountOut >= amountOutMin, "got less than expected");
+        (_amountIn, _amountOut, feeChange) = ICofiXPair(pair).swapWithExact{value: msg.value}(WETH, address(this));
+        require(_amountOut >= amountOutMin, "CRouter: got less than expected");
         IWETH(WETH).withdraw(_amountOut);
         TransferHelper.safeTransferETH(to, _amountOut.add(feeChange));
     }
@@ -158,13 +158,13 @@ contract AGroupRouter is IAGroupRouter {
         uint deadline
     ) external override payable ensure(deadline) returns (uint _amountIn, uint _amountOut)
     {
-        require(msg.value > amountInMax, "insufficient msg.value");
+        require(msg.value > amountInMax, "CRouter: insufficient msg.value");
         IWETH(WETH).deposit{value: amountInMax}();
         address pair = pairFor(factory, token);
         assert(IWETH(WETH).transfer(pair, amountInMax));
         uint feeChange; 
-        (_amountIn, _amountOut, feeChange) = IAGroupPair(pair).swapForExact{value: msg.value.sub(amountInMax)}(token, amountOut, to); // TODO: handle two *amountOut
-        require(_amountIn <= amountInMax, "spend more than expected");
+        (_amountIn, _amountOut, feeChange) = ICofiXPair(pair).swapForExact{value: msg.value.sub(amountInMax)}(token, amountOut, to); // TODO: handle two *amountOut
+        require(_amountIn <= amountInMax, "CRouter: spend more than expected");
         if (feeChange > 0) TransferHelper.safeTransferETH(msg.sender, feeChange);
     }
 
@@ -177,12 +177,12 @@ contract AGroupRouter is IAGroupRouter {
         uint deadline
     ) external override payable ensure(deadline) returns (uint _amountIn, uint _amountOut)
     {
-        require(msg.value > 0, "insufficient msg.value");
+        require(msg.value > 0, "CRouter: insufficient msg.value");
         address pair = pairFor(factory, token);
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountInMax);
         uint feeChange; 
-        (_amountIn, _amountOut, feeChange) = IAGroupPair(pair).swapForExact{value: msg.value}(WETH, amountOut, address(this));  // TODO: handle two *amountOut
-        require(_amountIn <= amountInMax, "got less than expected");
+        (_amountIn, _amountOut, feeChange) = ICofiXPair(pair).swapForExact{value: msg.value}(WETH, amountOut, address(this));  // TODO: handle two *amountOut
+        require(_amountIn <= amountInMax, "CRouter: got less than expected");
         IWETH(WETH).withdraw(_amountOut);
         TransferHelper.safeTransferETH(to, amountOut.add(feeChange));
     }

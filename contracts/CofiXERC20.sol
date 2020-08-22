@@ -2,14 +2,14 @@
 
 pragma solidity ^0.6.6;
 
-import './interface/IAGroupERC20.sol';
+import './interface/ICofiXERC20.sol';
 import './lib/SafeMath.sol';
 
-contract AGroupERC20 is IAGroupERC20 {
+contract CofiXERC20 is ICofiXERC20 {
     using SafeMath for uint;
 
-    string public override constant name = 'AGROUP V2';
-    string public override constant symbol = 'AG-V1';
+    string public override constant name = 'CofiX Pool Token';
+    string public override constant symbol = 'CPT';
     uint8 public override constant decimals = 18;
     uint  public override totalSupply;
     mapping(address => uint) public override balanceOf;
@@ -81,7 +81,7 @@ contract AGroupERC20 is IAGroupERC20 {
     }
 
     function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external override {
-        require(deadline >= block.timestamp, 'AGroupV1: EXPIRED');
+        require(deadline >= block.timestamp, 'CERC20: EXPIRED');
         bytes32 digest = keccak256(
             abi.encodePacked(
                 '\x19\x01',
@@ -90,7 +90,7 @@ contract AGroupERC20 is IAGroupERC20 {
             )
         );
         address recoveredAddress = ecrecover(digest, v, r, s);
-        require(recoveredAddress != address(0) && recoveredAddress == owner, 'AGroupV1: INVALID_SIGNATURE');
+        require(recoveredAddress != address(0) && recoveredAddress == owner, 'CERC20: INVALID_SIGNATURE');
         _approve(owner, spender, value);
     }
 }

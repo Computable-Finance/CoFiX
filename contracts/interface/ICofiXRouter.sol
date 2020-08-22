@@ -2,7 +2,7 @@
 
 pragma solidity ^0.6.6;
 
-interface IAGroupRouter {
+interface ICofiXRouter {
     function factory() external pure returns (address);
     function WETH() external pure returns (address);
 

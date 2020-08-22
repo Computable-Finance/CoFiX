@@ -2,7 +2,7 @@
 
 pragma solidity ^0.6.6;
 
-interface IAGroupERC20 {
+interface ICofiXERC20 {
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
 

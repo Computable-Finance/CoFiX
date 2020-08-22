@@ -2,15 +2,15 @@ const { accounts, contract, web3 } = require('@openzeppelin/test-environment');
 const { expect } = require('chai');
 require('chai').should();
 const { BN, constants, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
-const AGroupRouter = contract.fromArtifact("AGroupRouter");
+const CofiXRouter = contract.fromArtifact("CofiXRouter");
 const ERC20 = contract.fromArtifact("ERC20");
-const AGroupFactory = contract.fromArtifact("AGroupFactory");
-const AGroupPair = contract.fromArtifact("AGroupPair");
+const CofiXFactory = contract.fromArtifact("CofiXFactory");
+const CofiXPair = contract.fromArtifact("CofiXPair");
 const WETH9 = contract.fromArtifact("WETH9");
 const NEST3PriceOracleMock = contract.fromArtifact("NEST3PriceOracleMock");
 const DeviationRatio = contract.fromArtifact("DeviationRatio");
 
-describe('AGroupRouter', function () {
+describe('CofiXRouter', function () {
     const [owner] = accounts;
     let deployer = owner;
     let LP = owner;
@@ -24,8 +24,8 @@ describe('AGroupRouter', function () {
         USDT = await ERC20.new("10000000000000000", "USDT Test Token", "USDT", 6, { from: deployer });
         WETH = await WETH9.new();
         PriceOracle = await NEST3PriceOracleMock.new();
-        AGFactory = await AGroupFactory.new(PriceOracle.address, WETH.address)
-        AGRouter = await AGroupRouter.new(AGFactory.address, WETH.address);
+        AGFactory = await CofiXFactory.new(PriceOracle.address, WETH.address)
+        AGRouter = await CofiXRouter.new(AGFactory.address, WETH.address);
         KCalc = await DeviationRatio.new();
     });
 
@@ -98,7 +98,7 @@ describe('AGroupRouter', function () {
 
         // check token balance
         let pairAddr = await AGFactory.getPair(USDT.address);
-        let USDTPair = await AGroupPair.at(pairAddr);
+        let USDTPair = await CofiXPair.at(pairAddr);
         console.log("------------addLiquidity------------");
         let liquidity = await USDTPair.balanceOf(LP);
         let usdtInPool = await USDT.balanceOf(pairAddr);

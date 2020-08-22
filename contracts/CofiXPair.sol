@@ -2,13 +2,13 @@
 
 pragma solidity ^0.6.6;
 
-import './interface/IAGroupPair.sol';
-import './AGroupERC20.sol';
+import './interface/ICofiXPair.sol';
+import './CofiXERC20.sol';
 import './lib/Math.sol';
 import './interface/IERC20.sol';
-import './interface/IAGroupFactory.sol';
+import './interface/ICofiXFactory.sol';
 
-contract AGroupPair is IAGroupPair, AGroupERC20 {
+contract CofiXPair is ICofiXPair, CofiXERC20 {
     using SafeMath  for uint;
 
     uint public override constant MINIMUM_LIQUIDITY = 10**3;
@@ -25,7 +25,7 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
 
     uint private unlocked = 1;
     modifier lock() {
-        require(unlocked == 1, 'AGroupV1: LOCKED');
+        require(unlocked == 1, 'CPair: LOCKED');
         unlocked = 0;
         _;
         unlocked = 1;
@@ -38,7 +38,7 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
 
     function _safeTransfer(address token, address to, uint value) private {
         (bool success, bytes memory data) = token.call(abi.encodeWithSelector(SELECTOR, to, value));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), 'AGroupV1: TRANSFER_FAILED');
+        require(success && (data.length == 0 || abi.decode(data, (bool))), 'CPair: TRANSFER_FAILED');
     }
 
     event Mint(address indexed sender, uint amount0, uint amount1);
@@ -58,19 +58,19 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
     }
 
     receive() external payable {
-        // require(msg.sender == address(factory), "AGroupFactory: invalid eth sender");
+        // require(msg.sender == address(factory), "CPair: invalid eth sender");
     }
 
     // called once by the factory at time of deployment
     function initialize(address _token0, address _token1) external override {
-        require(msg.sender == factory, 'AGroupV1: FORBIDDEN'); // sufficient check
+        require(msg.sender == factory, 'CPair: FORBIDDEN'); // sufficient check
         token0 = _token0;
         token1 = _token1;
     }
 
     // update reserves and, on the first call per block, price accumulators
     function _update(uint balance0, uint balance1) private {
-        require(balance0 <= uint112(-1) && balance1 <= uint112(-1), 'AGroupV1: OVERFLOW');
+        require(balance0 <= uint112(-1) && balance1 <= uint112(-1), 'CPair: OVERFLOW');
         reserve0 = uint112(balance0);
         reserve1 = uint112(balance1);
         emit Sync(reserve0, reserve1);
@@ -90,7 +90,7 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
         { // scope for ethAmount/erc20Amount/blockNum to avoid stack too deep error
             // query price
             OraclePrice memory _op;
-            (_op.ethAmount, _op.erc20Amount, _op.blockNum) = IAGroupFactory(factory).updateAndCheckPriceNow{value: msg.value}(_token1);
+            (_op.ethAmount, _op.erc20Amount, _op.blockNum) = ICofiXFactory(factory).updateAndCheckPriceNow{value: msg.value}(_token1);
             // TODO: validate
             uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
 
@@ -105,7 +105,7 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
         }
         feeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
 
-        require(liquidity > 0, 'AGroupV1: INSUFFICIENT_LIQUIDITY_MINTED');
+        require(liquidity > 0, 'CPair: INSUFFICIENT_LIQUIDITY_MINTED');
         _mint(to, liquidity);
 
         _update(balance0, balance1);
@@ -126,7 +126,7 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
         {
             // query price
             OraclePrice memory _op;
-            (_op.ethAmount, _op.erc20Amount, _op.blockNum) = IAGroupFactory(factory).updateAndCheckPriceNow{value: msg.value}(_token1);
+            (_op.ethAmount, _op.erc20Amount, _op.blockNum) = ICofiXFactory(factory).updateAndCheckPriceNow{value: msg.value}(_token1);
             // TODO: validate
             uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
 
@@ -171,7 +171,7 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
             uint256 _ethBalanceBefore = address(this).balance;
 
             // query price
-            (_op.ethAmount, _op.erc20Amount, _op.blockNum) = IAGroupFactory(factory).updateAndCheckPriceNow{value: msg.value}(_token1);
+            (_op.ethAmount, _op.erc20Amount, _op.blockNum) = ICofiXFactory(factory).updateAndCheckPriceNow{value: msg.value}(_token1);
             // TODO: validate
 
             feeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
@@ -185,26 +185,26 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
      
             if (outToken == _token1) {
                 amountIn = balance0 - _reserve0;
-                require(amountIn > 0, "wrong amount0In");
+                require(amountIn > 0, "CPair: wrong amount0In");
                 // amountOut = amountIn*erc20Amount*1000/ethAmount/1005;
                 // amountIn = amountOut*ethAmount*1005/1000/erc20Amount
                 _amountInNeeded = _amountOut*_op.ethAmount*1005/1000/_op.erc20Amount;
                 _safeTransfer(_token0, to, amountIn.sub(_amountInNeeded)); // send back the token change
             } else if (outToken == _token0) {
                 amountIn = balance1 - _reserve1;
-                require(amountIn > 0, "wrong amount1In");
+                require(amountIn > 0, "CPair: wrong amount1In");
                 // amountOut = amountIn*ethAmount*1000/erc20Amount/1005;
                 // amountIn = amountOut*erc20Amount*1005/1000/ethAmount
                 _amountInNeeded = _amountOut*_op.erc20Amount*1005/1000/_op.ethAmount;
                 _safeTransfer(_token1, to, amountIn.sub(_amountInNeeded)); // TODO: think about a better payee than to
             } else {
-                revert("wrong outToken");
+                revert("CPair: wrong outToken");
             }
-            require(_amountInNeeded <= amountIn, "wrong amountIn");
+            require(_amountInNeeded <= amountIn, "CPair: wrong amountIn");
         }
         
         {
-            require(to != _token0 && to != _token1, 'AGroupV1: INVALID_TO');
+            require(to != _token0 && to != _token1, 'CPair: INVALID_TO');
 
             amountOut = _amountOut;
             _safeTransfer(outToken, to, _amountOut); // optimistically transfer tokens
@@ -230,26 +230,26 @@ contract AGroupPair is IAGroupPair, AGroupERC20 {
             uint256 _ethBalanceBefore = address(this).balance;
             // query price
             OraclePrice memory _op;
-            (_op.ethAmount, _op.erc20Amount, _op.blockNum) = IAGroupFactory(factory).updateAndCheckPriceNow{value: msg.value}(_token1);
+            (_op.ethAmount, _op.erc20Amount, _op.blockNum) = ICofiXFactory(factory).updateAndCheckPriceNow{value: msg.value}(_token1);
             // TODO: validate
 
             (uint112 _reserve0, uint112 _reserve1) = getReserves(); // gas savings
 
             if (outToken == _token1) {
                 amountIn = balance0 - _reserve0;
-                require(amountIn > 0, "wrong amount0In");
+                require(amountIn > 0, "CPair: wrong amount0In");
                 amountOut = amountIn*_op.erc20Amount*1000/_op.ethAmount/1005;
             } else if (outToken == _token0) {
                 amountIn = balance1 - _reserve1;
-                require(amountIn > 0, "wrong amount1In");
+                require(amountIn > 0, "CPair: wrong amount1In");
                 amountOut = amountIn*_op.ethAmount*1000/_op.erc20Amount/1005;
             } else {
-                revert("wrong outToken");
+                revert("CPair: wrong outToken");
             }
             feeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
         }
         
-        require(to != _token0 && to != _token1, 'AGroupV1: INVALID_TO');
+        require(to != _token0 && to != _token1, 'CPair: INVALID_TO');
 
         _safeTransfer(outToken, to, amountOut); // optimistically transfer tokens
 

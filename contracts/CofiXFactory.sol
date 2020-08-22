@@ -2,13 +2,13 @@
 
 pragma solidity ^0.6.6;
 
-import './interface/IAGroupFactory.sol';
-import './AGroupPair.sol';
+import './interface/ICofiXFactory.sol';
+import './CofiXPair.sol';
 import './interface/INest_3_OfferPrice.sol';
 import './lib/SafeMath.sol';
 
 
-contract AGroupFactory is IAGroupFactory {
+contract CofiXFactory is ICofiXFactory {
     using SafeMath for uint;
 
     mapping(address => address) public override getPair;
@@ -24,7 +24,7 @@ contract AGroupFactory is IAGroupFactory {
     }
 
     receive() external payable {
-        // require(msg.sender == address(priceOracle), "AGroupFactory: invalid eth sender");
+        // require(msg.sender == address(priceOracle), "CFactory: invalid eth sender");
         // TODO: strict check here
     }
 
@@ -37,16 +37,16 @@ contract AGroupFactory is IAGroupFactory {
     event ByteCodeHash(bytes32 _hash);
 
     function createPair(address token) external override returns (address pair) {
-        require(token != address(0), 'AGroupV1: ZERO_ADDRESS');
-        require(getPair[token] == address(0), 'AGroupV1: PAIR_EXISTS');
-        bytes memory bytecode = type(AGroupPair).creationCode;
+        require(token != address(0), 'CFactory: ZERO_ADDRESS');
+        require(getPair[token] == address(0), 'CFactory: PAIR_EXISTS');
+        bytes memory bytecode = type(CofiXPair).creationCode;
         // emit ByteCode(bytecode);
         emit ByteCodeHash(keccak256(bytecode));
         bytes32 salt = keccak256(abi.encodePacked(token));
         assembly {
             pair := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        IAGroupPair(pair).initialize(WETH, token);
+        ICofiXPair(pair).initialize(WETH, token);
         getPair[token] = pair;
         allPairs.push(pair);
         emit PairCreated(token, pair, allPairs.length);

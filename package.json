@@ -8,6 +8,7 @@
     "solium": "node_modules/.bin/solium -d contracts/ --fix-dry-run"
   },
   "dependencies": {
+    "@openzeppelin/contract-loader": "^0.6.1",
     "@truffle/hdwallet-provider": "^1.0.40",
     "ethlint": "^1.2.5",
     "ganache-cli": "^6.9.1",

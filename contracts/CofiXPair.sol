@@ -285,36 +285,43 @@ contract CofiXPair is ICofiXPair, CofiXERC20 {
         return calcNAVPerShare(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), _op);
     }
 
+    // get estimated liquidity amount (it represents the amount of pool tokens will be minted if someone provide liquidity to the pool)
     // only for read, could cost more gas if use it directly in contract
     function getLiquidity(uint256 amount0, uint256 amount1, OraclePrice memory _op) public view returns (uint256 liquidity) {
         uint256 navps = calcNAVPerShare(IERC20(token0).balanceOf(address(this)).add(amount0), IERC20(token1).balanceOf(address(this)).add(amount1), _op);
         return calcLiquidity(amount0, amount1, navps, _op);
     }
 
+    // calc amountOut for token0 (WETH) when send liquidity token to pool for burning
     function calcOutToken0ForBurn(uint256 liquidity, uint256 navps, OraclePrice memory _op) public pure returns (uint256 amountOut) {
         // outAmount = 1000*liquidity*navps*_op.ethAmount/_op.erc20Amount/NAVPS_BASE/1005;
         // b=s*n/[p*(1+k)]
         return liquidity.mul(K_BASE).mul(navps).mul(_op.ethAmount).div(_op.erc20Amount).div(NAVPS_BASE).div(K_BASE.add(_op.K));
     }
 
+
+    // calc amountOut for token1 (ERC20 token) when send liquidity token to pool for burning
     function calcOutToken1ForBurn(uint256 liquidity, uint256 navps, OraclePrice memory _op) public pure returns (uint256 amountOut) {
         // amountOut = liquidity.mul(K_BASE).mul(navps).div(NAVPS_BASE).div(K_BASE.add(_op.K)); // TODO: how about extreme small navps value
         // b=s*n/[p*(1+k)]
         return liquidity.mul(K_BASE).mul(navps).div(NAVPS_BASE).div(K_BASE.add(_op.K));
     }
 
+    // get estimated amountOut for token0 (WETH) when swapWithExact
     function calcOutToken0(uint256 amountIn, OraclePrice memory _op) public pure returns (uint256 amountOut) {
         // amountOut = amountIn*_op.ethAmount*1000/_op.erc20Amount/1005;
         // x = a/[p*(1+k)]
         return amountIn.mul(_op.ethAmount).mul(K_BASE).div(_op.erc20Amount).div(K_BASE.add(_op.K));
     }
 
+    // get estimated amountOut for token1 (ERC20 token) when swapWithExact
     function calcOutToken1(uint256 amountIn, OraclePrice memory _op) public pure returns (uint256 amountOut) {
         // amountOut = amountIn*_op.erc20Amount*1000/_op.ethAmount/1005;
         // y = b*[p*(1-k)]
         return amountIn.mul(_op.erc20Amount).mul(K_BASE.sub(_op.K)).div(_op.ethAmount).div(K_BASE);
     }
 
+    // get estimate amountInNeeded for token0 (WETH) when swapForExact
     function calcInNeededToken0(uint256 amountOut, OraclePrice memory _op) public pure returns (uint256 amountInNeeded) {
         // amountOut = amountIn*erc20Amount*1000/ethAmount/1005;
         // amountIn = amountOut*ethAmount*1005/1000/erc20Amount
@@ -323,6 +330,7 @@ contract CofiXPair is ICofiXPair, CofiXERC20 {
         return amountOut.mul(K_BASE).mul(_op.ethAmount).div(_op.erc20Amount).div(K_BASE.sub(_op.K));
     }
 
+    // get estimate amountInNeeded for token1 (ERC20 token) when swapForExact
     function calcInNeededToken1(uint256 amountOut, OraclePrice memory _op) public pure returns (uint256 amountInNeeded) {
         // amountOut = amountIn*ethAmount*1000/erc20Amount/1005;
         // amountIn = amountOut*erc20Amount*1005/1000/ethAmount

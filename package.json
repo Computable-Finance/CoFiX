@@ -4,6 +4,8 @@
     "ozc": "oz compile",
     "compile": "truffle compile",
     "test": "truffle test",
+    "ganache": "ganache-cli --deterministic --port 8545 -l 10000000 -i 1666",
+    "oztest": "oz compile && npx mocha --timeout 10000 --exit --recursive",
     "solium": "node_modules/.bin/solium -d contracts/ --fix-dry-run"
   },
   "dependencies": {

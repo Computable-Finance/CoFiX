@@ -1,7 +1,7 @@
-// const { accounts, contract, web3 } = require('@openzeppelin/test-environment');
 const { expect } = require('chai');
 require('chai').should();
 const { BN, constants, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
+// const { accounts, contract, web3 } = require('@openzeppelin/test-environment');
 // const CofiXRouter = contract.fromArtifact("CofiXRouter");
 // const ERC20 = contract.fromArtifact("ERC20");
 // const CofiXFactory = contract.fromArtifact("CofiXFactory");

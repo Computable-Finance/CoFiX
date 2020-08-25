@@ -6,6 +6,6 @@ install:
   - npm ci
 
 script:
-  - npm run ganache
+  - npm run ganache-for-ci
   - sleep 5
   - npm run test

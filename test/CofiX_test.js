@@ -1,17 +1,27 @@
-const { accounts, contract, web3 } = require('@openzeppelin/test-environment');
+// const { accounts, contract, web3 } = require('@openzeppelin/test-environment');
 const { expect } = require('chai');
 require('chai').should();
 const { BN, constants, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
-const CofiXRouter = contract.fromArtifact("CofiXRouter");
-const ERC20 = contract.fromArtifact("ERC20");
-const CofiXFactory = contract.fromArtifact("CofiXFactory");
-const CofiXPair = contract.fromArtifact("CofiXPair");
-const WETH9 = contract.fromArtifact("WETH9");
-const NEST3PriceOracleMock = contract.fromArtifact("NEST3PriceOracleMock");
-const CofiXController = contract.fromArtifact("CofiXController");
+// const CofiXRouter = contract.fromArtifact("CofiXRouter");
+// const ERC20 = contract.fromArtifact("ERC20");
+// const CofiXFactory = contract.fromArtifact("CofiXFactory");
+// const CofiXPair = contract.fromArtifact("CofiXPair");
+// const WETH9 = contract.fromArtifact("WETH9");
+// const NEST3PriceOracleMock = contract.fromArtifact("NEST3PriceOracleMock");
+// const CofiXController = contract.fromArtifact("CofiXController");
 
-describe('CofiX', function () {
-    const [owner] = accounts;
+const CofiXRouter = artifacts.require("CofiXRouter");
+const ERC20 = artifacts.require("ERC20");
+const CofiXFactory = artifacts.require("CofiXFactory");
+const CofiXPair = artifacts.require("CofiXPair");
+const WETH9 = artifacts.require("WETH9");
+const NEST3PriceOracleMock = artifacts.require("NEST3PriceOracleMock");
+const CofiXController = artifacts.require("CofiXController");
+
+contract('CofiX', (accounts) => {
+// describe('CofiX', function () {
+    // const [owner] = accounts;
+    const owner = accounts[0];
     let deployer = owner;
     let LP = owner;
     let trader = owner;
@@ -21,12 +31,19 @@ describe('CofiX', function () {
 
 
     before(async () => {
-        USDT = await ERC20.new("10000000000000000", "USDT Test Token", "USDT", 6, { from: deployer });
-        WETH = await WETH9.new();
-        PriceOracle = await NEST3PriceOracleMock.new();
-        CofiXCtrl = await CofiXController.new(PriceOracle.address);
-        AGFactory = await CofiXFactory.new(CofiXCtrl.address, WETH.address)
-        AGRouter = await CofiXRouter.new(AGFactory.address, WETH.address);
+        // change to openzeppelin/test-environment if it has better support for test coverage and gas cost measure
+        // USDT = await ERC20.new("10000000000000000", "USDT Test Token", "USDT", 6, { from: deployer });
+        // WETH = await WETH9.new();
+        // PriceOracle = await NEST3PriceOracleMock.new();
+        // CofiXCtrl = await CofiXController.new(PriceOracle.address);
+        // CFactory = await CofiXFactory.new(CofiXCtrl.address, WETH.address)
+        // CRouter = await CofiXRouter.new(CFactory.address, WETH.address);
+        USDT = await ERC20.deployed();
+        WETH = await WETH9.deployed();
+        PriceOracle = await NEST3PriceOracleMock.deployed();
+        CofiXCtrl = await CofiXController.deployed();
+        CFactory = await CofiXFactory.deployed();
+        CRouter = await CofiXRouter.deployed();
     });
 
     describe('template', function () {
@@ -96,10 +113,10 @@ describe('CofiX', function () {
             console.log("priceLen:", priceLen.toString());
 
             // approve USDT to router
-            await USDT.approve(AGRouter.address, totalSupply_, { from: LP });
+            await USDT.approve(CRouter.address, totalSupply_, { from: LP });
 
             // approve successfully
-            let allowance = await USDT.allowance(LP, AGRouter.address);
+            let allowance = await USDT.allowance(LP, CRouter.address);
             console.log("allowance: ", allowance.toString());
             expect(allowance).to.bignumber.equal(totalSupply_);
 
@@ -113,10 +130,10 @@ describe('CofiX', function () {
             let _amountETH = web3.utils.toWei('1', 'ether');
             let _msgValue = web3.utils.toWei('1.1', 'ether');
             let _amountToken = "1000000000";
-            let result = await AGRouter.addLiquidity(USDT.address, _amountETH, _amountToken, 0, LP, "99999999999", { from: LP, value: _msgValue }); // create pair automatically if not exists
+            let result = await CRouter.addLiquidity(USDT.address, _amountETH, _amountToken, 0, LP, "99999999999", { from: LP, value: _msgValue }); // create pair automatically if not exists
 
             // check token balance
-            let pairAddr = await AGFactory.getPair(USDT.address);
+            let pairAddr = await CFactory.getPair(USDT.address);
             let USDTPair = await CofiXPair.at(pairAddr);
             console.log("------------addLiquidity------------");
             let liquidity = await USDTPair.balanceOf(LP);
@@ -135,7 +152,7 @@ describe('CofiX', function () {
             // - uint deadline
             let _amountIn = "100000000";
             _msgValue = web3.utils.toWei('1.1', 'ether');
-            result = await AGRouter.swapExactTokensForETH(USDT.address, _amountIn, 0, trader, "99999999999", { from: trader, value: _msgValue });
+            result = await CRouter.swapExactTokensForETH(USDT.address, _amountIn, 0, trader, "99999999999", { from: trader, value: _msgValue });
             console.log("------------swapExactTokensForETH------------");
             usdtInPool = await USDT.balanceOf(pairAddr);
             wethInPool = await WETH.balanceOf(pairAddr);
@@ -153,7 +170,7 @@ describe('CofiX', function () {
             // - uint deadline
             _amountIn = web3.utils.toWei('0.2', 'ether');
             _msgValue = web3.utils.toWei('0.3', 'ether');
-            result = await AGRouter.swapExactETHForTokens(USDT.address, _amountIn, 0, trader, "99999999999", { from: trader, value: _msgValue });
+            result = await CRouter.swapExactETHForTokens(USDT.address, _amountIn, 0, trader, "99999999999", { from: trader, value: _msgValue });
             console.log("------------swapExactETHForTokens------------");
             usdtInPool = await USDT.balanceOf(pairAddr);
             wethInPool = await WETH.balanceOf(pairAddr);
@@ -170,10 +187,10 @@ describe('CofiX', function () {
             // - address to,
             // - uint deadline
             // approve liquidity to router
-            await USDTPair.approve(AGRouter.address, liquidity, { from: LP });
+            await USDTPair.approve(CRouter.address, liquidity, { from: LP });
             let partLiquidity = liquidity.div(new web3.utils.BN('5'));
             _msgValue = web3.utils.toWei('0.1', 'ether');
-            result = await AGRouter.removeLiquidityGetETH(USDT.address, partLiquidity, 0, LP, "99999999999", { from: LP, value: _msgValue });
+            result = await CRouter.removeLiquidityGetETH(USDT.address, partLiquidity, 0, LP, "99999999999", { from: LP, value: _msgValue });
             console.log("------------removeLiquidityGetETH------------");
             usdtInPool = await USDT.balanceOf(pairAddr);
             wethInPool = await WETH.balanceOf(pairAddr);
@@ -191,7 +208,7 @@ describe('CofiX', function () {
             // - uint deadline
             let mostLeftLiquidity = liquidity.mul(new web3.utils.BN('3')).div(new web3.utils.BN('5'));
             _msgValue = web3.utils.toWei('0.1', 'ether');
-            result = await AGRouter.removeLiquidityGetToken(USDT.address, mostLeftLiquidity, 0, LP, "99999999999", { from: LP, value: _msgValue });
+            result = await CRouter.removeLiquidityGetToken(USDT.address, mostLeftLiquidity, 0, LP, "99999999999", { from: LP, value: _msgValue });
             console.log("------------removeLiquidityGetToken------------");
             usdtInPool = await USDT.balanceOf(pairAddr);
             wethInPool = await WETH.balanceOf(pairAddr);
@@ -210,7 +227,7 @@ describe('CofiX', function () {
             expect(k_base).to.bignumber.equal(new BN("100000"));
 
             // get pair address
-            let pairAddr = await AGFactory.getPair(USDT.address);
+            let pairAddr = await CFactory.getPair(USDT.address);
             let USDTPair = await CofiXPair.at(pairAddr);
 
             // get NAVPS_BASE from CofiXPair contract

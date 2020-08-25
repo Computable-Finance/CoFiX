@@ -7,4 +7,5 @@ install:
 
 script:
   - npm run ganache
+  - sleep 5
   - npm run test

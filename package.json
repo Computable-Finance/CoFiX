@@ -5,6 +5,7 @@
     "compile": "truffle compile",
     "test": "truffle test",
     "ganache": "ganache-cli --deterministic --port 8545 -l 10000000 -i 1666",
+    "ganache-for-ci": "ganache-cli --deterministic --port 8545 -l 10000000 -i 1666 > /dev/null &",
     "oztest": "oz compile && npx mocha --timeout 10000 --exit --recursive",
     "solium": "node_modules/.bin/solium -d contracts/ --fix-dry-run"
   },

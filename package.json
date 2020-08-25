@@ -2,7 +2,7 @@
   "scripts": {
     "clean": "rm -rf build",
     "ozc": "oz compile",
-    "tc": "truffle compile",
+    "compile": "truffle compile",
     "test": "truffle test",
     "solium": "node_modules/.bin/solium -d contracts/ --fix-dry-run"
   },
@@ -21,6 +21,7 @@
     "eth-gas-reporter": "^0.2.17",
     "husky": "^4.2.5",
     "mocha": "^8.0.1",
-    "solidity-coverage": "^0.7.10"
+    "solidity-coverage": "^0.7.10",
+    "truffle": "^5.1.41"
   }
 }

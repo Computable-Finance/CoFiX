@@ -1,3 +1,5 @@
 build/
 node_modules/
 .openzeppelin/.session
+.openzeppelin/dev-*.json
+.openzeppelin/unknown-*.json

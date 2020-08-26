@@ -4,6 +4,8 @@ const NEST3PriceOracleMock = artifacts.require("mock/NEST3PriceOracleMock");
 const CofiXFactory = artifacts.require("CofiXFactory");
 const CofiXRouter = artifacts.require("CofiXRouter");
 const CofiXController = artifacts.require("CofiXController");
+const { deployProxy } = require('@openzeppelin/truffle-upgrades');
+
 
 module.exports = async function(deployer) {
 
@@ -18,7 +20,8 @@ module.exports = async function(deployer) {
     await deployer.deploy(NEST3PriceOracleMock, WETH9.address);
 
     // CofiXController
-    await deployer.deploy(CofiXController, NEST3PriceOracleMock.address);
+    // await deployer.deploy(CofiXController, NEST3PriceOracleMock.address);
+    await deployProxy(CofiXController, [NEST3PriceOracleMock.address], { deployer });
 
     // CofiXFactory
     await deployer.deploy(CofiXFactory, CofiXController.address, WETH9.address);

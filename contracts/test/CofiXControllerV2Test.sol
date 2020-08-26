@@ -1,13 +1,13 @@
 pragma solidity ^0.6.6;
 
-import "./lib/SafeMath.sol";
-import "./lib/ABDKMath64x64.sol";
-import "./interface/INest_3_OfferPrice.sol";
-import './lib/TransferHelpers.sol';
+import "../lib/SafeMath.sol";
+import "../lib/ABDKMath64x64.sol";
+import "../interface/INest_3_OfferPrice.sol";
+import '../lib/TransferHelpers.sol';
 import "@openzeppelin/upgrades/contracts/Initializable.sol";
 
 
-contract CofiXController is Initializable {
+contract CofiXControllerV2Test is Initializable {
 
     using SafeMath for uint256;
     
@@ -17,7 +17,7 @@ contract CofiXController is Initializable {
     int128 constant public BETA_ONE = 0x804A1A71DE69B0000000; // (32842.1033*2**64).toString(16), 32842.1033 as 64-bit fixed point
     int128 constant public BETA_TWO = 0x2B311FF75B04A; // (4.1191*10**(-5)*2**64).toString(16), 4.1191*10**(-5) as 64.64-bit fixed point
     uint256 constant public AONE = 1 ether;
-    uint256 constant public K_BASE = 100000;
+    uint256 constant public K_BASE = 1000000;
     uint256 constant internal TIMESTAMP_MODULUS = 2**32;
 
     // TODO: setter for these variables
@@ -89,12 +89,17 @@ contract CofiXController is Initializable {
             // TransferHelper.safeTransferETH(payback, msg.value.sub(_balanceBefore.sub(address(this).balance)));
             TransferHelper.safeTransferETH(msg.sender, msg.value.sub(_balanceBefore.sub(address(this).balance)));
             _k = ABDKMath64x64.toUInt(ABDKMath64x64.mul(K, ABDKMath64x64.fromUInt(K_BASE)));
+            // uint256 gasUsed;
+            // uint256 startGas = gasleft();
             KInfoMap[token][0] = uint32(_k); // k << MAX_K << uint32(-1)
             KInfoMap[token][1] = uint32(block.timestamp % TIMESTAMP_MODULUS); // 2106
+            // gasUsed = startGas - gasleft();
+            // emit DebugGasUsed(gasUsed);
             return (_k, _op[1], _op[2], _op[3]);
         }
     }
 
+    // event DebugGasUsed(uint256 gasUsed);
     function getKInfo(address token) public view returns (uint32 k, uint32 updatedAt) {
         k = KInfoMap[token][0];
         updatedAt = KInfoMap[token][1];

@@ -80,7 +80,7 @@ contract('CofiX', (accounts) => {
             let result = await CofiXCtrl.queryOracle(USDT.address, deployer, { from: deployer, value: _msgValue });
             console.log("receipt.gasUsed:", result.receipt.gasUsed); // 494562
             let evtArgs0 = result.receipt.logs[0].args;
-            console.log("evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString())
+            console.log("evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString());
             // K = -0.016826326, when sigma equals to zero
 
             // add more prices

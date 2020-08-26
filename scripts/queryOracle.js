@@ -3,6 +3,7 @@ const ERC20 = artifacts.require("ERC20");
 const { BN } = require('@openzeppelin/test-helpers');
 const { web3 } = require('@openzeppelin/test-environment');
 const CofiXController = artifacts.require("CofiXController");
+const CofiXPair = artifacts.require("CofiXPair");
 
 const argv = require('yargs').argv;
 
@@ -10,8 +11,10 @@ module.exports = async function (callback) {
     try {
         var PriceOracle;
         var Token;
+        var Pair;
+        var CofiXCtrl;
 
-        console.log(`argv> oracle=${argv.oracle}, token=${argv.token}, account=${argv.account}`);
+        console.log(`argv> oracle=${argv.oracle}, token=${argv.token}, account=${argv.account}, pair=${argv.pair}, controller=${argv.controller}`);
 
         if (argv.oracle === "" || argv.oracle === undefined) {
             PriceOracle = await NEST3PriceOracleMock.deployed();
@@ -23,8 +26,16 @@ module.exports = async function (callback) {
         } else {
             Token = await ERC20.at(argv.token);
         }
-
-        const CofiXCtrl = await CofiXController.deployed();
+        if (argv.pair === "" || argv.token === undefined) {
+            Pair = await CofiXPair.deployed();
+        } else {
+            Pair = await CofiXPair.at(argv.pair);
+        }
+        if (argv.controller === "" || argv.controller === undefined) {
+            CofiXCtrl = await CofiXController.deployed();
+        } else {
+            CofiXCtrl = await CofiXController.at(argv.controller);
+        }
 
         // getPriceLength
         let priceLen = await PriceOracle.getPriceLength(Token.address);
@@ -42,15 +53,20 @@ module.exports = async function (callback) {
         let k_base = await CofiXCtrl.K_BASE(); // 100000
 
         // queryOracle
-        const _msgValue = web3.utils.toWei('0.01', 'ether');
-        let result = await CofiXCtrl.queryOracle(Token.address, argv.account, { value: _msgValue });
-        console.log("receipt.gasUsed:", result.receipt.gasUsed); // 494562
-        let evtArgs0 = result.receipt.logs[0].args;
-        console.log("evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString())
+        // const _msgValue = web3.utils.toWei('0.01', 'ether');
+        // let result = await CofiXCtrl.queryOracle(Token.address, argv.account, { value: _msgValue });
+        // console.log("receipt.gasUsed:", result.receipt.gasUsed); // 494562
+        // let evtArgs0 = result.receipt.logs[0].args;
+        // console.log("evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString())
 
         // getKInfo
         let kInfo = await CofiXCtrl.getKInfo(Token.address);
         console.log(`kInfo> raw k: ${kInfo.k.toString()}, k meaning: ${kInfo.k.toString() / k_base.toString()}, updatedAt: ${kInfo.updatedAt.toString()}, update date: ${(new Date(kInfo.updatedAt*1000)).toUTCString()}`);
+        // get NAVPS_BASE from CofiXPair contract
+        let navps_base = await Pair.NAVPS_BASE();
+        let oraclePrice = [p.ethAmount, p.erc20Amount, new BN("0"), kInfo.k];
+        let navps = await Pair.getNAVPerShare(oraclePrice);
+        console.log(`pair=${Pair.address}, net asset value per share, raw=${navps.toNumber()}, meaning=${navps.toNumber() / navps_base.toNumber()}`);
         callback();
     } catch (e) {
         callback(e);

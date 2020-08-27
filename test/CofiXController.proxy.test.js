@@ -14,13 +14,14 @@ contract('CofiXController (proxy)', (accounts) => {
   const nonAdmin = accounts[1];
 
   before(async function () {
-    // Deploy a new Box contract for each test
     USDT = await ERC20.new("10000000000000000", "USDT Test Token", "USDT", 6);
     this.oracle = await NEST3PriceOracleMock.new();
-    this.controller = await upgrades.deployProxy(CofiXController, [this.oracle.address]); // no deployer when deployProxy in test
+    this.controller = await upgrades.deployProxy(CofiXController, [this.oracle.address]); // no deployer args when deployProxy in test
   });
 
   it('should read through proxy correctly', async function () {
+    console.log("this.oracle", this.oracle);
+    console.log("this.controller", this.controller);
     let alpha = await this.controller.ALPHA({from: nonAdmin});
     let k_base = await this.controller.K_BASE({from: nonAdmin});
     console.log(`alpha:${alpha.toString()}, k_base:${k_base.toString()}`);

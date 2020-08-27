@@ -13,9 +13,10 @@ contract CofiXController is Initializable {
     
     event newK(address token, int128 K, int128 sigma, uint256 T, uint256 ethAmount, uint256 erc20Amount, uint256 blockNum);
 
-    int128 constant public ALPHA = -0x47485E3DA2F8BC0; // (-0.017403*2**64).toString(16), -0.017403 as 64.64-bit fixed point
-    int128 constant public BETA_ONE = 0x804A1A71DE69B0000000; // (32842.1033*2**64).toString(16), 32842.1033 as 64-bit fixed point
-    int128 constant public BETA_TWO = 0x2B311FF75B04A; // (4.1191*10**(-5)*2**64).toString(16), 4.1191*10**(-5) as 64.64-bit fixed point
+    int128 constant public ALPHA = 0x1342825B8F72CF0; // (0.0047021*2**64).toString(16), 0.0047021 as 64.64-bit fixed point
+    int128 constant public BETA_ONE = 0x35D7F9C779A6B6000000; // (13783.9757*2**64).toString(16), 13783.9757 as 64-bit fixed point
+    int128 constant public BETA_TWO = 0x19A5EE66A57B7; // (2.446*10**(-5)*2**64).toString(16), 2.446*10**(-5) as 64.64-bit fixed point
+    int128 constant public THETA = 0x83126E978D4FE0; // (0.002*2**64).toString(16), 0.002 as 64.64-bit fixed point
     uint256 constant public AONE = 1 ether;
     uint256 constant public K_BASE = 100000;
     uint256 constant internal TIMESTAMP_MODULUS = 2**32;
@@ -73,7 +74,7 @@ contract CofiXController is Initializable {
                                 ABDKMath64x64.mul(BETA_TWO, ABDKMath64x64.fromUInt(_op[0]))
                             )
                         );
-            
+            // in future, K = K + THETA
             emit newK(token, K, _sigma, _op[0], _op[1], _op[2], _op[3]);
         }
 

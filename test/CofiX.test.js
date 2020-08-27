@@ -143,6 +143,13 @@ contract('CofiX', (accounts) => {
             console.log("pool balance USDT: ", usdtInPool.toString());
             console.log("pool balance WETH: ", wethInPool.toString());
             console.log("got liquidity: ", liquidity.toString());
+            
+            {
+                // for benchmark gas cost when not creating new pair
+                for (let i = 0; i < 10; i++) {
+                    await CRouter.addLiquidity(USDT.address, _amountETH, _amountToken, 0, LP, "99999999999", { from: LP, value: _msgValue });
+                }
+            }
 
             // swapExactTokensForETH
             // - address token,

@@ -3,7 +3,7 @@ node_js:
   - 12.18.0
 os:
   - linux
-  - osx
+  # - osx
 
 install:
   - npm ci
@@ -11,7 +11,7 @@ install:
 script:
   - npm run ganache-for-ci
   - sleep 5
-  - npx truffle migrate --network development
+  # - npx truffle migrate --network development
   - npm run test
-  - npm run coverage
+  # - npm run coverage
   # - npm run coverage-report

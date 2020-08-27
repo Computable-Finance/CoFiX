@@ -2,6 +2,7 @@
 
 ![CofiX](https://github.com/kazamio/CofiX/workflows/CofiX/badge.svg)
 [![Build Status](https://travis-ci.org/kazamio/CofiX.svg?branch=master)](https://travis-ci.org/kazamio/CofiX)
+[![Coverage Status](https://coveralls.io/repos/github/kazamio/CofiX/badge.svg?branch=master)](https://coveralls.io/github/kazamio/CofiX?branch=master)
 
 ## Usage
 

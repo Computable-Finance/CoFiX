@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 
 import './interface/ICofiXPair.sol';
 import './CofiXERC20.sol';
-import './lib/Math.sol';
 import './interface/IERC20.sol';
 import './interface/ICofiXFactory.sol';
 import './interface/ICofiXController.sol';

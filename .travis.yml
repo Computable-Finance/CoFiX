@@ -1,6 +1,9 @@
 language: node_js
 node_js:
   - 12.18.0
+os:
+  - linux
+  - osx
 
 install:
   - npm ci
@@ -10,4 +13,5 @@ script:
   - sleep 5
   - npx truffle migrate --network development
   - npm run test
-  - npm run coverage-report
+  - npm run coverage
+  # - npm run coverage-report

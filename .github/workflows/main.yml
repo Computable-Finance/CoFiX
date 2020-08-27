@@ -1,6 +1,6 @@
 name: CofiX
 
-on: [push]
+on: ["push", "pull_request"]
 
 jobs:
   build:
@@ -19,8 +19,13 @@ jobs:
     - run: npm ci
     - run: npm run ganache-for-ci
     - run: sleep 5
-    - run: truffle migrate --network development
+    - run: npx truffle migrate --network development
     - run: npm run test
     - run: npm run coverage-report
+    
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
       env:
         CI: true

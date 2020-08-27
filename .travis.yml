@@ -8,4 +8,6 @@ install:
 script:
   - npm run ganache-for-ci
   - sleep 5
+  - truffle migrate --network development
   - npm run test
+  - npm run coverage-report

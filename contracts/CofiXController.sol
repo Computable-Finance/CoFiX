@@ -90,7 +90,7 @@ contract CofiXController is Initializable {
             // TransferHelper.safeTransferETH(payback, msg.value.sub(_balanceBefore.sub(address(this).balance)));
             TransferHelper.safeTransferETH(msg.sender, msg.value.sub(_balanceBefore.sub(address(this).balance)));
             _k = ABDKMath64x64.toUInt(ABDKMath64x64.mul(K, ABDKMath64x64.fromUInt(K_BASE)));
-            KInfoMap[token][0] = uint32(_k); // k << MAX_K << uint32(-1)
+            KInfoMap[token][0] = uint32(_k); // k < MAX_K << uint32(-1)
             KInfoMap[token][1] = uint32(block.timestamp % TIMESTAMP_MODULUS); // 2106
             return (_k, _op[1], _op[2], _op[3]);
         }

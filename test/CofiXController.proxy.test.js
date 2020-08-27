@@ -20,8 +20,6 @@ contract('CofiXController (proxy)', (accounts) => {
   });
 
   it('should read through proxy correctly', async function () {
-    console.log("this.oracle", this.oracle);
-    console.log("this.controller", this.controller);
     let alpha = await this.controller.ALPHA({from: nonAdmin});
     let k_base = await this.controller.K_BASE({from: nonAdmin});
     console.log(`alpha:${alpha.toString()}, k_base:${k_base.toString()}`);
@@ -45,9 +43,9 @@ contract('CofiXController (proxy)', (accounts) => {
   it('should call queryOracle() through proxy correctly', async function () {
     let _msgValue = web3.utils.toWei('0.01', 'ether');
     let result = await this.controller.queryOracle(USDT.address, admin, { from: admin, value: _msgValue });
-    console.log("receipt.gasUsed:", result.receipt.gasUsed);
+    console.log("queryOracle>receipt.gasUsed:", result.receipt.gasUsed);
     let evtArgs0 = result.receipt.logs[0].args;
-    console.log("evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString());
+    console.log("queryOracle>evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString());
   });
 
   it('should upgrade correctly', async function () {

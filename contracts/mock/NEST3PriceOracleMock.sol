@@ -45,8 +45,9 @@ contract NEST3PriceOracleMock {
         uint256 length = num*3;
         uint256 i = 0;
         uint256[] memory data = new uint256[](length);
+        uint _idx;
         while (i < length) {
-            uint _idx = priceLength - 1 - (i/3);
+            _idx = priceLength - 1 - (i/3);
             data[i++] = priceInfoList_[token][_idx].ethAmount;
             data[i++] = priceInfoList_[token][_idx].erc20Amount;
             data[i++] = priceInfoList_[token][_idx].blockNum;

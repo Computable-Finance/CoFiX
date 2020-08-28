@@ -54,4 +54,4 @@ truffle migrate --network ropsten
 
 ## Test Flow
 
-check [`test/CofiX_test.js`](test/CofiX_test.js) for details.
+check [`test/CofiX.test.js`](test/CofiX.test.js) for details.

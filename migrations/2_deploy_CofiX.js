@@ -1,4 +1,5 @@
-const ERC20 = artifacts.require("test/ERC20");
+const USDT = artifacts.require("test/USDT");
+const HBTC = artifacts.require("test/HBTC");
 const WETH9 = artifacts.require("test/WETH9");
 const NEST3PriceOracleMock = artifacts.require("mock/NEST3PriceOracleMock");
 const CofiXFactory = artifacts.require("CofiXFactory");
@@ -9,9 +10,11 @@ const { deployProxy } = require('@openzeppelin/truffle-upgrades');
 
 module.exports = async function(deployer) {
 
-    // Test token
-    // let totalSupply = (10**12)*(10**6);  
-    await deployer.deploy(ERC20, "10000000000000000", "USDT Test Token", "USDT", 6);
+    // USDT Test Token
+    await deployer.deploy(USDT);
+
+    // HBTC Test Token
+    await deployer.deploy(HBTC);
 
     // WETH contract
     await deployer.deploy(WETH9);
@@ -20,8 +23,10 @@ module.exports = async function(deployer) {
     await deployer.deploy(NEST3PriceOracleMock, WETH9.address);
 
     // CofiXController
-    // await deployer.deploy(CofiXController, NEST3PriceOracleMock.address);
-    await deployProxy(CofiXController, [NEST3PriceOracleMock.address], { deployer });
+    await deployer.deploy(CofiXController, NEST3PriceOracleMock.address);
+
+    // // Wait for NEST Oracle sending eth by `call` instead of `transfer`
+    // await deployProxy(CofiXController, [NEST3PriceOracleMock.address], { deployer });
 
     // CofiXFactory
     await deployer.deploy(CofiXFactory, CofiXController.address, WETH9.address);
@@ -29,4 +34,12 @@ module.exports = async function(deployer) {
     // CofiXRouter
     await deployer.deploy(CofiXRouter, CofiXFactory.address, WETH9.address);
 
+    console.log(`Contract Deployed Summary\n=========================`);
+    console.log(`| USDT | ${USDT.address} |`);
+    console.log(`| HBTC | ${HBTC.address} |`);
+    console.log(`| WETH9 | ${WETH9.address} |`);
+    console.log(`| NEST3PriceOracleMock | ${NEST3PriceOracleMock.address} |`);
+    console.log(`| CofiXController | ${CofiXController.address} |`);
+    console.log(`| CofixFactory | ${CofiXFactory.address} |`);
+    console.log(`| CofixRouter | ${CofiXRouter.address} |`);
 };

@@ -130,6 +130,29 @@ contract CofiXRouter is ICofiXRouter {
         if (feeChange > 0) TransferHelper.safeTransferETH(msg.sender, feeChange);
     }
 
+    function swapExactTokensForTokens(
+        address tokenIn,
+        address tokenOut,
+        uint amountIn,
+        uint amountOutMin,
+        address to,
+        uint deadline
+    ) external payable ensure(deadline) returns (uint _amountIn, uint _amountOut) {
+        // swapExactTokensForETH
+        require(msg.value > 0, "CRouter: insufficient msg.value");
+        address pairIn = pairFor(factory, tokenIn);
+        TransferHelper.safeTransferFrom(tokenIn, msg.sender, pairIn, amountIn);
+        uint feeChange; 
+        (_amountIn, _amountOut, feeChange) = ICofiXPair(pairIn).swapWithExact{value: msg.value}(WETH, address(this));
+
+        // swapExactETHForTokens
+        address pairOut = pairFor(factory, tokenOut);
+        assert(IWETH(WETH).transfer(pairOut, _amountOut)); // swap with all amountOut in last swap
+        (, _amountOut, feeChange) = ICofiXPair(pairOut).swapWithExact{value: feeChange}(tokenOut, to);
+        require(_amountOut >= amountOutMin, "CRouter: got less than expected");
+        if (feeChange > 0) TransferHelper.safeTransferETH(msg.sender, feeChange);
+    }
+
     // msg.value = oracle fee
     function swapExactTokensForETH(
         address token,

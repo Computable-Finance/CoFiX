@@ -22,8 +22,10 @@ contract NEST3PriceOracleMock {
         returns(uint256 ethAmount, uint256 erc20Amount, uint256 blockNum)
     {
         require(priceInfoList_[token].length > 0, "oracleMock: no price available");
-        require(msg.value > 0.001 ether, "oracleMock: insufficient oracle fee");
-        msg.sender.transfer(msg.value - 0.001 ether); // return back
+        // It's recommended to stop using .transfer() and .send() and instead use .call().
+        // https://consensys.github.io/smart-contract-best-practices/recommendations/#dont-use-transfer-or-send
+        require(msg.value >= 0.001 ether, "oracleMock: insufficient oracle fee");
+        repayEth(msg.sender, msg.value - 0.001 ether); // just use repayEth to simulate the real impl.
         return checkPriceNow(token);
     }
 
@@ -31,7 +33,11 @@ contract NEST3PriceOracleMock {
         external payable
         returns (uint256[] memory)
     {
-        require(msg.value > 0.001 ether, "oracleMock: insufficient oracle fee");
+        require(msg.value >= 0.01 ether, "oracleMock: insufficient oracle fee");
+        // msg.sender.transfer(msg.value - 0.01 ether); // return back
+        // It's recommended to stop using .transfer() and .send() and instead use .call().
+        // https://consensys.github.io/smart-contract-best-practices/recommendations/#dont-use-transfer-or-send
+        repayEth(msg.sender, msg.value - 0.01 ether); // just use repayEth to simulate the real impl.
         return checkPriceList(token, num);
     }
 
@@ -106,5 +112,14 @@ contract NEST3PriceOracleMock {
         returns (uint256)
     {
         return priceInfoList_[token].length;
+    }
+
+    function make_payable(address x) internal pure returns (address payable) {
+      return address(uint160(x));
+    }
+
+    // Transfer ETH
+    function repayEth(address addr, uint256 amount) private {
+        make_payable(addr).transfer(amount);
     }
 }

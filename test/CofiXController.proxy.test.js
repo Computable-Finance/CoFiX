@@ -40,13 +40,15 @@ contract('CofiXController (proxy)', (accounts) => {
     expect(priceLen).to.bignumber.equal(new BN("50"));
   });
 
-  it('should call queryOracle() through proxy correctly', async function () {
-    let _msgValue = web3.utils.toWei('0.01', 'ether');
-    let result = await this.controller.queryOracle(USDT.address, admin, { from: admin, value: _msgValue });
-    console.log("queryOracle>receipt.gasUsed:", result.receipt.gasUsed);
-    let evtArgs0 = result.receipt.logs[0].args;
-    console.log("queryOracle>evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString());
-  });
+  // The NEST V3 Oracle Use transfer() to send back the oracle fee change
+  // it would run into out-of-gas error when transferring to proxy contract which cost more than 2300 gas
+  // it('should call queryOracle() through proxy correctly', async function () {
+  //   let _msgValue = web3.utils.toWei('0.01', 'ether');
+  //   let result = await this.controller.queryOracle(USDT.address, admin, { from: admin, value: _msgValue });
+  //   console.log("queryOracle>receipt.gasUsed:", result.receipt.gasUsed);
+  //   let evtArgs0 = result.receipt.logs[0].args;
+  //   console.log("queryOracle>evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString());
+  // });
 
   it('should upgrade correctly', async function () {
     // must deployProxy here, could not use the one create in before setup

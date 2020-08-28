@@ -11,12 +11,14 @@ const { BN, constants, expectEvent, expectRevert } = require('@openzeppelin/test
 // const CofiXController = contract.fromArtifact("CofiXController");
 
 const CofiXRouter = artifacts.require("CofiXRouter");
-const ERC20 = artifacts.require("ERC20");
+// const ERC20 = artifacts.require("ERC20");
 const CofiXFactory = artifacts.require("CofiXFactory");
 const CofiXPair = artifacts.require("CofiXPair");
 const WETH9 = artifacts.require("WETH9");
 const NEST3PriceOracleMock = artifacts.require("NEST3PriceOracleMock");
 const CofiXController = artifacts.require("CofiXController");
+const TestUSDT = artifacts.require("test/USDT");
+const TestHBTC = artifacts.require("test/HBTC");
 
 contract('CofiX', (accounts) => {
 // describe('CofiX', function () {
@@ -27,8 +29,8 @@ contract('CofiX', (accounts) => {
     let trader = owner;
 
     // let totalSupply_ = "10000000000000000";
-    const totalSupply_ = new BN("10000000000000000");
-
+    const USDTTotalSupply_ = new BN("10000000000000000");
+    const HBTCTotalSupply_ = new BN("100000000000000000000000000");
 
     before(async () => {
         // change to openzeppelin/test-environment if it has better support for test coverage and gas cost measure
@@ -38,10 +40,14 @@ contract('CofiX', (accounts) => {
         // CofiXCtrl = await CofiXController.new(PriceOracle.address);
         // CFactory = await CofiXFactory.new(CofiXCtrl.address, WETH.address)
         // CRouter = await CofiXRouter.new(CFactory.address, WETH.address);
-        USDT = await ERC20.deployed();
+        // USDT = await ERC20.new("10000000000000000", "USDT Test Token", "USDT", 6, { from: deployer });
+        // HBTC = await ERC20.new("100000000000000000000000000", "Huobi BTC", "HBTC", 18, { from: deployer });
+        USDT = await TestUSDT.new();
+        HBTC = await TestHBTC.new();
         WETH = await WETH9.deployed();
         PriceOracle = await NEST3PriceOracleMock.deployed();
         CofiXCtrl = await CofiXController.deployed();
+        CofiXCtrl.initialize(PriceOracle.address, { from: deployer });
         CFactory = await CofiXFactory.deployed();
         CRouter = await CofiXRouter.deployed();
     });
@@ -54,7 +60,7 @@ contract('CofiX', (accounts) => {
     describe('ERC20 Token', function () {
         it("should USDT totalSupply equals", async () => {
             let totalSupply = await USDT.totalSupply();
-            expect(totalSupply).to.bignumber.equal(totalSupply_);
+            expect(totalSupply).to.bignumber.equal(USDTTotalSupply_);
         })
     });
 
@@ -65,60 +71,73 @@ contract('CofiX', (accounts) => {
 
             // add enough prices in NEST3PriceOracleMock
             let ethAmount = new BN("10000000000000000000");
-            let tokenAmount = new BN("3255000000");
+            let usdtAmount = new BN("3255000000");
 
             for (let i = 0; i < 50; i++) {
-                await PriceOracle.addPriceToList(USDT.address, ethAmount, tokenAmount, "0", { from: deployer });
-                tokenAmount = tokenAmount.mul(new BN("100")).div(new BN("100")); // very stable price
+                await PriceOracle.addPriceToList(USDT.address, ethAmount, usdtAmount, "0", { from: deployer });
+                usdtAmount = usdtAmount.mul(new BN("100")).div(new BN("100")); // very stable price
             }
             let priceLen = await PriceOracle.getPriceLength(USDT.address);
-            console.log("priceLen:", priceLen.toString(), ", tokenAmount:", tokenAmount.toString());
+            console.log("USDT>priceLen:", priceLen.toString(), ", tokenAmount:", usdtAmount.toString());
             expect(priceLen).to.bignumber.equal(new BN("50"));
 
             // let gas = await CofiXCtrl.methods['queryOracle(address,address)'].estimateGas(USDT.address, deployer, { from: deployer })
             // console.log("estimateGas:", gas.toString())
             let result = await CofiXCtrl.queryOracle(USDT.address, deployer, { from: deployer, value: _msgValue });
-            console.log("receipt.gasUsed:", result.receipt.gasUsed); // 494562
+            console.log("USDT>receipt.gasUsed:", result.receipt.gasUsed); // 494562
             let evtArgs0 = result.receipt.logs[0].args;
-            console.log("evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString());
+            console.log("USDT>evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString());
             // K = -0.016826326, when sigma equals to zero
 
             // add more prices
             for (let i = 0; i < 50; i++) {
-                await PriceOracle.addPriceToList(USDT.address, ethAmount, tokenAmount, "0", { from: deployer });
-                tokenAmount = tokenAmount.mul(new BN("101")).div(new BN("100")); // eth price rising
+                await PriceOracle.addPriceToList(USDT.address, ethAmount, usdtAmount, "0", { from: deployer });
+                usdtAmount = usdtAmount.mul(new BN("101")).div(new BN("100")); // eth price rising
             }
             priceLen = await PriceOracle.getPriceLength(USDT.address);
-            console.log("priceLen:", priceLen.toString(), ", tokenAmount:", tokenAmount.toString());
+            console.log("USDT>priceLen:", priceLen.toString(), ", tokenAmount:", usdtAmount.toString());
             expect(priceLen).to.bignumber.equal(new BN("100"));
             result = await CofiXCtrl.queryOracle(USDT.address, deployer, { from: deployer, value: _msgValue });
-            console.log("receipt.gasUsed:", result.receipt.gasUsed); // 544914
+            console.log("USDT>receipt.gasUsed:", result.receipt.gasUsed); // 544914
             evtArgs0 = result.receipt.logs[0].args;
-            console.log("evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString())
+            console.log("USDT>evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString())
             // python result, K=-0.009217843036355746, sigma=0.0004813196086030222
             // contract result, K=-170039189510192419/(2**64)=-0.00921784293373125, sigma=8878779697438274/(2**64)=0.0004813196118491383
 
             // debug
             let p = await PriceOracle.priceInfoList_(USDT.address, 99);
-            console.log("debug>p:", p.ethAmount.toString(), p.erc20Amount.toString(), p.blockNum.toString());
+            console.log("debug>USDT>p:", p.ethAmount.toString(), p.erc20Amount.toString(), p.blockNum.toString());
             let c = await PriceOracle.checkPriceList(USDT.address, 50);
-            console.log("debug>c:", c[0].toString(), c[1].toString(), c[2].toString(), c[3].toString(), c[4].toString());
+            console.log("debug>USDT>c:", c[0].toString(), c[1].toString(), c[2].toString(), c[3].toString(), c[4].toString());
             console.log("======================CofiXController STATS END======================");
+
+            // add price for HBTC
+            let hbtcAmount = new BN("339880000000000000");
+            for (let i = 0; i < 50; i++) {
+                await PriceOracle.addPriceToList(HBTC.address, ethAmount, hbtcAmount, "0", { from: deployer });
+                hbtcAmount = hbtcAmount.mul(new BN("100")).div(new BN("100")); // very stable price
+            }
+            let priceLenBTC = await PriceOracle.getPriceLength(HBTC.address);
+            console.log("HBTC>priceLen:", priceLenBTC.toString(), ", tokenAmount:", hbtcAmount.toString());
+            expect(priceLenBTC).to.bignumber.equal(new BN("50"));
         })
     });
 
     describe('Main flow', function () {
         it("should run correctly", async () => {
-            let priceLen = await PriceOracle.getPriceLength(USDT.address);
-            console.log("priceLen:", priceLen.toString());
+            let priceLenUSDT = await PriceOracle.getPriceLength(USDT.address);
+            console.log("USDT priceLen:", priceLenUSDT.toString());
+
+            let priceLenHBTC = await PriceOracle.getPriceLength(HBTC.address);
+            console.log("HBTC priceLen:", priceLenHBTC.toString());
 
             // approve USDT to router
-            await USDT.approve(CRouter.address, totalSupply_, { from: LP });
+            await USDT.approve(CRouter.address, USDTTotalSupply_, { from: LP });
 
-            // approve successfully
+            // check if approve successfully
             let allowance = await USDT.allowance(LP, CRouter.address);
-            console.log("allowance: ", allowance.toString());
-            expect(allowance).to.bignumber.equal(totalSupply_);
+            console.log("allowanceUSDT: ", allowance.toString());
+            expect(allowance).to.bignumber.equal(USDTTotalSupply_);
 
             // addLiquidity (create pair included)
             //  - address token,
@@ -131,18 +150,22 @@ contract('CofiX', (accounts) => {
             let _msgValue = web3.utils.toWei('1.1', 'ether');
             let _amountToken = "1000000000";
             let result = await CRouter.addLiquidity(USDT.address, _amountETH, _amountToken, 0, LP, "99999999999", { from: LP, value: _msgValue }); // create pair automatically if not exists
-
-            // check token balance
-            let pairAddr = await CFactory.getPair(USDT.address);
-            let USDTPair = await CofiXPair.at(pairAddr);
-            console.log("------------addLiquidity------------");
-            let liquidity = await USDTPair.balanceOf(LP);
-            let usdtInPool = await USDT.balanceOf(pairAddr);
-            let wethInPool = await WETH.balanceOf(pairAddr);
+            let usdtPairAddr = await CFactory.getPair(USDT.address);
+            let USDTPair = await CofiXPair.at(usdtPairAddr);
+            console.log("------------addLiquidity for USDT/ETH------------");
+            let liquidityUSDTPair = await USDTPair.balanceOf(LP);
+            let usdtInUSDTPool = await USDT.balanceOf(usdtPairAddr);
+            let wethInUSDTPool = await WETH.balanceOf(usdtPairAddr);
+            let ethUserBalance = await web3.utils.fromWei(await web3.eth.getBalance(LP), 'ether')
+            let usdtUserBalance = await USDT.balanceOf(LP);
+            let hbtcUserBalance = await HBTC.balanceOf(LP);
             console.log("receipt.gasUsed:", result.receipt.gasUsed);
-            console.log("pool balance USDT: ", usdtInPool.toString());
-            console.log("pool balance WETH: ", wethInPool.toString());
-            console.log("got liquidity: ", liquidity.toString());
+            console.log("pool balance USDT:", usdtInUSDTPool.toString());
+            console.log("pool balance WETH:", wethInUSDTPool.toString());
+            console.log("got liquidity ETH/USDT:", liquidityUSDTPair.toString());
+            console.log("user balance ETH:", ethUserBalance.toString());
+            console.log("user balance USDT:", usdtUserBalance.toString());
+            console.log("user balance HBTC:", hbtcUserBalance.toString());
             
             {
                 // for benchmark gas cost when not creating new pair
@@ -151,6 +174,38 @@ contract('CofiX', (accounts) => {
                 }
             }
 
+            // add liquidity for HBTC
+            // approve HBTC to router
+            await HBTC.approve(CRouter.address, HBTCTotalSupply_, { from: LP });
+            // check if approve successfully
+            let allowanceHBTC = await HBTC.allowance(LP, CRouter.address);
+            console.log("allowanceHBTC: ", allowanceHBTC.toString());
+            expect(allowanceHBTC).to.bignumber.equal(HBTCTotalSupply_);
+            _amountETH = web3.utils.toWei('1', 'ether');
+            let _amountHBTC = "2000000000000000000"
+            result = await CRouter.addLiquidity(HBTC.address, _amountETH, _amountHBTC, 0, LP, "99999999999", { from: LP, value: _msgValue }); // create pair automatically if not exists
+            let hbtcPairAddr = await CFactory.getPair(HBTC.address);
+            let HBTCPair = await CofiXPair.at(hbtcPairAddr);
+            usdtInUSDTPool = await USDT.balanceOf(usdtPairAddr);
+            wethInUSDTPool = await WETH.balanceOf(usdtPairAddr);
+            hbtcInHBTCTPool = await HBTC.balanceOf(hbtcPairAddr);
+            wethInHBTCPool = await WETH.balanceOf(hbtcPairAddr);
+            let _liquidityUSDTPair = await USDTPair.balanceOf(LP);
+            let _liquidityHBTCPair = await HBTCPair.balanceOf(LP);
+            ethUserBalance = await web3.utils.fromWei(await web3.eth.getBalance(trader), 'ether')
+            usdtUserBalance = await USDT.balanceOf(trader);
+            hbtcUserBalance = await HBTC.balanceOf(trader);
+            console.log("------------addLiquidity for HBTC/ETH------------");
+            console.log("receipt.gasUsed:", result.receipt.gasUsed);
+            console.log("USDT pool balance USDT:", usdtInUSDTPool.toString());
+            console.log("USDT pool balance WETH:", wethInUSDTPool.toString());
+            console.log("HBTC pool balance HBTC:", hbtcInHBTCTPool.toString());
+            console.log("HBTC pool balance WETH:", wethInHBTCPool.toString());
+            console.log("ETH/USDT liquidity of LP:", _liquidityUSDTPair.toString());
+            console.log("ETH/HBTC liquidity of LP:", _liquidityHBTCPair.toString());
+            console.log("user balance ETH:", ethUserBalance.toString());
+            console.log("user balance USDT:", usdtUserBalance.toString());
+            console.log("user balance HBTC:", hbtcUserBalance.toString());
             // swapExactTokensForETH
             // - address token,
             // - uint amountIn,
@@ -161,13 +216,25 @@ contract('CofiX', (accounts) => {
             _msgValue = web3.utils.toWei('1.1', 'ether');
             result = await CRouter.swapExactTokensForETH(USDT.address, _amountIn, 0, trader, "99999999999", { from: trader, value: _msgValue });
             console.log("------------swapExactTokensForETH------------");
-            usdtInPool = await USDT.balanceOf(pairAddr);
-            wethInPool = await WETH.balanceOf(pairAddr);
-            _liquidity = await USDTPair.balanceOf(LP);
+            usdtInUSDTPool = await USDT.balanceOf(usdtPairAddr);
+            wethInUSDTPool = await WETH.balanceOf(usdtPairAddr);
+            hbtcInHBTCTPool = await HBTC.balanceOf(hbtcPairAddr);
+            wethInHBTCPool = await WETH.balanceOf(hbtcPairAddr);
+            _liquidityUSDTPair = await USDTPair.balanceOf(LP);
+            _liquidityHBTCPair = await HBTCPair.balanceOf(LP);
+            ethUserBalance = await web3.utils.fromWei(await web3.eth.getBalance(trader), 'ether')
+            usdtUserBalance = await USDT.balanceOf(trader);
+            hbtcUserBalance = await HBTC.balanceOf(trader);
             console.log("receipt.gasUsed:", result.receipt.gasUsed);
-            console.log("pool balance USDT: ", usdtInPool.toString());
-            console.log("pool balance WETH: ", wethInPool.toString());
-            console.log("liquidity of LP: ", _liquidity.toString());
+            console.log("USDT pool balance USDT:", usdtInUSDTPool.toString());
+            console.log("USDT pool balance WETH:", wethInUSDTPool.toString());
+            console.log("HBTC pool balance HBTC:", hbtcInHBTCTPool.toString());
+            console.log("HBTC pool balance WETH:", wethInHBTCPool.toString());
+            console.log("ETH/USDT liquidity of LP:", _liquidityUSDTPair.toString());
+            console.log("ETH/HBTC liquidity of LP:", _liquidityHBTCPair.toString());
+            console.log("user balance ETH:", ethUserBalance.toString());
+            console.log("user balance USDT:", usdtUserBalance.toString());
+            console.log("user balance HBTC:", hbtcUserBalance.toString());
 
             // swapExactETHForTokens
             // - address token,
@@ -179,13 +246,58 @@ contract('CofiX', (accounts) => {
             _msgValue = web3.utils.toWei('0.3', 'ether');
             result = await CRouter.swapExactETHForTokens(USDT.address, _amountIn, 0, trader, "99999999999", { from: trader, value: _msgValue });
             console.log("------------swapExactETHForTokens------------");
-            usdtInPool = await USDT.balanceOf(pairAddr);
-            wethInPool = await WETH.balanceOf(pairAddr);
-            _liquidity = await USDTPair.balanceOf(LP);
+            usdtInUSDTPool = await USDT.balanceOf(usdtPairAddr);
+            wethInUSDTPool = await WETH.balanceOf(usdtPairAddr);
+            hbtcInHBTCTPool = await HBTC.balanceOf(hbtcPairAddr);
+            wethInHBTCPool = await WETH.balanceOf(hbtcPairAddr);
+            _liquidityUSDTPair = await USDTPair.balanceOf(LP);
+            _liquidityHBTCPair = await HBTCPair.balanceOf(LP);
+            ethUserBalance = await web3.utils.fromWei(await web3.eth.getBalance(trader), 'ether')
+            usdtUserBalance = await USDT.balanceOf(trader);
+            hbtcUserBalance = await HBTC.balanceOf(trader);
             console.log("receipt.gasUsed:", result.receipt.gasUsed);
-            console.log("pool balance USDT: ", usdtInPool.toString());
-            console.log("pool balance WETH: ", wethInPool.toString());
-            console.log("liquidity of LP: ", _liquidity.toString());
+            console.log("USDT pool balance USDT:", usdtInUSDTPool.toString());
+            console.log("USDT pool balance WETH:", wethInUSDTPool.toString());
+            console.log("HBTC pool balance HBTC:", hbtcInHBTCTPool.toString());
+            console.log("HBTC pool balance WETH:", wethInHBTCPool.toString());
+            console.log("ETH/USDT liquidity of LP:", _liquidityUSDTPair.toString());
+            console.log("ETH/HBTC liquidity of LP:", _liquidityHBTCPair.toString());
+            console.log("user balance ETH:", ethUserBalance.toString());
+            console.log("user balance USDT:", usdtUserBalance.toString());
+            console.log("user balance HBTC:", hbtcUserBalance.toString());
+
+            // swapExactTokensForTokens
+            // - address tokenIn,
+            // - address tokenOut,
+            // - uint amountIn,
+            // - uint amountOutMin,
+            // - address to,
+            // - uint deadline
+            // USDT -> HBTC
+            _amountIn = "100000000";
+            _msgValue = web3.utils.toWei('0.1', 'ether');
+            result = await CRouter.swapExactTokensForTokens(USDT.address, HBTC.address, _amountIn, 0, trader, "99999999999", { from: trader, value: _msgValue });
+            console.log("------------swapExactTokensForTokens------------");
+            usdtInUSDTPool = await USDT.balanceOf(usdtPairAddr);
+            wethInUSDTPool = await WETH.balanceOf(usdtPairAddr);
+            hbtcInHBTCTPool = await HBTC.balanceOf(hbtcPairAddr);
+            wethInHBTCPool = await WETH.balanceOf(hbtcPairAddr);
+            _liquidityUSDTPair = await USDTPair.balanceOf(LP);
+            _liquidityHBTCPair = await HBTCPair.balanceOf(LP);
+            ethUserBalance = await web3.utils.fromWei(await web3.eth.getBalance(trader), 'ether')
+            usdtUserBalance = await USDT.balanceOf(trader);
+            hbtcUserBalance = await HBTC.balanceOf(trader);
+            // console.log("tx result:", result);
+            console.log("receipt.gasUsed:", result.receipt.gasUsed);
+            console.log("USDT pool balance USDT:", usdtInUSDTPool.toString());
+            console.log("USDT pool balance WETH:", wethInUSDTPool.toString());
+            console.log("HBTC pool balance HBTC:", hbtcInHBTCTPool.toString());
+            console.log("HBTC pool balance WETH:", wethInHBTCPool.toString());
+            console.log("ETH/USDT liquidity of LP:", _liquidityUSDTPair.toString());
+            console.log("ETH/HBTC liquidity of LP:", _liquidityHBTCPair.toString());
+            console.log("user balance ETH:", ethUserBalance.toString());
+            console.log("user balance USDT:", usdtUserBalance.toString());
+            console.log("user balance HBTC:", hbtcUserBalance.toString());
 
             // removeLiquidityGetETH
             // - address token,
@@ -194,18 +306,30 @@ contract('CofiX', (accounts) => {
             // - address to,
             // - uint deadline
             // approve liquidity to router
-            await USDTPair.approve(CRouter.address, liquidity, { from: LP });
-            let partLiquidity = liquidity.div(new web3.utils.BN('5'));
+            await USDTPair.approve(CRouter.address, liquidityUSDTPair, { from: LP });
+            let partLiquidity = liquidityUSDTPair.div(new web3.utils.BN('5'));
             _msgValue = web3.utils.toWei('0.1', 'ether');
             result = await CRouter.removeLiquidityGetETH(USDT.address, partLiquidity, 0, LP, "99999999999", { from: LP, value: _msgValue });
             console.log("------------removeLiquidityGetETH------------");
-            usdtInPool = await USDT.balanceOf(pairAddr);
-            wethInPool = await WETH.balanceOf(pairAddr);
-            _liquidity = await USDTPair.balanceOf(LP);
+            usdtInUSDTPool = await USDT.balanceOf(usdtPairAddr);
+            wethInUSDTPool = await WETH.balanceOf(usdtPairAddr);
+            hbtcInHBTCTPool = await HBTC.balanceOf(hbtcPairAddr);
+            wethInHBTCPool = await WETH.balanceOf(hbtcPairAddr);
+            _liquidityUSDTPair = await USDTPair.balanceOf(LP);
+            _liquidityHBTCPair = await HBTCPair.balanceOf(LP);
+            ethUserBalance = await web3.utils.fromWei(await web3.eth.getBalance(LP), 'ether')
+            usdtUserBalance = await USDT.balanceOf(LP);
+            hbtcUserBalance = await HBTC.balanceOf(LP);
             console.log("receipt.gasUsed:", result.receipt.gasUsed);
-            console.log("pool balance USDT: ", usdtInPool.toString());
-            console.log("pool balance WETH: ", wethInPool.toString());
-            console.log("liquidity of LP: ", _liquidity.toString());
+            console.log("USDT pool balance USDT:", usdtInUSDTPool.toString());
+            console.log("USDT pool balance WETH:", wethInUSDTPool.toString());
+            console.log("HBTC pool balance HBTC:", hbtcInHBTCTPool.toString());
+            console.log("HBTC pool balance WETH:", wethInHBTCPool.toString());
+            console.log("ETH/USDT liquidity of LP:", _liquidityUSDTPair.toString());
+            console.log("ETH/HBTC liquidity of LP:", _liquidityHBTCPair.toString());
+            console.log("user balance ETH:", ethUserBalance.toString());
+            console.log("user balance USDT:", usdtUserBalance.toString());
+            console.log("user balance HBTC:", hbtcUserBalance.toString());
 
             // removeLiquidityGetToken
             // - address token,
@@ -213,17 +337,29 @@ contract('CofiX', (accounts) => {
             // - uint amountTokenMin,
             // - address to,
             // - uint deadline
-            let mostLeftLiquidity = liquidity.mul(new web3.utils.BN('3')).div(new web3.utils.BN('5'));
+            let mostLeftLiquidity = liquidityUSDTPair.mul(new web3.utils.BN('3')).div(new web3.utils.BN('5'));
             _msgValue = web3.utils.toWei('0.1', 'ether');
             result = await CRouter.removeLiquidityGetToken(USDT.address, mostLeftLiquidity, 0, LP, "99999999999", { from: LP, value: _msgValue });
             console.log("------------removeLiquidityGetToken------------");
-            usdtInPool = await USDT.balanceOf(pairAddr);
-            wethInPool = await WETH.balanceOf(pairAddr);
-            _liquidity = await USDTPair.balanceOf(LP);
+            usdtInUSDTPool = await USDT.balanceOf(usdtPairAddr);
+            wethInUSDTPool = await WETH.balanceOf(usdtPairAddr);
+            hbtcInHBTCTPool = await HBTC.balanceOf(hbtcPairAddr);
+            wethInHBTCPool = await WETH.balanceOf(hbtcPairAddr);
+            _liquidityUSDTPair = await USDTPair.balanceOf(LP);
+            _liquidityHBTCPair = await HBTCPair.balanceOf(LP);
+            ethUserBalance = await web3.utils.fromWei(await web3.eth.getBalance(LP), 'ether')
+            usdtUserBalance = await USDT.balanceOf(LP);
+            hbtcUserBalance = await HBTC.balanceOf(LP);
             console.log("receipt.gasUsed:", result.receipt.gasUsed);
-            console.log("pool balance USDT: ", usdtInPool.toString());
-            console.log("pool balance WETH: ", wethInPool.toString());
-            console.log("liquidity of LP: ", _liquidity.toString());
+            console.log("USDT pool balance USDT:", usdtInUSDTPool.toString());
+            console.log("USDT pool balance WETH:", wethInUSDTPool.toString());
+            console.log("HBTC pool balance HBTC:", hbtcInHBTCTPool.toString());
+            console.log("HBTC pool balance WETH:", wethInHBTCPool.toString());
+            console.log("ETH/USDT liquidity of LP:", _liquidityUSDTPair.toString());
+            console.log("ETH/HBTC liquidity of LP:", _liquidityHBTCPair.toString());
+            console.log("user balance ETH:", ethUserBalance.toString());
+            console.log("user balance USDT:", usdtUserBalance.toString());
+            console.log("user balance HBTC:", hbtcUserBalance.toString());
         });
     });
 
@@ -234,8 +370,8 @@ contract('CofiX', (accounts) => {
             expect(k_base).to.bignumber.equal(new BN("100000"));
 
             // get pair address
-            let pairAddr = await CFactory.getPair(USDT.address);
-            let USDTPair = await CofiXPair.at(pairAddr);
+            let usdtPairAddr = await CFactory.getPair(USDT.address);
+            let USDTPair = await CofiXPair.at(usdtPairAddr);
 
             // get NAVPS_BASE from CofiXPair contract
             let navps_base = await USDTPair.NAVPS_BASE();

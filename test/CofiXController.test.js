@@ -58,6 +58,9 @@ contract('CofiXController', (accounts) => {
     let constOracle;
     let tmpController;
 
+    let ethAmount = new BN("10000000000000000000");
+    let tokenAmount = new BN("3862600000");
+
     before(async function () {
       _msgValue = web3.utils.toWei('0.01', 'ether');
       constOracle = await NEST3PriceOracleConstMock.new({ from: deployer });
@@ -69,7 +72,7 @@ contract('CofiXController', (accounts) => {
       for (let i = 0; i < 50; i++) {
         await time.advanceBlock();
       }
-      await constOracle.feedPrice({ from: deployer });
+      await constOracle.feedPrice(Token.address, ethAmount, tokenAmount, { from: deployer });
       
       let result = await tmpController.queryOracle(Token.address, deployer, { from: deployer, value: _msgValue });
       console.log("queryOracle> receipt.gasUsed:", result.receipt.gasUsed);
@@ -88,7 +91,7 @@ contract('CofiXController', (accounts) => {
     });
 
     it("should revert if no new price feeded for a specific time", async () => {
-      await constOracle.feedPrice({ from: deployer });
+      await constOracle.feedPrice(Token.address, ethAmount, tokenAmount, { from: deployer });
       // k = alpha + beta_one * sigma^2 + beta_two*T
       // (max_k - (alpha))/beta_two
       let max_interval_block = (max_k - (alpha))/beta_two/block_time;

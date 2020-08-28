@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.6.6;
 
 import "../lib/SafeMath.sol";
@@ -51,7 +52,7 @@ contract CofiXControllerV2Test is Initializable {
 
     receive() external payable {}
 
-    function queryOracle(address token, address payback) external payable returns (uint256 _k, uint256, uint256, uint256) {
+    function queryOracle(address token, address /*payback*/) external payable returns (uint256 _k, uint256, uint256, uint256) {
         uint256 _balanceBefore = address(this).balance;
         int128 K;
         // TODO: cache K to reduce gas cost

@@ -61,24 +61,24 @@ contract NEST3PriceOracleMock {
         return data;
     }
 
-    // add prices to list
-    function addPricesToList(
-        address token,
-        uint256 _ethAmount,
-        uint256 _erc20Amount,
-        uint256 _ethStep,
-        uint256 _ercStep,
-        uint256 _blockStep,
-        uint256 _cnt
-    ) public {
-        uint256 _blockNum = block.number;
-        for (uint256 i = 0; i < _cnt; i++) {
-            addPriceToList(token, _ethAmount, _erc20Amount, _blockNum);
-            _ethAmount = _ethAmount * _ethStep / 100;
-            _erc20Amount = _erc20Amount * _ercStep / 100;
-            _blockNum = _blockNum + _blockStep;
-        }
-    }
+    // // add prices to list
+    // function addPricesToList(
+    //     address token,
+    //     uint256 _ethAmount,
+    //     uint256 _erc20Amount,
+    //     uint256 _ethStep,
+    //     uint256 _ercStep,
+    //     uint256 _blockStep,
+    //     uint256 _cnt
+    // ) public {
+    //     uint256 _blockNum = block.number;
+    //     for (uint256 i = 0; i < _cnt; i++) {
+    //         addPriceToList(token, _ethAmount, _erc20Amount, _blockNum);
+    //         _ethAmount = _ethAmount * _ethStep / 100;
+    //         _erc20Amount = _erc20Amount * _ercStep / 100;
+    //         _blockNum = _blockNum + _blockStep;
+    //     }
+    // }
 
     function addPriceToList(address token, uint256 _ethAmount, uint256 _erc20Amount, uint256 _blockNum) public {
         (,, uint256 lastBlockNum) = checkPriceNow(token);

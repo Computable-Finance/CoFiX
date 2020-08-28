@@ -1,6 +1,7 @@
 module.exports = {
     skipFiles: [
         'Migrations.sol',
-        'test'
+        'test/',
+        'lib/ABDKMath64x64.sol'
       ],
 };

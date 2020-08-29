@@ -51,6 +51,17 @@ truffle migrate --network ropsten
 |   CofiXController    | 0x01B5fF069b49d2dA08cCBce9D8506d59472Ea868 |
 | NEST3PriceOracleMock | 0xf137Dd7C6f091494597e0907D234E486128Bc937 |
 
+### Beta-V0.3
+
+|       Contract       |                  Address                   |
+| :------------------: | :----------------------------------------: |
+| USDT | 0x081B96b53f887ef4543649CED7fD7A5a872bDd29 |
+| HBTC | 0x5fFdeC16168D9e29A653FED3ab333579A02d8008 |
+| WETH9 | 0xF4874b0FcD45210D5b6849cc0b5A312224C37758 |
+| NEST3PriceOracleMock | 0xD1E59a51a597697b3768844Fd87D9336E0a6e091 |
+| CofiXController | 0xA8769Bc396538Ad7D6BD8814b1eC5667CAe64b91 |
+| CofixFactory | 0x94B5950ed24199b7e2d676A93F9eE1971fD745D1 |
+| CofixRouter | 0x4205f9950d618371d3735335C15aA7e218f0eC72 |
 
 ## Test Flow
 

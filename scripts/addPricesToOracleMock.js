@@ -21,11 +21,9 @@ module.exports = async function (callback) {
         } else {
             PriceOracle = await NEST3PriceOracleMock.at(argv.oracle);
         }
-        if (argv.token === "" || argv.token === undefined) {
-            Token = await ERC20.deployed();
-        } else {
-            Token = await ERC20.at(argv.token);
-        }
+
+        Token = await ERC20.at(argv.token);
+
         if (argv.ethAmount === "" || argv.ethAmount === undefined) {
             ethAmount = new BN("10000000000000000000");
         } else {
@@ -50,9 +48,10 @@ module.exports = async function (callback) {
 
         // add prices in NEST3PriceOracleMock
         for (let i = 0; i < txCnt; i++) {
-            console.log(`send tx, progress=${i+1}/${txCnt}`);
+            const volatility = getRandomArbitrary(990, 1010);
+            tokenAmount = tokenAmount.mul(new BN(volatility)).div(new BN("1000"));
+            console.log(`send tx, progress=${i+1}/${txCnt}, volatility=${volatility}, ethAmount=${ethAmount}, tokenAmount=${tokenAmount}`);
             await PriceOracle.addPriceToList(Token.address, ethAmount, tokenAmount, "0");
-            tokenAmount = tokenAmount.mul(new BN("101")).div(new BN("100")); // eth price rising
         }
         console.log("priceLen:", priceLen.toString(), ", now tokenAmount:", tokenAmount.toString());
 
@@ -66,3 +65,7 @@ module.exports = async function (callback) {
         callback(e);
     }
 }
+
+function getRandomArbitrary(min, max) {
+    return Math.random() * (max - min) + min;
+  }

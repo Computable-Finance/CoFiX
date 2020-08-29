@@ -12,6 +12,6 @@ script:
   - npm run ganache-for-ci
   - sleep 5
   # - npx truffle migrate --network development
-  - npm run test
+  - npm run test-verbose
   # - npm run coverage
   # - npm run coverage-report

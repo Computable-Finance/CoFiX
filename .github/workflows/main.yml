@@ -20,7 +20,7 @@ jobs:
     - run: npm run ganache-for-ci
     - run: sleep 5
     - run: npx truffle migrate --network development
-    - run: npm run test
+    - run: npm run test-verbose
     - run: npm run coverage    
     - name: Coveralls
       uses: coverallsapp/github-action@master

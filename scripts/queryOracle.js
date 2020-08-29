@@ -26,11 +26,15 @@ module.exports = async function (callback) {
         } else {
             Token = await ERC20.at(argv.token);
         }
-        if (argv.pair === "" || argv.token === undefined) {
-            Pair = await CofiXPair.deployed();
-        } else {
+        // if (argv.pair === "" || argv.token === undefined) {
+        //     Pair = await CofiXPair.deployed();
+        // } else {
+        //     Pair = await CofiXPair.at(argv.pair);
+        // }
+        if (argv.pair) {
             Pair = await CofiXPair.at(argv.pair);
         }
+
         if (argv.controller === "" || argv.controller === undefined) {
             CofiXCtrl = await CofiXController.deployed();
         } else {
@@ -53,20 +57,22 @@ module.exports = async function (callback) {
         let k_base = await CofiXCtrl.K_BASE(); // 100000
 
         // queryOracle
-        // const _msgValue = web3.utils.toWei('0.01', 'ether');
-        // let result = await CofiXCtrl.queryOracle(Token.address, argv.account, { value: _msgValue });
-        // console.log("receipt.gasUsed:", result.receipt.gasUsed); // 494562
-        // let evtArgs0 = result.receipt.logs[0].args;
-        // console.log("evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString())
+        const _msgValue = web3.utils.toWei('0.01', 'ether');
+        let result = await CofiXCtrl.queryOracle(Token.address, argv.account, { value: _msgValue });
+        console.log("receipt.gasUsed:", result.receipt.gasUsed); // 494562
+        let evtArgs0 = result.receipt.logs[0].args;
+        console.log("evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString())
 
         // getKInfo
         let kInfo = await CofiXCtrl.getKInfo(Token.address);
         console.log(`kInfo> raw k: ${kInfo.k.toString()}, k meaning: ${kInfo.k.toString() / k_base.toString()}, updatedAt: ${kInfo.updatedAt.toString()}, update date: ${(new Date(kInfo.updatedAt*1000)).toUTCString()}`);
-        // get NAVPS_BASE from CofiXPair contract
-        let navps_base = await Pair.NAVPS_BASE();
-        let oraclePrice = [p.ethAmount, p.erc20Amount, new BN("0"), kInfo.k];
-        let navps = await Pair.getNAVPerShare(oraclePrice);
-        console.log(`pair=${Pair.address}, net asset value per share, raw=${navps.toNumber()}, meaning=${navps.toNumber() / navps_base.toNumber()}`);
+        if (argv.pair) {
+            // get NAVPS_BASE from CofiXPair contract
+            let navps_base = await Pair.NAVPS_BASE();
+            let oraclePrice = [p.ethAmount, p.erc20Amount, new BN("0"), kInfo.k];
+            let navps = await Pair.getNAVPerShare(oraclePrice);
+            console.log(`pair=${Pair.address}, net asset value per share, raw=${navps.toNumber()}, meaning=${navps.toNumber() / navps_base.toNumber()}`);
+        }
         callback();
     } catch (e) {
         callback(e);

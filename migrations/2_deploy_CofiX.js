@@ -20,10 +20,13 @@ module.exports = async function(deployer) {
     await deployer.deploy(WETH9);
 
     // NEST3 Price Oracle Mock
-    await deployer.deploy(NEST3PriceOracleMock, WETH9.address);
+    await deployer.deploy(NEST3PriceOracleMock);
 
     // CofiXController
-    await deployer.deploy(CofiXController, NEST3PriceOracleMock.address);
+    await deployer.deploy(CofiXController);
+
+    let controller = await CofiXController.deployed();
+    await controller.initialize(NEST3PriceOracleMock.address);
 
     // // Wait for NEST Oracle sending eth by `call` instead of `transfer`
     // await deployProxy(CofiXController, [NEST3PriceOracleMock.address], { deployer });

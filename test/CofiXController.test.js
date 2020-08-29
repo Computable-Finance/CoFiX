@@ -1,11 +1,15 @@
 const { expect } = require('chai');
 require('chai').should();
 const { BN, constants, expectEvent, expectRevert, time, balance } = require('@openzeppelin/test-helpers');
+const { calcK, convert_from_fixed_point, convert_into_fixed_point, calcRelativeDiff } = require('../lib/calc');
+const { printKInfoEvent } = require('../lib/print');
 
 const ERC20 = artifacts.require("ERC20");
 const CofiXController = artifacts.require("CofiXController");
 const NEST3PriceOracleMock = artifacts.require("NEST3PriceOracleMock");
 const NEST3PriceOracleConstMock = artifacts.require("NEST3PriceOracleConstMock");
+
+const errorDelta = 10 ** -15;
 
 contract('CofiXController', (accounts) => {
 
@@ -84,10 +88,11 @@ contract('CofiXController', (accounts) => {
       // evtArgs0.K.toNumber() / 
       // k for constant price, T = 28
       let kExpected = calcK(alpha, beta_one, beta_two, theta, evtArgs0.sigma.toNumber(), evtArgs0.T.toNumber());
-      let kCalculated = convert_from_fixed_point(evtArgs0.K);
-      let error = Math.abs((kCalculated - kExpected) / kExpected);
-      console.log(`kExpected: ${kExpected}, kCalculated:${kCalculated}, error:${error}`);
-      expect(error).to.be.below(1E-15);
+      let kActual = convert_from_fixed_point(evtArgs0.K);
+      // let error = Math.abs((kActual - kExpected) / kExpected);
+      let error = calcRelativeDiff(kExpected, kActual);
+      console.log(`kExpected: ${kExpected}, kActual:${kActual}, error:${error}`);
+      assert.isAtMost(error.toNumber(), errorDelta);
     });
 
     it("should revert if no new price feeded for a specific time", async () => {
@@ -109,20 +114,3 @@ contract('CofiXController', (accounts) => {
 
 
 });
-
-function printKInfoEvent(evtArgs0) {
-  console.log(`queryOracle>evtArgs0> K: ${evtArgs0.K.toString()}, sigma: ${evtArgs0.sigma.toString()}, T: ${evtArgs0.T.toString()}, ethAmount: ${evtArgs0.ethAmount.toString()}, erc20Amount: ${evtArgs0.erc20Amount.toString()}`);
-}
-
-function calcK(alpha, beta_one, beta_two, theta, sigma, T) {
-  return alpha + beta_one * (sigma * sigma) + beta_two * T; // no theta now;
-}
-
-function convert_from_fixed_point(fp) {
-  return fp.toString() / (2 ** 64);
-}
-
-// convert into 64.64 bit fixed_point
-function convert_into_fixed_point(coeff) {
-  return web3.utils.toBN("0x" + (coeff * 2 ** 64).toString(16).toUpperCase().split(".")[0]); // e.g. 0x19A5EE66A57B7.A, ignore every digis after the dot
-}

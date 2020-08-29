@@ -47,7 +47,7 @@ contract('CofiX', (accounts) => {
         WETH = await WETH9.deployed();
         PriceOracle = await NEST3PriceOracleMock.deployed();
         CofiXCtrl = await CofiXController.deployed();
-        CofiXCtrl.initialize(PriceOracle.address, { from: deployer });
+        // CofiXCtrl.initialize(PriceOracle.address, { from: deployer });
         CFactory = await CofiXFactory.deployed();
         CRouter = await CofiXRouter.deployed();
     });

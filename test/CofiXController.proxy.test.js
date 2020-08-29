@@ -58,4 +58,9 @@ contract('CofiXController (proxy)', (accounts) => {
     console.log(`alpha:${alpha.toString()}, k_base:${k_base.toString()}`);
     expect(k_base).to.bignumber.equal(new BN('1000000'));
   });
+
+  it('should not be initialized again', async function () {
+    await expectRevert(this.controller.initialize(this.oracle.address), "Contract instance has already been initialized");
+  });
+
 });

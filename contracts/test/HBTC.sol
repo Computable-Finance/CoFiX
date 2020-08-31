@@ -6,6 +6,6 @@ import "./ERC20.sol";
 
 contract HBTC is ERC20 {
 
-    constructor() ERC20(10**7*10**18, "USDT Test Token", "USDT", 18) public {
+    constructor() ERC20(10**7*10**18, "HBTC Token", "HBTC", 18) public {
     }
 }

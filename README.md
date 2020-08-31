@@ -56,7 +56,7 @@ truffle migrate --network ropsten
 |       Contract       |                  Address                   |
 | :------------------: | :----------------------------------------: |
 | USDT | 0xDc9E7381678EfA251E403F8F9fafcBdbf91a5C6C |
-| HBTC | 0x9a6313FAf3b347687F86303835607463202AB7D4 |
+| HBTC | 0x081B96b53f887ef4543649CED7fD7A5a872bDd29 |
 | WETH9 | 0xcfcF136eEc1C4A03BC2F684090844bF67168bF90 |
 | NEST3PriceOracleMock | 0x33EB7860427220684D6d69E0CE1914FfBFaC56B1 |
 | CofiXController | 0x6D631e101BC36A6f51fB875059347B1D4830BdBB |

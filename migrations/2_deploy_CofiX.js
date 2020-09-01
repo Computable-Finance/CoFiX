@@ -1,5 +1,6 @@
 const USDT = artifacts.require("test/USDT");
 const HBTC = artifacts.require("test/HBTC");
+const NEST = artifacts.require("test/NEST");
 const WETH9 = artifacts.require("test/WETH9");
 const NEST3PriceOracleMock = artifacts.require("mock/NEST3PriceOracleMock");
 const CofiXFactory = artifacts.require("CofiXFactory");
@@ -16,17 +17,20 @@ module.exports = async function(deployer) {
     // HBTC Test Token
     await deployer.deploy(HBTC);
 
+    // NEST Test Token
+    await deployer.deploy(NEST);
+
     // WETH contract
     await deployer.deploy(WETH9);
 
     // NEST3 Price Oracle Mock
-    await deployer.deploy(NEST3PriceOracleMock);
+    await deployer.deploy(NEST3PriceOracleMock, NEST.address);
 
     // CofiXController
-    await deployer.deploy(CofiXController);
+    await deployer.deploy(CofiXController, NEST3PriceOracleMock.address, NEST.address);
 
-    let controller = await CofiXController.deployed();
-    await controller.initialize(NEST3PriceOracleMock.address);
+    // let controller = await CofiXController.deployed();
+    // await controller.initialize(NEST3PriceOracleMock.address);
 
     // // Wait for NEST Oracle sending eth by `call` instead of `transfer`
     // await deployProxy(CofiXController, [NEST3PriceOracleMock.address], { deployer });

@@ -8,6 +8,8 @@ const ERC20 = artifacts.require("ERC20");
 const CofiXController = artifacts.require("CofiXController");
 const NEST3PriceOracleMock = artifacts.require("NEST3PriceOracleMock");
 const NEST3PriceOracleConstMock = artifacts.require("NEST3PriceOracleConstMock");
+const TestUSDT = artifacts.require("test/USDT");
+const TestNEST = artifacts.require("test/NEST");
 
 const errorDelta = 10 ** -15;
 
@@ -28,18 +30,19 @@ contract('CofiXController', (accounts) => {
   const block_time = 14;
 
   before(async function () {
-    Token = await ERC20.new("10000000000000000", "USDT Test Token", "USDT", 6);
-    Oracle = await NEST3PriceOracleMock.new({ from: deployer });
-    Controller = await CofiXController.new({ from: deployer });
-    Controller.initialize(Oracle.address, { from: deployer });
+    Token = await TestUSDT.new();
+    NEST = await TestNEST.new()
+    Oracle = await NEST3PriceOracleMock.new(NEST.address, { from: deployer });
+    Controller = await CofiXController.new(Oracle.address, NEST.address,{ from: deployer });
+    // Controller.initialize(Oracle.address, { from: deployer });
   });
 
-  it('should not be initialized again', async function () {
-    await expectRevert(
-      Controller.initialize(Oracle.address, { from: deployer }),
-      "Contract instance has already been initialized"
-    );
-  });
+  // it('should not be initialized again', async function () {
+  //   await expectRevert(
+  //     Controller.initialize(Oracle.address, { from: deployer }),
+  //     "Contract instance has already been initialized"
+  //   );
+  // });
 
   it("should have correct K coefficients", async () => {
     let ALPHA = await Controller.ALPHA({ from: deployer });
@@ -67,9 +70,9 @@ contract('CofiXController', (accounts) => {
 
     before(async function () {
       _msgValue = web3.utils.toWei('0.01', 'ether');
-      constOracle = await NEST3PriceOracleConstMock.new({ from: deployer });
-      tmpController = await CofiXController.new({ from: deployer });
-      tmpController.initialize(constOracle.address, { from: deployer });
+      constOracle = await NEST3PriceOracleConstMock.new(NEST.address, { from: deployer });
+      tmpController = await CofiXController.new(constOracle.address, NEST.address, { from: deployer });
+      // tmpController.initialize(constOracle.address, { from: deployer });
     });
 
     it('should calculate k correctly for constant price', async function () {

@@ -12,6 +12,7 @@ const NEST3PriceOracleConstMock = artifacts.require("NEST3PriceOracleConstMock")
 const CofiXController = artifacts.require("CofiXController");
 const TestUSDT = artifacts.require("test/USDT");
 const TestHBTC = artifacts.require("test/HBTC");
+const TestNEST = artifacts.require("test/NEST");
 const verbose = process.env.VERBOSE;
 
 contract('CofiXRouter', (accounts) => {
@@ -27,10 +28,11 @@ contract('CofiXRouter', (accounts) => {
     before(async () => {
         USDT = await TestUSDT.new({ from: deployer });
         HBTC = await TestHBTC.new({ from: deployer });
+        NEST = await TestNEST.new({ from: deployer });
         WETH = await WETH9.new();
         ConstOracle = await NEST3PriceOracleConstMock.new({ from: deployer });
-        CofiXCtrl = await CofiXController.new();
-        await CofiXCtrl.initialize(ConstOracle.address, { from: deployer });
+        CofiXCtrl = await CofiXController.new(ConstOracle.address, NEST.address);
+        // await CofiXCtrl.initialize(ConstOracle.address, { from: deployer });
         CFactory = await CofiXFactory.new(CofiXCtrl.address, WETH.address, { from: deployer });
         CRouter = await CofiXRouter.new(CFactory.address, WETH.address, { from: deployer });
     });

@@ -1,6 +1,6 @@
 const { expect } = require('chai');
 require('chai').should();
-const { BN, constants, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
+const { BN, constants, expectEvent, expectRevert, time } = require('@openzeppelin/test-helpers');
 // const { accounts, contract, web3 } = require('@openzeppelin/test-environment');
 // const CofiXRouter = contract.fromArtifact("CofiXRouter");
 // const ERC20 = contract.fromArtifact("ERC20");
@@ -19,6 +19,7 @@ const NEST3PriceOracleMock = artifacts.require("NEST3PriceOracleMock");
 const CofiXController = artifacts.require("CofiXController");
 const TestUSDT = artifacts.require("test/USDT");
 const TestHBTC = artifacts.require("test/HBTC");
+const TestNEST = artifacts.require("test/NEST");
 
 contract('CofiX', (accounts) => {
 // describe('CofiX', function () {
@@ -31,6 +32,8 @@ contract('CofiX', (accounts) => {
     // let totalSupply_ = "10000000000000000";
     const USDTTotalSupply_ = new BN("10000000000000000");
     const HBTCTotalSupply_ = new BN("100000000000000000000000000");
+
+    const DESTRUCTION_AMOUNT = web3.utils.toWei('10000', 'ether');
 
     before(async () => {
         // change to openzeppelin/test-environment if it has better support for test coverage and gas cost measure
@@ -45,6 +48,7 @@ contract('CofiX', (accounts) => {
         USDT = await TestUSDT.new();
         HBTC = await TestHBTC.new();
         WETH = await WETH9.deployed();
+        NEST = await TestNEST.deployed()
         PriceOracle = await NEST3PriceOracleMock.deployed();
         CofiXCtrl = await CofiXController.deployed();
         // CofiXCtrl.initialize(PriceOracle.address, { from: deployer });
@@ -65,6 +69,17 @@ contract('CofiX', (accounts) => {
     });
 
     describe('CofiXController', function () {
+        it("should activate nest oracle correctly", async () => {
+            await NEST.approve(CofiXCtrl.address, DESTRUCTION_AMOUNT);
+            await CofiXCtrl.activate();
+            await time.increase(time.duration.minutes(1)); // increase time to make activation be effective
+        });
+
+        it("should not activate again", async () => {
+            await NEST.approve(CofiXCtrl.address, DESTRUCTION_AMOUNT);
+            await expectRevert(CofiXCtrl.activate(), 'CofiXCtrl: activated');
+        });
+
         it("K calculation", async () => {
             console.log("======================CofiXController TEST START======================");
             _msgValue = web3.utils.toWei('0.01', 'ether');

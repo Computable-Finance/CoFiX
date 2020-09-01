@@ -5,10 +5,9 @@ import "./lib/SafeMath.sol";
 import "./lib/ABDKMath64x64.sol";
 import "./interface/INest_3_OfferPrice.sol";
 import './lib/TransferHelpers.sol';
-import "@openzeppelin/upgrades/contracts/Initializable.sol";
 
-
-contract CofiXController is Initializable {
+// Controller contract to call NEST Oracle for prices, no special ownership
+contract CofiXController {
 
     using SafeMath for uint256;
     
@@ -21,12 +20,17 @@ contract CofiXController is Initializable {
     uint256 constant public AONE = 1 ether;
     uint256 constant public K_BASE = 100000;
     uint256 constant internal TIMESTAMP_MODULUS = 2**32;
+    uint256 constant DESTRUCTION_AMOUNT = 10000 ether; // from nest oracle
 
     // TODO: setter for these variables
     uint256 public timespan_;
     int128 public MIN_K;
     int128 public MAX_K;
     address public oracle;
+    address public nestToken;
+    address public governance;
+
+    bool public activated;
 
     mapping(address => uint32[2]) internal KInfoMap; // gas saving, index [0] is k vlaue, index [1] is updatedAt
 
@@ -44,14 +48,45 @@ contract CofiXController is Initializable {
     //     uint256 T;
     // }
 
-    function initialize(address _priceOracle) initializer public {
+    constructor(address _priceOracle, address _nest) public {
         timespan_ = 14;
         MIN_K = 0x147AE147AE147B0; // (0.005*2**64).toString(16), 0.5% as 64.64-bit fixed point
         MAX_K = 0x1999999999999A00; // (0.1*2**64).toString(16),  10% 64.64-bit fixed point
         oracle = _priceOracle;
+        nestToken = _nest;
+        governance = msg.sender;
     }
 
     receive() external payable {}
+
+    // function setGovernance(address _new) external {
+    //     require(msg.sender == governance, "CFactory: !governance");
+    //     governance = _new;
+    // }
+
+    // TODO: Not sure to keep these setters
+    // function setTimespan(uint256 _timeSpan) external {
+    //     require(msg.sender == governance, "CFactory: !governance");
+    //     timespan_ = _timeSpan;
+    // }
+
+    // function setKLimit(int128 min, int128 max) external {
+    //     require(msg.sender == governance, "CFactory: !governance");
+    //     MIN_K = min;
+    //     MAX_K = max;
+    // }
+
+    // Activate on NEST Oracle
+    function activate() public {
+        require(activated == false, "CofiXCtrl: activated");
+        // address token, address from, address to, uint value
+        TransferHelper.safeTransferFrom(nestToken, msg.sender, address(this), DESTRUCTION_AMOUNT);
+        // address token, address to, uint value
+        TransferHelper.safeApprove(nestToken, oracle, DESTRUCTION_AMOUNT);
+        INest_3_OfferPrice(oracle).activation(); // nest.transferFrom will be called
+        TransferHelper.safeApprove(nestToken, oracle, 0); // ensure safety
+        activated = true;
+    }
 
     function queryOracle(address token, address /*payback*/) external payable returns (uint256 _k, uint256, uint256, uint256) {
         uint256 _balanceBefore = address(this).balance;

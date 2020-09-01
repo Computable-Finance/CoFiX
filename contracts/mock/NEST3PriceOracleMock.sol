@@ -2,6 +2,7 @@
 
 pragma solidity ^0.6.6;
 // import "../interface/INest_3_OfferPrice.sol";
+import '../interface/IERC20.sol';
 
 contract NEST3PriceOracleMock {
     
@@ -10,6 +11,11 @@ contract NEST3PriceOracleMock {
     // uint256 public ethAmount_ = 10000000000000000000;
     // uint256 public erc20Amount_ = 3255000000;
     mapping(address => PriceInfo[]) public priceInfoList_;
+    mapping(address => uint256) public addressEffect_; //  Effective time of address to call prices
+
+    address public nestToken_;
+    uint256 destructionAmount = 10000 ether; //  Amount of NEST to destroy to call prices
+    uint256 effectTime = 1 minutes; //  Waiting time to start calling prices
 
     struct PriceInfo {
         uint256 ethAmount;
@@ -17,10 +23,21 @@ contract NEST3PriceOracleMock {
         uint256 blockNum;
     }
 
+    constructor(address nest) public {
+        nestToken_ = nest;
+    }
+
+    // Activate the price checking function
+    function activation() public { // should not be called for multiple times, or effect time would postpone
+        IERC20(nestToken_).transferFrom(msg.sender, address(0), destructionAmount);
+        addressEffect_[msg.sender] = now + effectTime; // SHOULD ADD A BOOL TO FLAG ACTIVATED
+    }
+
     function updateAndCheckPriceNow(address token)
         external payable
         returns(uint256 ethAmount, uint256 erc20Amount, uint256 blockNum)
     {
+        require(checkUseNestPrice(msg.sender), "not activeted yet");
         require(priceInfoList_[token].length > 0, "oracleMock: no price available");
         // It's recommended to stop using .transfer() and .send() and instead use .call().
         // https://consensys.github.io/smart-contract-best-practices/recommendations/#dont-use-transfer-or-send
@@ -33,6 +50,7 @@ contract NEST3PriceOracleMock {
         external payable
         returns (uint256[] memory)
     {
+        require(checkUseNestPrice(msg.sender), "not activeted yet");
         require(msg.value >= 0.01 ether, "oracleMock: insufficient oracle fee");
         // msg.sender.transfer(msg.value - 0.01 ether); // return back
         // It's recommended to stop using .transfer() and .send() and instead use .call().
@@ -121,5 +139,13 @@ contract NEST3PriceOracleMock {
     // Transfer ETH
     function repayEth(address addr, uint256 amount) private {
         make_payable(addr).transfer(amount);
+    }
+
+    function checkUseNestPrice(address target) public view returns (bool) {
+        if (addressEffect_[target] < now && addressEffect_[target] != 0) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }

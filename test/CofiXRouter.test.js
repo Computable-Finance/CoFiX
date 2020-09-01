@@ -49,6 +49,7 @@ contract('CofiXRouter', (accounts) => {
             let usdtInUSDTPoolBefore = await USDT.balanceOf(usdtPairAddr);
             let ethUserBalanceBefore = await web3.eth.getBalance(LP);
             let usdtUserBalanceBefore = await USDT.balanceOf(LP);
+            let oracleBalanceBefore = await web3.eth.getBalance(ConstOracle.address);
 
             let result = await CRouter.addLiquidity(USDT.address, _amountETH, 0, 0, LP, "99999999999", { from: LP, value: _msgValue, gasPrice: 0});
             usdtPairAddr = await CFactory.getPair(USDT.address);
@@ -59,19 +60,30 @@ contract('CofiXRouter', (accounts) => {
             let usdtInUSDTPoolAfter = await USDT.balanceOf(usdtPairAddr);
             let ethUserBalanceAfter = await web3.eth.getBalance(LP);
             let usdtUserBalanceAfter = await USDT.balanceOf(LP);
+            let oracleBalanceAfter = await web3.eth.getBalance(ConstOracle.address);
             if (verbose) {
                 console.log(`gasUsed: ${result.receipt.gasUsed}`);
                 console.log(`before>pool balance WETH: ${wethInUSDTPoolBefore.toString()}`);
                 console.log(`before>pool balance USDT: ${usdtInUSDTPoolBefore.toString()}`);
                 console.log(`before>user balance ETH: ${ethUserBalanceBefore.toString()}`);
                 console.log(`before>user balance USDT: ${usdtUserBalanceBefore.toString()}`);
+                console.log(`before>oracle balance ETH: ${oracleBalanceBefore.toString()}`);
                 console.log(`-------`);
                 console.log(`got liquidity of ETH/USDT Pool: ${liquidityUSDTPair.toString()}`);
                 console.log(`after>pool balance WETH: ${wethInUSDTPoolAfter.toString()}`);
                 console.log(`after>pool balance USDT: ${usdtInUSDTPoolAfter.toString()}`);
                 console.log(`after>user balance ETH: ${ethUserBalanceAfter.toString()}`);
                 console.log(`after>user balance USDT: ${usdtUserBalanceAfter.toString()}`);
+                console.log(`after>oracle balance ETH: ${oracleBalanceAfter.toString()}`);
             }
+            // compare balance
+            let ethSpent = balanceDiff(ethUserBalanceAfter, ethUserBalanceBefore).mul(new BN('-1')); // after <= before
+            let ethToPool = balanceDiff(wethInUSDTPoolAfter, wethInUSDTPoolBefore);
+            let ethToOracle = balanceDiff(oracleBalanceAfter, oracleBalanceBefore);
+            expect(_amountETH).to.bignumber.equal(ethToPool); // pool got the eth amount user want to add
+            expect('0').to.bignumber.equal(balanceDiff(usdtInUSDTPoolAfter, usdtInUSDTPoolBefore)); // no change for usdt balance in pool
+            expect('0').to.bignumber.equal(balanceDiff(usdtUserBalanceAfter, usdtUserBalanceBefore)); // no change for user usdt balance
+            expect(ethSpent).to.bignumber.equal(ethToPool.add(ethToOracle)); // eth user spent equals eth into pool plus eth as oracle fee (no gas fee here because gas price zero)
         });
 
 
@@ -86,3 +98,7 @@ contract('CofiXRouter', (accounts) => {
     });
 
 });
+
+function balanceDiff(after, before) {
+    return web3.utils.toBN(after).sub(web3.utils.toBN(before))
+}

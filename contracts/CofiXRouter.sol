@@ -9,6 +9,7 @@ import './lib/SafeMath.sol';
 import './interface/IERC20.sol';
 import './interface/IWETH.sol';
 import './interface/ICofiXPair.sol';
+import './lib/CofiXLibrary.sol';
 
 contract CofiXRouter is ICofiXRouter {
     using SafeMath for uint;
@@ -31,17 +32,6 @@ contract CofiXRouter is ICofiXRouter {
         // TODO: strict limit
     }
 
-    // calculates the CREATE2 address for a pair without making any external calls
-    function pairFor(address _factory, address token) internal view returns (address pair) {
-        // pair = address(uint(keccak256(abi.encodePacked(
-        //         hex'ff',
-        //         _factory,
-        //         keccak256(abi.encodePacked(token)),
-        //         hex'fb0c5470b7fbfce7f512b5035b5c35707fd5c7bd43c8d81959891b0296030118' // init code hash
-        //     )))); // TODO: calc the real init code hash
-        return ICofiXFactory(_factory).getPair(token);
-    }
-
     // msg.value = amountETH + oracle fee
     function addLiquidity(
         address token,
@@ -54,12 +44,11 @@ contract CofiXRouter is ICofiXRouter {
     {
         // create the pair if it doesn't exist yet
         if (ICofiXFactory(factory).getPair(token) == address(0)) {
-            address _pair = ICofiXFactory(factory).createPair(token);
-            require(_pair == pairFor(factory, token), "CRouter: wrong pair address");
+            ICofiXFactory(factory).createPair(token);
         }
         require(msg.value > amountETH, "CRouter: insufficient msg.value");
         uint256 _oracleFee = msg.value.sub(amountETH);
-        address pair = pairFor(factory, token);
+        address pair = CofiXLibrary.pairFor(factory, token);
         if (amountToken > 0 ) { // support for tokens which do not allow to transfer zero values
             TransferHelper.safeTransferFrom(token, msg.sender, pair, amountToken);
         }
@@ -84,7 +73,7 @@ contract CofiXRouter is ICofiXRouter {
     ) external override payable ensure(deadline) returns (uint amountToken)
     {
         require(msg.value > 0, "CRouter: insufficient msg.value");
-        address pair = pairFor(factory, token);
+        address pair = CofiXLibrary.pairFor(factory, token);
         ICofiXPair(pair).transferFrom(msg.sender, pair, liquidity); // send liquidity to pair
         uint feeChange; 
         (amountToken, feeChange) = ICofiXPair(pair).burn{value: msg.value}(token, to);
@@ -102,7 +91,7 @@ contract CofiXRouter is ICofiXRouter {
     ) external override payable ensure(deadline) returns (uint amountETH)
     {
         require(msg.value > 0, "CRouter: insufficient msg.value");
-        address pair = pairFor(factory, token);
+        address pair = CofiXLibrary.pairFor(factory, token);
         ICofiXPair(pair).transferFrom(msg.sender, pair, liquidity); // send liquidity to pair
         uint feeChange; 
         (amountETH, feeChange) = ICofiXPair(pair).burn{value: msg.value}(WETH, address(this));
@@ -122,7 +111,7 @@ contract CofiXRouter is ICofiXRouter {
     {
         require(msg.value > amountIn, "CRouter: insufficient msg.value");
         IWETH(WETH).deposit{value: amountIn}();
-        address pair = pairFor(factory, token);
+        address pair = CofiXLibrary.pairFor(factory, token);
         assert(IWETH(WETH).transfer(pair, amountIn));
         uint feeChange; 
         (_amountIn, _amountOut, feeChange) = ICofiXPair(pair).swapWithExact{value: msg.value.sub(amountIn)}(token, to);
@@ -140,13 +129,13 @@ contract CofiXRouter is ICofiXRouter {
     ) external payable ensure(deadline) returns (uint _amountIn, uint _amountOut) {
         // swapExactTokensForETH
         require(msg.value > 0, "CRouter: insufficient msg.value");
-        address pairIn = pairFor(factory, tokenIn);
+        address pairIn = CofiXLibrary.pairFor(factory, tokenIn);
         TransferHelper.safeTransferFrom(tokenIn, msg.sender, pairIn, amountIn);
         uint feeChange; 
         (_amountIn, _amountOut, feeChange) = ICofiXPair(pairIn).swapWithExact{value: msg.value}(WETH, address(this));
 
         // swapExactETHForTokens
-        address pairOut = pairFor(factory, tokenOut);
+        address pairOut = CofiXLibrary.pairFor(factory, tokenOut);
         assert(IWETH(WETH).transfer(pairOut, _amountOut)); // swap with all amountOut in last swap
         (, _amountOut, feeChange) = ICofiXPair(pairOut).swapWithExact{value: feeChange}(tokenOut, to);
         require(_amountOut >= amountOutMin, "CRouter: got less than expected");
@@ -163,7 +152,7 @@ contract CofiXRouter is ICofiXRouter {
     ) external override payable ensure(deadline) returns (uint _amountIn, uint _amountOut)
     {
         require(msg.value > 0, "CRouter: insufficient msg.value");
-        address pair = pairFor(factory, token);
+        address pair = CofiXLibrary.pairFor(factory, token);
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountIn);
         uint feeChange; 
         (_amountIn, _amountOut, feeChange) = ICofiXPair(pair).swapWithExact{value: msg.value}(WETH, address(this));
@@ -183,7 +172,7 @@ contract CofiXRouter is ICofiXRouter {
     {
         require(msg.value > amountInMax, "CRouter: insufficient msg.value");
         IWETH(WETH).deposit{value: amountInMax}();
-        address pair = pairFor(factory, token);
+        address pair = CofiXLibrary.pairFor(factory, token);
         assert(IWETH(WETH).transfer(pair, amountInMax));
         uint feeChange; 
         (_amountIn, _amountOut, feeChange) = ICofiXPair(pair).swapForExact{value: msg.value.sub(amountInMax)}(token, amountOut, to); // TODO: handle two *amountOut
@@ -201,7 +190,7 @@ contract CofiXRouter is ICofiXRouter {
     ) external override payable ensure(deadline) returns (uint _amountIn, uint _amountOut)
     {
         require(msg.value > 0, "CRouter: insufficient msg.value");
-        address pair = pairFor(factory, token);
+        address pair = CofiXLibrary.pairFor(factory, token);
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountInMax);
         uint feeChange; 
         (_amountIn, _amountOut, feeChange) = ICofiXPair(pair).swapForExact{value: msg.value}(WETH, amountOut, address(this));  // TODO: handle two *amountOut

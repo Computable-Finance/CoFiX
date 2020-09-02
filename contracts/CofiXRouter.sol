@@ -30,6 +30,8 @@ contract CofiXRouter is ICofiXRouter {
     receive() external payable {
         // assert(msg.sender == WETH); // only accept ETH via fallback from the WETH contract
         // TODO: strict limit
+        // accept ETH from WETH contract, controller, and anyone else
+        // require(msg.sender == WETH || msg.sender == ICofiXFactory(factory).getController(), "CRouter: not accept ETH");
     }
 
     // msg.value = amountETH + oracle fee
@@ -49,7 +51,7 @@ contract CofiXRouter is ICofiXRouter {
         require(msg.value > amountETH, "CRouter: insufficient msg.value");
         uint256 _oracleFee = msg.value.sub(amountETH);
         address pair = CofiXLibrary.pairFor(factory, token);
-        if (amountToken > 0 ) { // support for tokens which do not allow to transfer zero values
+        if (amountToken > 0) { // support for tokens which do not allow to transfer zero values
             TransferHelper.safeTransferFrom(token, msg.sender, pair, amountToken);
         }
         if (amountETH > 0) {

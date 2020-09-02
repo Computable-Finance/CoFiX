@@ -11,6 +11,7 @@ install:
 script:
   - npm run ganache-for-ci
   - sleep 5
+  - npm run compile
   # - npx truffle migrate --network development
   - npm run test-verbose
   # - npm run coverage

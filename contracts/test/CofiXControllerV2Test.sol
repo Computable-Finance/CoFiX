@@ -5,10 +5,11 @@ import "../lib/SafeMath.sol";
 import "../lib/ABDKMath64x64.sol";
 import "../interface/INest_3_OfferPrice.sol";
 import '../lib/TransferHelpers.sol';
-import "@openzeppelin/upgrades/contracts/Initializable.sol";
+// import "@openzeppelin/upgrades/contracts/Initializable.sol";
 
 
-contract CofiXControllerV2Test is Initializable {
+// contract CofiXControllerV2Test is Initializable {
+contract CofiXControllerV2Test {
 
     using SafeMath for uint256;
     
@@ -43,7 +44,8 @@ contract CofiXControllerV2Test is Initializable {
     //     uint256 T;
     // }
 
-    function initialize(address _priceOracle) initializer public {
+    // function initialize(address _priceOracle) initializer public {
+    constructor(address _priceOracle) public {
         timespan_ = 14;
         MIN_K = 0x147AE147AE147B0; // (0.005*2**64).toString(16), 0.5% as 64.64-bit fixed point
         MAX_K = 0x1999999999999A00; // (0.1*2**64).toString(16),  10% 64.64-bit fixed point

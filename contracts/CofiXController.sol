@@ -29,10 +29,12 @@ contract CofiXController {
     address public oracle;
     address public nestToken;
     address public governance;
+    address public factory;
 
     bool public activated;
 
     mapping(address => uint32[2]) internal KInfoMap; // gas saving, index [0] is k vlaue, index [1] is updatedAt
+    mapping(address => bool) public callerAllowed;
 
     // use uint32[2] instead
     // struct KInfo {
@@ -48,21 +50,22 @@ contract CofiXController {
     //     uint256 T;
     // }
 
-    constructor(address _priceOracle, address _nest) public {
+    constructor(address _priceOracle, address _nest, address _factory) public {
         timespan_ = 14;
         MIN_K = 0x147AE147AE147B0; // (0.005*2**64).toString(16), 0.5% as 64.64-bit fixed point
         MAX_K = 0x1999999999999A00; // (0.1*2**64).toString(16),  10% 64.64-bit fixed point
         oracle = _priceOracle;
         nestToken = _nest;
         governance = msg.sender;
+        factory = _factory;
     }
 
     receive() external payable {}
 
-    // function setGovernance(address _new) external {
-    //     require(msg.sender == governance, "CFactory: !governance");
-    //     governance = _new;
-    // }
+    function setGovernance(address _new) external {
+        require(msg.sender == governance, "CFactory: !governance");
+        governance = _new;
+    }
 
     // TODO: Not sure to keep these setters
     // function setTimespan(uint256 _timeSpan) external {
@@ -77,7 +80,7 @@ contract CofiXController {
     // }
 
     // Activate on NEST Oracle
-    function activate() public {
+    function activate() external {
         require(activated == false, "CofiXCtrl: activated");
         // address token, address from, address to, uint value
         TransferHelper.safeTransferFrom(nestToken, msg.sender, address(this), DESTRUCTION_AMOUNT);
@@ -88,7 +91,13 @@ contract CofiXController {
         activated = true;
     }
 
+    function addCaller(address caller) external {
+        require(msg.sender == factory || msg.sender == governance, "CofiXCtrl: only factory"); // omit governance in reason
+        callerAllowed[caller] = true;
+    }  
+
     function queryOracle(address token, address /*payback*/) external payable returns (uint256 _k, uint256, uint256, uint256) {
+        require(callerAllowed[msg.sender] == true, "CofiXCtrl: caller not allowed");
         uint256 _balanceBefore = address(this).balance;
         int128 K;
         // TODO: cache K to reduce gas cost

@@ -96,6 +96,9 @@ contract('CofiX', (accounts) => {
             console.log("USDT>priceLen:", priceLen.toString(), ", tokenAmount:", usdtAmount.toString());
             expect(priceLen).to.bignumber.equal(new BN("50"));
 
+            // add caller
+            await CofiXCtrl.addCaller(deployer, { from: deployer });
+
             // let gas = await CofiXCtrl.methods['queryOracle(address,address)'].estimateGas(USDT.address, deployer, { from: deployer })
             // console.log("estimateGas:", gas.toString())
             let result = await CofiXCtrl.queryOracle(USDT.address, deployer, { from: deployer, value: _msgValue });

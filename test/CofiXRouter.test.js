@@ -31,9 +31,10 @@ contract('CofiXRouter', (accounts) => {
         NEST = await TestNEST.new({ from: deployer });
         WETH = await WETH9.new();
         ConstOracle = await NEST3PriceOracleConstMock.new({ from: deployer });
-        CofiXCtrl = await CofiXController.new(ConstOracle.address, NEST.address);
+        CFactory = await CofiXFactory.new(WETH.address, { from: deployer });
+        CofiXCtrl = await CofiXController.new(ConstOracle.address, NEST.address, CFactory.address);
+        await CFactory.setController(CofiXCtrl.address);
         // await CofiXCtrl.initialize(ConstOracle.address, { from: deployer });
-        CFactory = await CofiXFactory.new(CofiXCtrl.address, WETH.address, { from: deployer });
         CRouter = await CofiXRouter.new(CFactory.address, WETH.address, { from: deployer });
     });
 

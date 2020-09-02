@@ -10,12 +10,14 @@ const NEST3PriceOracleMock = artifacts.require("NEST3PriceOracleMock");
 const NEST3PriceOracleConstMock = artifacts.require("NEST3PriceOracleConstMock");
 const TestUSDT = artifacts.require("test/USDT");
 const TestNEST = artifacts.require("test/NEST");
+const CofiXFactory = artifacts.require("CofiXFactory");
 
 const errorDelta = 10 ** -15;
 
 contract('CofiXController', (accounts) => {
 
   const deployer = accounts[0];
+  const callerNotAllowed = accounts[1];
 
   let Controller;
   let Oracle;
@@ -32,8 +34,9 @@ contract('CofiXController', (accounts) => {
   before(async function () {
     Token = await TestUSDT.new();
     NEST = await TestNEST.new()
+    CFactory = await CofiXFactory.deployed(); // no need to deploy a new one here
     Oracle = await NEST3PriceOracleMock.new(NEST.address, { from: deployer });
-    Controller = await CofiXController.new(Oracle.address, NEST.address,{ from: deployer });
+    Controller = await CofiXController.new(Oracle.address, NEST.address, CFactory.address, { from: deployer });
     // Controller.initialize(Oracle.address, { from: deployer });
   });
 
@@ -70,8 +73,9 @@ contract('CofiXController', (accounts) => {
 
     before(async function () {
       _msgValue = web3.utils.toWei('0.01', 'ether');
+      tmpCFactory = await CofiXFactory.deployed();
       constOracle = await NEST3PriceOracleConstMock.new(NEST.address, { from: deployer });
-      tmpController = await CofiXController.new(constOracle.address, NEST.address, { from: deployer });
+      tmpController = await CofiXController.new(constOracle.address, NEST.address, tmpCFactory.address, { from: deployer });
       // tmpController.initialize(constOracle.address, { from: deployer });
     });
 
@@ -81,12 +85,15 @@ contract('CofiXController', (accounts) => {
       }
       await constOracle.feedPrice(Token.address, ethAmount, tokenAmount, { from: deployer });
       
+      // add caller
+      await tmpController.addCaller(deployer, { from: deployer });
+
       let result = await tmpController.queryOracle(Token.address, deployer, { from: deployer, value: _msgValue });
       console.log("queryOracle> receipt.gasUsed:", result.receipt.gasUsed);
       let evtArgs0 = result.receipt.logs[0].args;
       printKInfoEvent(evtArgs0);
       expect(evtArgs0.sigma).to.bignumber.equal(new BN(0)); // sigma should be zero because we returned constant price
-      expect(evtArgs0.T).to.bignumber.equal(new BN(28)); // sigma should be zero because we returned constant price
+      expect(evtArgs0.T).to.bignumber.equal(new BN(42)); // sigma should be zero because we returned constant price
       // k calculated from contract
       // evtArgs0.K.toNumber() / 
       // k for constant price, T = 28
@@ -113,7 +120,40 @@ contract('CofiXController', (accounts) => {
       printKInfoEvent(evtArgs0);
       await expectRevert(tmpController.queryOracle(Token.address, deployer, { from: deployer, value: _msgValue }), "CofiXCtrl: K");
     });
+
+    it("should revert if someone not allowed calling queryOracle", async () => {
+      await constOracle.feedPrice(Token.address, ethAmount, tokenAmount, { from: deployer });
+      await expectRevert(tmpController.queryOracle(Token.address, deployer, { from: callerNotAllowed, value: _msgValue }), "CofiXCtrl: caller not allowed");
+    });
   });
 
+  const oldGovernance = deployer;
+  const newGovernance = accounts[2];
+
+  describe('setGovernance', function () {
+    it("should setGovernance correctly", async () => {
+      await Controller.setGovernance(newGovernance, { from: oldGovernance });
+      let newG = await Controller.governance();
+      expect(newG).to.equal(newGovernance);
+    });
+
+    it("should revert if oldGovernance call setGovernance", async () => {
+      await expectRevert(Controller.setGovernance(oldGovernance, { from: oldGovernance }), "CFactory: !governance");
+    });
+
+    it("should setGovernance correctly by newGovernance", async () => {
+      await Controller.setGovernance(newGovernance, { from: newGovernance });
+      let newG = await Controller.governance();
+      expect(newG).to.equal(newGovernance);
+    });
+
+    it("should addCaller correctly by newGovernance", async () => {
+      await Controller.addCaller(newGovernance, { from: newGovernance });
+    });
+
+    it("should revert if oldGovernance call addCaller", async () => {
+      await expectRevert(Controller.addCaller(oldGovernance, { from: oldGovernance }), "CofiXCtrl: only factory");
+    });
+  });
 
 });

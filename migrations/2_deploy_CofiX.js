@@ -26,9 +26,6 @@ module.exports = async function(deployer) {
     // NEST3 Price Oracle Mock
     await deployer.deploy(NEST3PriceOracleMock, NEST.address);
 
-    // CofiXController
-    await deployer.deploy(CofiXController, NEST3PriceOracleMock.address, NEST.address);
-
     // let controller = await CofiXController.deployed();
     // await controller.initialize(NEST3PriceOracleMock.address);
 
@@ -36,7 +33,14 @@ module.exports = async function(deployer) {
     // await deployProxy(CofiXController, [NEST3PriceOracleMock.address], { deployer });
 
     // CofiXFactory
-    await deployer.deploy(CofiXFactory, CofiXController.address, WETH9.address);
+    await deployer.deploy(CofiXFactory, WETH9.address);
+
+    // CofiXController
+    await deployer.deploy(CofiXController, NEST3PriceOracleMock.address, NEST.address, CofiXFactory.address);
+
+    // set controller in factory
+    let factory = await CofiXFactory.deployed();
+    await factory.setController(CofiXController.address);
 
     // CofiXRouter
     await deployer.deploy(CofiXRouter, CofiXFactory.address, WETH9.address);

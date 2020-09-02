@@ -3,6 +3,7 @@
 pragma solidity ^0.6.6;
 
 import './interface/ICofiXFactory.sol';
+import './interface/ICofiXController.sol';
 import './CofiXPair.sol';
 import './interface/INest_3_OfferPrice.sol';
 import './lib/SafeMath.sol';
@@ -19,9 +20,8 @@ contract CofiXFactory is ICofiXFactory {
 
     event PairCreated(address indexed token, address pair, uint);
 
-    constructor(address _controller, address _WETH) public {
+    constructor(address _WETH) public {
         governance = msg.sender;
-        controller = _controller;
         WETH = _WETH;
     }
 
@@ -50,6 +50,7 @@ contract CofiXFactory is ICofiXFactory {
         ICofiXPair(pair).initialize(WETH, token);
         getPair[token] = pair;
         allPairs.push(pair);
+        ICofiXController(controller).addCaller(pair);
         emit PairCreated(token, pair, allPairs.length);
     }
 

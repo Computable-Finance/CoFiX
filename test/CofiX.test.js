@@ -68,7 +68,8 @@ contract('CofiX', (accounts) => {
         })
     });
 
-    describe('CofiXController', function () {
+    describe('CofiXController', function () {  
+
         it("should activate nest oracle correctly", async () => {
             await NEST.approve(CofiXCtrl.address, DESTRUCTION_AMOUNT);
             await CofiXCtrl.activate();

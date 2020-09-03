@@ -19,7 +19,7 @@ contract('CofiXController', (accounts) => {
   const deployer = accounts[0];
   const callerNotAllowed = accounts[1];
 
-  let Controller;
+  let CofiXCtrl;
   let Oracle;
   let Token
 
@@ -31,12 +31,14 @@ contract('CofiXController', (accounts) => {
   const min_k = 0.005;
   const block_time = 14;
 
+  const DESTRUCTION_AMOUNT = web3.utils.toWei('10000', 'ether');
+
   before(async function () {
     Token = await TestUSDT.new();
     NEST = await TestNEST.new()
     CFactory = await CofiXFactory.deployed(); // no need to deploy a new one here
     Oracle = await NEST3PriceOracleMock.new(NEST.address, { from: deployer });
-    Controller = await CofiXController.new(Oracle.address, NEST.address, CFactory.address, { from: deployer });
+    CofiXCtrl = await CofiXController.new(Oracle.address, NEST.address, CFactory.address, { from: deployer });
     // Controller.initialize(Oracle.address, { from: deployer });
   });
 
@@ -48,12 +50,12 @@ contract('CofiXController', (accounts) => {
   // });
 
   it("should have correct K coefficients", async () => {
-    let ALPHA = await Controller.ALPHA({ from: deployer });
-    let BETA_ONE = await Controller.BETA_ONE({ from: deployer });
-    let BETA_TWO = await Controller.BETA_TWO({ from: deployer });
-    let THETA = await Controller.THETA({ from: deployer });
-    let MAX_K = await Controller.MAX_K({ from: deployer });
-    let MIN_K = await Controller.MIN_K({ from: deployer });
+    let ALPHA = await CofiXCtrl.ALPHA({ from: deployer });
+    let BETA_ONE = await CofiXCtrl.BETA_ONE({ from: deployer });
+    let BETA_TWO = await CofiXCtrl.BETA_TWO({ from: deployer });
+    let THETA = await CofiXCtrl.THETA({ from: deployer });
+    let MAX_K = await CofiXCtrl.MAX_K({ from: deployer });
+    let MIN_K = await CofiXCtrl.MIN_K({ from: deployer });
     // console.log(`alpha:${ALPHA.toString()}}, beta_one:${BETA_ONE.toString()}, beta_two:${BETA_TWO.toString()}, theta:${THETA.toString()}`);
     expect(ALPHA).to.bignumber.equal((convert_into_fixed_point(alpha)));
     expect(BETA_ONE).to.bignumber.equal((convert_into_fixed_point(beta_one)));
@@ -61,6 +63,39 @@ contract('CofiXController', (accounts) => {
     expect(THETA).to.bignumber.equal((convert_into_fixed_point(theta)));
     expect(MAX_K).to.bignumber.equal((convert_into_fixed_point(max_k)));
     expect(MIN_K).to.bignumber.equal((convert_into_fixed_point(min_k)));
+  });
+
+  describe('activate', function() {
+    let _msgValue = web3.utils.toWei('0.01', 'ether');
+
+    it("should revert if not activated", async () => {
+      // add caller
+      await CofiXCtrl.addCaller(deployer, { from: deployer });
+      await expectRevert(CofiXCtrl.queryOracle(Token.address, deployer, { from: deployer, value: _msgValue }), "oracleMock: not activeted yet");
+    });
+
+    it("should activate nest oracle correctly", async () => {
+      await NEST.approve(CofiXCtrl.address, DESTRUCTION_AMOUNT);
+      await CofiXCtrl.activate();
+      await time.increase(time.duration.minutes(1)); // increase time to make activation be effective
+    });
+
+    it("should not activate again", async () => {
+      await NEST.approve(CofiXCtrl.address, DESTRUCTION_AMOUNT);
+      await expectRevert(CofiXCtrl.activate(), 'CofiXCtrl: activated');
+    });
+  });
+
+  describe('queryOracle', function() {
+    let _msgValue = web3.utils.toWei('0.01', 'ether');
+
+    it("should revert if not price available", async () => {
+      await expectRevert(CofiXCtrl.queryOracle(Token.address, deployer, { from: deployer, value: _msgValue }), "oracleMock: num too large");
+    });
+
+    it("should revert if no enough oracle fee provided", async () => {
+      await expectRevert(CofiXCtrl.queryOracle(Token.address, deployer, { from: deployer, value: web3.utils.toWei('0.009', 'ether') }), "oracleMock: insufficient oracle fee");
+    });
   });
 
   describe('test queryOracle & k calculation', function () {
@@ -103,6 +138,9 @@ contract('CofiXController', (accounts) => {
       let error = calcRelativeDiff(kExpected, kActual);
       console.log(`kExpected: ${kExpected}, kActual:${kActual}, error:${error}`);
       assert.isAtMost(error.toNumber(), errorDelta);
+
+      // should revert if no enough oracle fee
+
     });
 
     it("should revert if no new price feeded for a specific time", async () => {
@@ -132,27 +170,27 @@ contract('CofiXController', (accounts) => {
 
   describe('setGovernance', function () {
     it("should setGovernance correctly", async () => {
-      await Controller.setGovernance(newGovernance, { from: oldGovernance });
-      let newG = await Controller.governance();
+      await CofiXCtrl.setGovernance(newGovernance, { from: oldGovernance });
+      let newG = await CofiXCtrl.governance();
       expect(newG).to.equal(newGovernance);
     });
 
     it("should revert if oldGovernance call setGovernance", async () => {
-      await expectRevert(Controller.setGovernance(oldGovernance, { from: oldGovernance }), "CFactory: !governance");
+      await expectRevert(CofiXCtrl.setGovernance(oldGovernance, { from: oldGovernance }), "CFactory: !governance");
     });
 
     it("should setGovernance correctly by newGovernance", async () => {
-      await Controller.setGovernance(newGovernance, { from: newGovernance });
-      let newG = await Controller.governance();
+      await CofiXCtrl.setGovernance(newGovernance, { from: newGovernance });
+      let newG = await CofiXCtrl.governance();
       expect(newG).to.equal(newGovernance);
     });
 
     it("should addCaller correctly by newGovernance", async () => {
-      await Controller.addCaller(newGovernance, { from: newGovernance });
+      await CofiXCtrl.addCaller(newGovernance, { from: newGovernance });
     });
 
     it("should revert if oldGovernance call addCaller", async () => {
-      await expectRevert(Controller.addCaller(oldGovernance, { from: oldGovernance }), "CofiXCtrl: only factory");
+      await expectRevert(CofiXCtrl.addCaller(oldGovernance, { from: oldGovernance }), "CofiXCtrl: only factory");
     });
   });
 

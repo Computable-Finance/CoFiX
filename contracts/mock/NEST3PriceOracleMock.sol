@@ -37,7 +37,7 @@ contract NEST3PriceOracleMock {
         external payable
         returns(uint256 ethAmount, uint256 erc20Amount, uint256 blockNum)
     {
-        require(checkUseNestPrice(msg.sender), "not activeted yet");
+        require(checkUseNestPrice(msg.sender), "oracleMock: not activeted yet");
         require(priceInfoList_[token].length > 0, "oracleMock: no price available");
         // It's recommended to stop using .transfer() and .send() and instead use .call().
         // https://consensys.github.io/smart-contract-best-practices/recommendations/#dont-use-transfer-or-send
@@ -50,7 +50,7 @@ contract NEST3PriceOracleMock {
         external payable
         returns (uint256[] memory)
     {
-        require(checkUseNestPrice(msg.sender), "not activeted yet");
+        require(checkUseNestPrice(msg.sender), "oracleMock: not activeted yet");
         require(msg.value >= 0.01 ether, "oracleMock: insufficient oracle fee");
         // msg.sender.transfer(msg.value - 0.01 ether); // return back
         // It's recommended to stop using .transfer() and .send() and instead use .call().

@@ -78,6 +78,9 @@ contract('CofiXController', (accounts) => {
       await NEST.approve(CofiXCtrl.address, DESTRUCTION_AMOUNT);
       await CofiXCtrl.activate();
       await time.increase(time.duration.minutes(1)); // increase time to make activation be effective
+      for (let i = 0; i < 2; i++) {
+        await time.advanceBlock(); // to avoid unknown errors due to delay of tx exec
+      }
     });
 
     it("should not activate again", async () => {

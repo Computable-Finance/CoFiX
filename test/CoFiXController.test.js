@@ -78,26 +78,11 @@ contract('CoFiXController', (accounts) => {
       await NEST.approve(CoFiXCtrl.address, DESTRUCTION_AMOUNT);
       await CoFiXCtrl.activate();
       await time.increase(time.duration.minutes(1)); // increase time to make activation be effective
-      for (let i = 0; i < 2; i++) {
-        await time.advanceBlock(); // to avoid unknown errors due to delay of tx exec
-      }
     });
 
     it("should not activate again", async () => {
       await NEST.approve(CoFiXCtrl.address, DESTRUCTION_AMOUNT);
       await expectRevert(CoFiXCtrl.activate(), 'CoFiXCtrl: activated');
-    });
-  });
-
-  describe('queryOracle', function() {
-    let _msgValue = web3.utils.toWei('0.01', 'ether');
-
-    it("should revert if not price available", async () => {
-      await expectRevert(CoFiXCtrl.queryOracle(Token.address, deployer, { from: deployer, value: _msgValue }), "oracleMock: num too large");
-    });
-
-    it("should revert if no enough oracle fee provided", async () => {
-      await expectRevert(CoFiXCtrl.queryOracle(Token.address, deployer, { from: deployer, value: web3.utils.toWei('0.009', 'ether') }), "oracleMock: insufficient oracle fee");
     });
   });
 
@@ -194,6 +179,19 @@ contract('CoFiXController', (accounts) => {
 
     it("should revert if oldGovernance call addCaller", async () => {
       await expectRevert(CoFiXCtrl.addCaller(oldGovernance, { from: oldGovernance }), "CoFiXCtrl: only factory");
+    });
+  });
+
+  // move to the end to avoid unknown errors in coverage test
+  describe('queryOracle', function() {
+    let _msgValue = web3.utils.toWei('0.01', 'ether');
+
+    it("should revert if not price available", async () => {
+      await expectRevert(CoFiXCtrl.queryOracle(Token.address, deployer, { from: deployer, value: _msgValue }), "oracleMock: num too large");
+    });
+
+    it("should revert if no enough oracle fee provided", async () => {
+      await expectRevert(CoFiXCtrl.queryOracle(Token.address, deployer, { from: deployer, value: web3.utils.toWei('0.009', 'ether') }), "oracleMock: insufficient oracle fee");
     });
   });
 

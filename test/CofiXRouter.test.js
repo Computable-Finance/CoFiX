@@ -2,11 +2,6 @@ const { expect } = require('chai');
 require('chai').should();
 const { BN, constants, expectEvent, expectRevert, time } = require('@openzeppelin/test-helpers');
 
-const {INIT_CODE_HASH} = require("../lib/constants");
-
-const { pack, keccak256 } = require('@ethersproject/solidity');
-const { getCreate2Address } = require('@ethersproject/address');
-
 const CofiXRouter = artifacts.require("CofiXRouter");
 // const ERC20 = artifacts.require("ERC20");
 const CofiXFactory = artifacts.require("CofiXFactory");
@@ -94,17 +89,6 @@ contract('CofiXRouter', (accounts) => {
             expect(ethSpent).to.bignumber.equal(ethToPool.add(ethToOracle)); // eth user spent equals eth into pool plus eth as oracle fee (no gas fee here because gas price zero)
         });
 
-        it("should calc pair address correctly", async () => {
-            const token = USDT.address;
-            const FACTORY_ADDRESS = CFactory.address;
-            const computed_pair = getCreate2Address(
-                FACTORY_ADDRESS,
-                keccak256(['bytes'], [pack(['address'], [token])]),
-                INIT_CODE_HASH
-              );
-            const  called_pair = await CFactory.getPair(USDT.address);
-            expect(computed_pair).to.equal(called_pair);
-        });
 
         it("should add liquidity for USDT correctly", async () => {
 

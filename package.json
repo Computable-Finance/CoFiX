@@ -13,7 +13,6 @@
     "solium": "node_modules/.bin/solium -d contracts/ --fix-dry-run"
   },
   "dependencies": {
-    "@ethersproject/solidity": "^5.0.3",
     "@openzeppelin/contract-loader": "^0.6.1",
     "@truffle/hdwallet-provider": "^1.0.40",
     "decimal.js": "^10.2.0",

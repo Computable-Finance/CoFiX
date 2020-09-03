@@ -54,8 +54,7 @@ contract CofiXRouter is ICofiXRouter {
     {
         // create the pair if it doesn't exist yet
         if (ICofiXFactory(factory).getPair(token) == address(0)) {
-            address _pair = ICofiXFactory(factory).createPair(token);
-            require(_pair == pairFor(factory, token), "CRouter: wrong pair address");
+            ICofiXFactory(factory).createPair(token);
         }
         require(msg.value > amountETH, "CRouter: insufficient msg.value");
         uint256 _oracleFee = msg.value.sub(amountETH);

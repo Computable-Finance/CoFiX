@@ -8,8 +8,8 @@ import '../lib/TransferHelpers.sol';
 // import "@openzeppelin/upgrades/contracts/Initializable.sol";
 
 
-// contract CofiXControllerV2Test is Initializable {
-contract CofiXControllerV2Test {
+// contract CoFiXControllerV2Test is Initializable {
+contract CoFiXControllerV2Test {
 
     using SafeMath for uint256;
     
@@ -83,7 +83,7 @@ contract CofiXControllerV2Test {
         if (K < MIN_K) {
             K = MIN_K;
         } else if (K > MAX_K) {
-            revert("CofiXCtrl: K");
+            revert("CoFiXCtrl: K");
         }
 
         {
@@ -114,7 +114,7 @@ contract CofiXControllerV2Test {
 
         // query raw price list from nest oracle (newest to oldest)
         uint256[] memory _rawPriceList = INest_3_OfferPrice(oracle).updateAndCheckPriceList{value: msg.value}(token, 50);
-        require(_rawPriceList.length == 150, "CofiXCtrl: bad price len");
+        require(_rawPriceList.length == 150, "CoFiXCtrl: bad price len");
         // calc P a.k.a. price from the raw price data (ethAmount, erc20Amount, blockNum)
         uint256[] memory _prices = new uint256[](50);
         for (uint256 i = 0; i < 50; i++) {

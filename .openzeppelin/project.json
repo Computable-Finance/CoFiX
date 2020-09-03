@@ -2,7 +2,7 @@
   "manifestVersion": "2.2",
   "contracts": {},
   "dependencies": {},
-  "name": "CofiX",
+  "name": "CoFiX",
   "version": "0.1.0",
   "compiler": {
     "compilerSettings": {

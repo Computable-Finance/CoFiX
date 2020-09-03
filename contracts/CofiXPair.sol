@@ -3,16 +3,16 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
-import './interface/ICofiXPair.sol';
-import './CofiXERC20.sol';
+import './interface/ICoFiXPair.sol';
+import './CoFiXERC20.sol';
 import './interface/IERC20.sol';
-import './interface/ICofiXFactory.sol';
-import './interface/ICofiXController.sol';
+import './interface/ICoFiXFactory.sol';
+import './interface/ICoFiXController.sol';
 import './lib/TransferHelpers.sol';
 import "./lib/ABDKMath64x64.sol";
 
 
-contract CofiXPair is ICofiXPair, CofiXERC20 {
+contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
     using SafeMath  for uint;
 
     uint public override constant MINIMUM_LIQUIDITY = 10**3;
@@ -339,7 +339,7 @@ contract CofiXPair is ICofiXPair, CofiXERC20 {
     }
 
     function queryOracle(address token, address to) internal returns (uint256, uint256, uint256, uint256) {
-        return ICofiXController(ICofiXFactory(factory).getController()).queryOracle{value: msg.value}(token, to);
+        return ICoFiXController(ICoFiXFactory(factory).getController()).queryOracle{value: msg.value}(token, to);
     }
 
 }

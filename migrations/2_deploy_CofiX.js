@@ -3,9 +3,9 @@ const HBTC = artifacts.require("test/HBTC");
 const NEST = artifacts.require("test/NEST");
 const WETH9 = artifacts.require("test/WETH9");
 const NEST3PriceOracleMock = artifacts.require("mock/NEST3PriceOracleMock");
-const CofiXFactory = artifacts.require("CofiXFactory");
-const CofiXRouter = artifacts.require("CofiXRouter");
-const CofiXController = artifacts.require("CofiXController");
+const CoFiXFactory = artifacts.require("CoFiXFactory");
+const CoFiXRouter = artifacts.require("CoFiXRouter");
+const CoFiXController = artifacts.require("CoFiXController");
 const { deployProxy } = require('@openzeppelin/truffle-upgrades');
 
 
@@ -26,31 +26,31 @@ module.exports = async function(deployer) {
     // NEST3 Price Oracle Mock
     await deployer.deploy(NEST3PriceOracleMock, NEST.address);
 
-    // let controller = await CofiXController.deployed();
+    // let controller = await CoFiXController.deployed();
     // await controller.initialize(NEST3PriceOracleMock.address);
 
     // // Wait for NEST Oracle sending eth by `call` instead of `transfer`
-    // await deployProxy(CofiXController, [NEST3PriceOracleMock.address], { deployer });
+    // await deployProxy(CoFiXController, [NEST3PriceOracleMock.address], { deployer });
 
-    // CofiXFactory
-    await deployer.deploy(CofiXFactory, WETH9.address);
+    // CoFiXFactory
+    await deployer.deploy(CoFiXFactory, WETH9.address);
 
-    // CofiXController
-    await deployer.deploy(CofiXController, NEST3PriceOracleMock.address, NEST.address, CofiXFactory.address);
+    // CoFiXController
+    await deployer.deploy(CoFiXController, NEST3PriceOracleMock.address, NEST.address, CoFiXFactory.address);
 
     // set controller in factory
-    let factory = await CofiXFactory.deployed();
-    await factory.setController(CofiXController.address);
+    let factory = await CoFiXFactory.deployed();
+    await factory.setController(CoFiXController.address);
 
-    // CofiXRouter
-    await deployer.deploy(CofiXRouter, CofiXFactory.address, WETH9.address);
+    // CoFiXRouter
+    await deployer.deploy(CoFiXRouter, CoFiXFactory.address, WETH9.address);
 
     console.log(`Contract Deployed Summary\n=========================`);
     console.log(`| USDT | ${USDT.address} |`);
     console.log(`| HBTC | ${HBTC.address} |`);
     console.log(`| WETH9 | ${WETH9.address} |`);
     console.log(`| NEST3PriceOracleMock | ${NEST3PriceOracleMock.address} |`);
-    console.log(`| CofiXController | ${CofiXController.address} |`);
-    console.log(`| CofixFactory | ${CofiXFactory.address} |`);
-    console.log(`| CofixRouter | ${CofiXRouter.address} |`);
+    console.log(`| CoFiXController | ${CoFiXController.address} |`);
+    console.log(`| CoFiXFactory | ${CoFiXFactory.address} |`);
+    console.log(`| CoFiXRouter | ${CoFiXRouter.address} |`);
 };

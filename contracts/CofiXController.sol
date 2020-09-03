@@ -7,7 +7,7 @@ import "./interface/INest_3_OfferPrice.sol";
 import './lib/TransferHelpers.sol';
 
 // Controller contract to call NEST Oracle for prices, no special ownership
-contract CofiXController {
+contract CoFiXController {
 
     using SafeMath for uint256;
     
@@ -81,7 +81,7 @@ contract CofiXController {
 
     // Activate on NEST Oracle
     function activate() external {
-        require(activated == false, "CofiXCtrl: activated");
+        require(activated == false, "CoFiXCtrl: activated");
         // address token, address from, address to, uint value
         TransferHelper.safeTransferFrom(nestToken, msg.sender, address(this), DESTRUCTION_AMOUNT);
         // address token, address to, uint value
@@ -92,12 +92,12 @@ contract CofiXController {
     }
 
     function addCaller(address caller) external {
-        require(msg.sender == factory || msg.sender == governance, "CofiXCtrl: only factory"); // omit governance in reason
+        require(msg.sender == factory || msg.sender == governance, "CoFiXCtrl: only factory"); // omit governance in reason
         callerAllowed[caller] = true;
     }  
 
     function queryOracle(address token, address /*payback*/) external payable returns (uint256 _k, uint256, uint256, uint256) {
-        require(callerAllowed[msg.sender] == true, "CofiXCtrl: caller not allowed");
+        require(callerAllowed[msg.sender] == true, "CoFiXCtrl: caller not allowed");
         uint256 _balanceBefore = address(this).balance;
         int128 K;
         // TODO: cache K to reduce gas cost
@@ -126,7 +126,7 @@ contract CofiXController {
         if (K < MIN_K) {
             K = MIN_K;
         } else if (K > MAX_K) {
-            revert("CofiXCtrl: K");
+            revert("CoFiXCtrl: K");
         }
 
         {
@@ -152,7 +152,7 @@ contract CofiXController {
 
         // query raw price list from nest oracle (newest to oldest)
         uint256[] memory _rawPriceList = INest_3_OfferPrice(oracle).updateAndCheckPriceList{value: msg.value}(token, 50);
-        require(_rawPriceList.length == 150, "CofiXCtrl: bad price len");
+        require(_rawPriceList.length == 150, "CoFiXCtrl: bad price len");
         // calc P a.k.a. price from the raw price data (ethAmount, erc20Amount, blockNum)
         uint256[] memory _prices = new uint256[](50);
         for (uint256 i = 0; i < 50; i++) {

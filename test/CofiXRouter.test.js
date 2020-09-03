@@ -2,20 +2,20 @@ const { expect } = require('chai');
 require('chai').should();
 const { BN, constants, expectEvent, expectRevert, time } = require('@openzeppelin/test-helpers');
 
-const CofiXRouter = artifacts.require("CofiXRouter");
+const CoFiXRouter = artifacts.require("CoFiXRouter");
 // const ERC20 = artifacts.require("ERC20");
-const CofiXFactory = artifacts.require("CofiXFactory");
-const CofiXPair = artifacts.require("CofiXPair");
+const CoFiXFactory = artifacts.require("CoFiXFactory");
+const CoFiXPair = artifacts.require("CoFiXPair");
 const WETH9 = artifacts.require("WETH9");
 // const NEST3PriceOracleMock = artifacts.require("NEST3PriceOracleMock");
 const NEST3PriceOracleConstMock = artifacts.require("NEST3PriceOracleConstMock");
-const CofiXController = artifacts.require("CofiXController");
+const CoFiXController = artifacts.require("CoFiXController");
 const TestUSDT = artifacts.require("test/USDT");
 const TestHBTC = artifacts.require("test/HBTC");
 const TestNEST = artifacts.require("test/NEST");
 const verbose = process.env.VERBOSE;
 
-contract('CofiXRouter', (accounts) => {
+contract('CoFiXRouter', (accounts) => {
 
     const owner = accounts[0];
     let deployer = owner;
@@ -31,11 +31,11 @@ contract('CofiXRouter', (accounts) => {
         NEST = await TestNEST.new({ from: deployer });
         WETH = await WETH9.new();
         ConstOracle = await NEST3PriceOracleConstMock.new({ from: deployer });
-        CFactory = await CofiXFactory.new(WETH.address, { from: deployer });
-        CofiXCtrl = await CofiXController.new(ConstOracle.address, NEST.address, CFactory.address);
-        await CFactory.setController(CofiXCtrl.address);
-        // await CofiXCtrl.initialize(ConstOracle.address, { from: deployer });
-        CRouter = await CofiXRouter.new(CFactory.address, WETH.address, { from: deployer });
+        CFactory = await CoFiXFactory.new(WETH.address, { from: deployer });
+        CoFiXCtrl = await CoFiXController.new(ConstOracle.address, NEST.address, CFactory.address);
+        await CFactory.setController(CoFiXCtrl.address);
+        // await CoFiXCtrl.initialize(ConstOracle.address, { from: deployer });
+        CRouter = await CoFiXRouter.new(CFactory.address, WETH.address, { from: deployer });
     });
 
     describe('addLiquidity()', function () {
@@ -56,7 +56,7 @@ contract('CofiXRouter', (accounts) => {
 
             let result = await CRouter.addLiquidity(USDT.address, _amountETH, 0, 0, LP, "99999999999", { from: LP, value: _msgValue, gasPrice: 0});
             usdtPairAddr = await CFactory.getPair(USDT.address);
-            USDTPair = await CofiXPair.at(usdtPairAddr);
+            USDTPair = await CoFiXPair.at(usdtPairAddr);
             console.log("------------addLiquidity for USDT/ETH Pool with ETH------------");
             let liquidityUSDTPair = await USDTPair.balanceOf(LP);
             let wethInUSDTPoolAfter = await WETH.balanceOf(usdtPairAddr);

@@ -2,15 +2,15 @@
 
 pragma solidity ^0.6.6;
 
-import './interface/ICofiXFactory.sol';
+import './interface/ICoFiXFactory.sol';
 import './lib/TransferHelpers.sol';
-import './interface/ICofiXRouter.sol';
+import './interface/ICoFiXRouter.sol';
 import './lib/SafeMath.sol';
 import './interface/IERC20.sol';
 import './interface/IWETH.sol';
-import './interface/ICofiXPair.sol';
+import './interface/ICoFiXPair.sol';
 
-contract CofiXRouter is ICofiXRouter {
+contract CoFiXRouter is ICoFiXRouter {
     using SafeMath for uint;
 
     address public immutable override factory;
@@ -39,7 +39,7 @@ contract CofiXRouter is ICofiXRouter {
         //         keccak256(abi.encodePacked(token)),
         //         hex'fb0c5470b7fbfce7f512b5035b5c35707fd5c7bd43c8d81959891b0296030118' // init code hash
         //     )))); // TODO: calc the real init code hash
-        return ICofiXFactory(_factory).getPair(token);
+        return ICoFiXFactory(_factory).getPair(token);
     }
 
     // msg.value = amountETH + oracle fee
@@ -53,8 +53,8 @@ contract CofiXRouter is ICofiXRouter {
     ) external override payable ensure(deadline) returns (uint liquidity)
     {
         // create the pair if it doesn't exist yet
-        if (ICofiXFactory(factory).getPair(token) == address(0)) {
-            ICofiXFactory(factory).createPair(token);
+        if (ICoFiXFactory(factory).getPair(token) == address(0)) {
+            ICoFiXFactory(factory).createPair(token);
         }
         require(msg.value > amountETH, "CRouter: insufficient msg.value");
         uint256 _oracleFee = msg.value.sub(amountETH);
@@ -67,7 +67,7 @@ contract CofiXRouter is ICofiXRouter {
             assert(IWETH(WETH).transfer(pair, amountETH));
         }
         uint256 feeChange;
-        (liquidity, feeChange) = ICofiXPair(pair).mint{value: _oracleFee}(to);
+        (liquidity, feeChange) = ICoFiXPair(pair).mint{value: _oracleFee}(to);
         require(liquidity >= liquidityMin, "CRouter: less liquidity than expected");
         // refund eth, if any
         if (feeChange > 0) TransferHelper.safeTransferETH(msg.sender, feeChange);
@@ -84,9 +84,9 @@ contract CofiXRouter is ICofiXRouter {
     {
         require(msg.value > 0, "CRouter: insufficient msg.value");
         address pair = pairFor(factory, token);
-        ICofiXPair(pair).transferFrom(msg.sender, pair, liquidity); // send liquidity to pair
+        ICoFiXPair(pair).transferFrom(msg.sender, pair, liquidity); // send liquidity to pair
         uint feeChange; 
-        (amountToken, feeChange) = ICofiXPair(pair).burn{value: msg.value}(token, to);
+        (amountToken, feeChange) = ICoFiXPair(pair).burn{value: msg.value}(token, to);
         require(amountToken >= amountTokenMin, "CRouter: got less than expected");
         if (feeChange > 0) TransferHelper.safeTransferETH(msg.sender, feeChange);
     }
@@ -102,9 +102,9 @@ contract CofiXRouter is ICofiXRouter {
     {
         require(msg.value > 0, "CRouter: insufficient msg.value");
         address pair = pairFor(factory, token);
-        ICofiXPair(pair).transferFrom(msg.sender, pair, liquidity); // send liquidity to pair
+        ICoFiXPair(pair).transferFrom(msg.sender, pair, liquidity); // send liquidity to pair
         uint feeChange; 
-        (amountETH, feeChange) = ICofiXPair(pair).burn{value: msg.value}(WETH, address(this));
+        (amountETH, feeChange) = ICoFiXPair(pair).burn{value: msg.value}(WETH, address(this));
         require(amountETH >= amountETHMin, "CRouter: got less than expected");
         IWETH(WETH).withdraw(amountETH);
         TransferHelper.safeTransferETH(to, amountETH.add(feeChange));
@@ -124,7 +124,7 @@ contract CofiXRouter is ICofiXRouter {
         address pair = pairFor(factory, token);
         assert(IWETH(WETH).transfer(pair, amountIn));
         uint feeChange; 
-        (_amountIn, _amountOut, feeChange) = ICofiXPair(pair).swapWithExact{value: msg.value.sub(amountIn)}(token, to);
+        (_amountIn, _amountOut, feeChange) = ICoFiXPair(pair).swapWithExact{value: msg.value.sub(amountIn)}(token, to);
         require(_amountOut >= amountOutMin, "CRouter: got less than expected");
         if (feeChange > 0) TransferHelper.safeTransferETH(msg.sender, feeChange);
     }
@@ -142,12 +142,12 @@ contract CofiXRouter is ICofiXRouter {
         address pairIn = pairFor(factory, tokenIn);
         TransferHelper.safeTransferFrom(tokenIn, msg.sender, pairIn, amountIn);
         uint feeChange; 
-        (_amountIn, _amountOut, feeChange) = ICofiXPair(pairIn).swapWithExact{value: msg.value}(WETH, address(this));
+        (_amountIn, _amountOut, feeChange) = ICoFiXPair(pairIn).swapWithExact{value: msg.value}(WETH, address(this));
 
         // swapExactETHForTokens
         address pairOut = pairFor(factory, tokenOut);
         assert(IWETH(WETH).transfer(pairOut, _amountOut)); // swap with all amountOut in last swap
-        (, _amountOut, feeChange) = ICofiXPair(pairOut).swapWithExact{value: feeChange}(tokenOut, to);
+        (, _amountOut, feeChange) = ICoFiXPair(pairOut).swapWithExact{value: feeChange}(tokenOut, to);
         require(_amountOut >= amountOutMin, "CRouter: got less than expected");
         if (feeChange > 0) TransferHelper.safeTransferETH(msg.sender, feeChange);
     }
@@ -165,7 +165,7 @@ contract CofiXRouter is ICofiXRouter {
         address pair = pairFor(factory, token);
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountIn);
         uint feeChange; 
-        (_amountIn, _amountOut, feeChange) = ICofiXPair(pair).swapWithExact{value: msg.value}(WETH, address(this));
+        (_amountIn, _amountOut, feeChange) = ICoFiXPair(pair).swapWithExact{value: msg.value}(WETH, address(this));
         require(_amountOut >= amountOutMin, "CRouter: got less than expected");
         IWETH(WETH).withdraw(_amountOut);
         TransferHelper.safeTransferETH(to, _amountOut.add(feeChange));
@@ -185,7 +185,7 @@ contract CofiXRouter is ICofiXRouter {
         address pair = pairFor(factory, token);
         assert(IWETH(WETH).transfer(pair, amountInMax));
         uint feeChange; 
-        (_amountIn, _amountOut, feeChange) = ICofiXPair(pair).swapForExact{value: msg.value.sub(amountInMax)}(token, amountOut, to); // TODO: handle two *amountOut
+        (_amountIn, _amountOut, feeChange) = ICoFiXPair(pair).swapForExact{value: msg.value.sub(amountInMax)}(token, amountOut, to); // TODO: handle two *amountOut
         require(_amountIn <= amountInMax, "CRouter: spend more than expected");
         if (feeChange > 0) TransferHelper.safeTransferETH(msg.sender, feeChange);
     }
@@ -203,7 +203,7 @@ contract CofiXRouter is ICofiXRouter {
         address pair = pairFor(factory, token);
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountInMax);
         uint feeChange; 
-        (_amountIn, _amountOut, feeChange) = ICofiXPair(pair).swapForExact{value: msg.value}(WETH, amountOut, address(this));  // TODO: handle two *amountOut
+        (_amountIn, _amountOut, feeChange) = ICoFiXPair(pair).swapForExact{value: msg.value}(WETH, amountOut, address(this));  // TODO: handle two *amountOut
         require(_amountIn <= amountInMax, "CRouter: got less than expected");
         IWETH(WETH).withdraw(_amountOut);
         TransferHelper.safeTransferETH(to, amountOut.add(feeChange));

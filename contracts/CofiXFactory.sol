@@ -2,14 +2,14 @@
 
 pragma solidity ^0.6.6;
 
-import './interface/ICofiXFactory.sol';
-import './interface/ICofiXController.sol';
-import './CofiXPair.sol';
+import './interface/ICoFiXFactory.sol';
+import './interface/ICoFiXController.sol';
+import './CoFiXPair.sol';
 import './interface/INest_3_OfferPrice.sol';
 import './lib/SafeMath.sol';
 
 
-contract CofiXFactory is ICofiXFactory {
+contract CoFiXFactory is ICoFiXFactory {
     using SafeMath for uint;
 
     mapping(address => address) public override getPair;
@@ -40,17 +40,17 @@ contract CofiXFactory is ICofiXFactory {
     function createPair(address token) external override returns (address pair) {
         require(token != address(0), 'CFactory: ZERO_ADDRESS');
         require(getPair[token] == address(0), 'CFactory: PAIR_EXISTS');
-        bytes memory bytecode = type(CofiXPair).creationCode;
+        bytes memory bytecode = type(CoFiXPair).creationCode;
         // emit ByteCode(bytecode);
         emit ByteCodeHash(keccak256(bytecode));
         bytes32 salt = keccak256(abi.encodePacked(token));
         assembly {
             pair := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        ICofiXPair(pair).initialize(WETH, token);
+        ICoFiXPair(pair).initialize(WETH, token);
         getPair[token] = pair;
         allPairs.push(pair);
-        ICofiXController(controller).addCaller(pair);
+        ICoFiXController(controller).addCaller(pair);
         emit PairCreated(token, pair, allPairs.length);
     }
 

@@ -1,4 +1,4 @@
-name: CofiX
+name: CoFiX
 
 on: ["push", "pull_request"]
 

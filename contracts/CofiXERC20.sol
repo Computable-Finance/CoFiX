@@ -2,13 +2,13 @@
 
 pragma solidity ^0.6.6;
 
-import './interface/ICofiXERC20.sol';
+import './interface/ICoFiXERC20.sol';
 import './lib/SafeMath.sol';
 
-contract CofiXERC20 is ICofiXERC20 {
+contract CoFiXERC20 is ICoFiXERC20 {
     using SafeMath for uint;
 
-    string public override constant name = 'CofiX Pool Token';
+    string public override constant name = 'CoFiX Pool Token';
     string public override constant symbol = 'CPT';
     uint8 public override constant decimals = 18;
     uint  public override totalSupply;

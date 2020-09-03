@@ -4,14 +4,14 @@
 // const upgrades = require('@openzeppelin/truffle-upgrades');
 
 // const ERC20 = artifacts.require("ERC20");
-// const CofiXController = artifacts.require("CofiXController");
-// const CofiXControllerV2 = artifacts.require('CofiXControllerV2Test');
+// const CoFiXController = artifacts.require("CoFiXController");
+// const CoFiXControllerV2 = artifacts.require('CoFiXControllerV2Test');
 
 // const NEST3PriceOracleMock = artifacts.require("NEST3PriceOracleMock");
 // const TestUSDT = artifacts.require("test/USDT");
 // const TestNEST = artifacts.require("test/NEST");
 
-// contract('CofiXController (proxy)', (accounts) => {
+// contract('CoFiXController (proxy)', (accounts) => {
 //   const admin = accounts[0];
 //   const nonAdmin = accounts[1];
 
@@ -19,7 +19,7 @@
 //     USDT = await TestUSDT.new();
 //     NEST = await TestNEST.new();
 //     this.oracle = await NEST3PriceOracleMock.new(NEST.address);
-//     this.controller = await upgrades.deployProxy(CofiXController, [this.oracle.address]); // no deployer args when deployProxy in test
+//     this.controller = await upgrades.deployProxy(CoFiXController, [this.oracle.address]); // no deployer args when deployProxy in test
 //   });
 
 //   it('should read through proxy correctly', async function () {
@@ -55,7 +55,7 @@
 
 //   it('should upgrade correctly', async function () {
 //     // must deployProxy here, could not use the one create in before setup
-//     await upgrades.upgradeProxy(this.controller.address, CofiXControllerV2, [this.oracle.address]);
+//     await upgrades.upgradeProxy(this.controller.address, CoFiXControllerV2, [this.oracle.address]);
 //     let alpha = await this.controller.ALPHA();
 //     let k_base = await this.controller.K_BASE();
 //     console.log(`alpha:${alpha.toString()}, k_base:${k_base.toString()}`);

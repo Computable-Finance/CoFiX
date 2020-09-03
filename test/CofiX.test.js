@@ -2,27 +2,27 @@ const { expect } = require('chai');
 require('chai').should();
 const { BN, constants, expectEvent, expectRevert, time } = require('@openzeppelin/test-helpers');
 // const { accounts, contract, web3 } = require('@openzeppelin/test-environment');
-// const CofiXRouter = contract.fromArtifact("CofiXRouter");
+// const CoFiXRouter = contract.fromArtifact("CoFiXRouter");
 // const ERC20 = contract.fromArtifact("ERC20");
-// const CofiXFactory = contract.fromArtifact("CofiXFactory");
-// const CofiXPair = contract.fromArtifact("CofiXPair");
+// const CoFiXFactory = contract.fromArtifact("CoFiXFactory");
+// const CoFiXPair = contract.fromArtifact("CoFiXPair");
 // const WETH9 = contract.fromArtifact("WETH9");
 // const NEST3PriceOracleMock = contract.fromArtifact("NEST3PriceOracleMock");
-// const CofiXController = contract.fromArtifact("CofiXController");
+// const CoFiXController = contract.fromArtifact("CoFiXController");
 
-const CofiXRouter = artifacts.require("CofiXRouter");
+const CoFiXRouter = artifacts.require("CoFiXRouter");
 // const ERC20 = artifacts.require("ERC20");
-const CofiXFactory = artifacts.require("CofiXFactory");
-const CofiXPair = artifacts.require("CofiXPair");
+const CoFiXFactory = artifacts.require("CoFiXFactory");
+const CoFiXPair = artifacts.require("CoFiXPair");
 const WETH9 = artifacts.require("WETH9");
 const NEST3PriceOracleMock = artifacts.require("NEST3PriceOracleMock");
-const CofiXController = artifacts.require("CofiXController");
+const CoFiXController = artifacts.require("CoFiXController");
 const TestUSDT = artifacts.require("test/USDT");
 const TestHBTC = artifacts.require("test/HBTC");
 const TestNEST = artifacts.require("test/NEST");
 
-contract('CofiX', (accounts) => {
-// describe('CofiX', function () {
+contract('CoFiX', (accounts) => {
+// describe('CoFiX', function () {
     // const [owner] = accounts;
     const owner = accounts[0];
     let deployer = owner;
@@ -40,9 +40,9 @@ contract('CofiX', (accounts) => {
         // USDT = await ERC20.new("10000000000000000", "USDT Test Token", "USDT", 6, { from: deployer });
         // WETH = await WETH9.new();
         // PriceOracle = await NEST3PriceOracleMock.new();
-        // CofiXCtrl = await CofiXController.new(PriceOracle.address);
-        // CFactory = await CofiXFactory.new(CofiXCtrl.address, WETH.address)
-        // CRouter = await CofiXRouter.new(CFactory.address, WETH.address);
+        // CoFiXCtrl = await CoFiXController.new(PriceOracle.address);
+        // CFactory = await CoFiXFactory.new(CoFiXCtrl.address, WETH.address)
+        // CRouter = await CoFiXRouter.new(CFactory.address, WETH.address);
         // USDT = await ERC20.new("10000000000000000", "USDT Test Token", "USDT", 6, { from: deployer });
         // HBTC = await ERC20.new("100000000000000000000000000", "Huobi BTC", "HBTC", 18, { from: deployer });
         USDT = await TestUSDT.new();
@@ -50,10 +50,10 @@ contract('CofiX', (accounts) => {
         WETH = await WETH9.deployed();
         NEST = await TestNEST.deployed()
         PriceOracle = await NEST3PriceOracleMock.deployed();
-        CofiXCtrl = await CofiXController.deployed();
-        // CofiXCtrl.initialize(PriceOracle.address, { from: deployer });
-        CFactory = await CofiXFactory.deployed();
-        CRouter = await CofiXRouter.deployed();
+        CoFiXCtrl = await CoFiXController.deployed();
+        // CoFiXCtrl.initialize(PriceOracle.address, { from: deployer });
+        CFactory = await CoFiXFactory.deployed();
+        CRouter = await CoFiXRouter.deployed();
     });
 
     describe('template', function () {
@@ -68,21 +68,21 @@ contract('CofiX', (accounts) => {
         })
     });
 
-    describe('CofiXController', function () {  
+    describe('CoFiXController', function () {  
 
         it("should activate nest oracle correctly", async () => {
-            await NEST.approve(CofiXCtrl.address, DESTRUCTION_AMOUNT);
-            await CofiXCtrl.activate();
+            await NEST.approve(CoFiXCtrl.address, DESTRUCTION_AMOUNT);
+            await CoFiXCtrl.activate();
             await time.increase(time.duration.minutes(1)); // increase time to make activation be effective
         });
 
         it("should not activate again", async () => {
-            await NEST.approve(CofiXCtrl.address, DESTRUCTION_AMOUNT);
-            await expectRevert(CofiXCtrl.activate(), 'CofiXCtrl: activated');
+            await NEST.approve(CoFiXCtrl.address, DESTRUCTION_AMOUNT);
+            await expectRevert(CoFiXCtrl.activate(), 'CoFiXCtrl: activated');
         });
 
         it("K calculation", async () => {
-            console.log("======================CofiXController TEST START======================");
+            console.log("======================CoFiXController TEST START======================");
             _msgValue = web3.utils.toWei('0.01', 'ether');
 
             // add enough prices in NEST3PriceOracleMock
@@ -98,11 +98,11 @@ contract('CofiX', (accounts) => {
             expect(priceLen).to.bignumber.equal(new BN("50"));
 
             // add caller
-            await CofiXCtrl.addCaller(deployer, { from: deployer });
+            await CoFiXCtrl.addCaller(deployer, { from: deployer });
 
-            // let gas = await CofiXCtrl.methods['queryOracle(address,address)'].estimateGas(USDT.address, deployer, { from: deployer })
+            // let gas = await CoFiXCtrl.methods['queryOracle(address,address)'].estimateGas(USDT.address, deployer, { from: deployer })
             // console.log("estimateGas:", gas.toString())
-            let result = await CofiXCtrl.queryOracle(USDT.address, deployer, { from: deployer, value: _msgValue });
+            let result = await CoFiXCtrl.queryOracle(USDT.address, deployer, { from: deployer, value: _msgValue });
             console.log("USDT>receipt.gasUsed:", result.receipt.gasUsed); // 494562
             let evtArgs0 = result.receipt.logs[0].args;
             console.log("USDT>evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString());
@@ -116,7 +116,7 @@ contract('CofiX', (accounts) => {
             priceLen = await PriceOracle.getPriceLength(USDT.address);
             console.log("USDT>priceLen:", priceLen.toString(), ", tokenAmount:", usdtAmount.toString());
             expect(priceLen).to.bignumber.equal(new BN("100"));
-            result = await CofiXCtrl.queryOracle(USDT.address, deployer, { from: deployer, value: _msgValue });
+            result = await CoFiXCtrl.queryOracle(USDT.address, deployer, { from: deployer, value: _msgValue });
             console.log("USDT>receipt.gasUsed:", result.receipt.gasUsed); // 544914
             evtArgs0 = result.receipt.logs[0].args;
             console.log("USDT>evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString())
@@ -128,7 +128,7 @@ contract('CofiX', (accounts) => {
             console.log("debug>USDT>p:", p.ethAmount.toString(), p.erc20Amount.toString(), p.blockNum.toString());
             let c = await PriceOracle.checkPriceList(USDT.address, 50);
             console.log("debug>USDT>c:", c[0].toString(), c[1].toString(), c[2].toString(), c[3].toString(), c[4].toString());
-            console.log("======================CofiXController STATS END======================");
+            console.log("======================CoFiXController STATS END======================");
 
             // add price for HBTC
             let hbtcAmount = new BN("339880000000000000");
@@ -170,7 +170,7 @@ contract('CofiX', (accounts) => {
             let _amountToken = "1000000000";
             let result = await CRouter.addLiquidity(USDT.address, _amountETH, _amountToken, 0, LP, "99999999999", { from: LP, value: _msgValue }); // create pair automatically if not exists
             let usdtPairAddr = await CFactory.getPair(USDT.address);
-            let USDTPair = await CofiXPair.at(usdtPairAddr);
+            let USDTPair = await CoFiXPair.at(usdtPairAddr);
             console.log("------------addLiquidity for USDT/ETH------------");
             let liquidityUSDTPair = await USDTPair.balanceOf(LP);
             let usdtInUSDTPool = await USDT.balanceOf(usdtPairAddr);
@@ -204,7 +204,7 @@ contract('CofiX', (accounts) => {
             let _amountHBTC = "2000000000000000000"
             result = await CRouter.addLiquidity(HBTC.address, _amountETH, _amountHBTC, 0, LP, "99999999999", { from: LP, value: _msgValue }); // create pair automatically if not exists
             let hbtcPairAddr = await CFactory.getPair(HBTC.address);
-            let HBTCPair = await CofiXPair.at(hbtcPairAddr);
+            let HBTCPair = await CoFiXPair.at(hbtcPairAddr);
             usdtInUSDTPool = await USDT.balanceOf(usdtPairAddr);
             wethInUSDTPool = await WETH.balanceOf(usdtPairAddr);
             hbtcInHBTCTPool = await HBTC.balanceOf(hbtcPairAddr);
@@ -384,20 +384,20 @@ contract('CofiX', (accounts) => {
 
     describe('Read from contract', function () {
         it("test", async () => {
-            // get K_BASE from CofiXController contract
-            let k_base = await CofiXCtrl.K_BASE(); // 100000
+            // get K_BASE from CoFiXController contract
+            let k_base = await CoFiXCtrl.K_BASE(); // 100000
             expect(k_base).to.bignumber.equal(new BN("100000"));
 
             // get pair address
             let usdtPairAddr = await CFactory.getPair(USDT.address);
-            let USDTPair = await CofiXPair.at(usdtPairAddr);
+            let USDTPair = await CoFiXPair.at(usdtPairAddr);
 
-            // get NAVPS_BASE from CofiXPair contract
+            // get NAVPS_BASE from CoFiXPair contract
             let navps_base = await USDTPair.NAVPS_BASE();
             expect(navps_base).to.bignumber.equal(new BN("10000"));
 
-            // get the latest k info from CofiXController contract, including k value & last updated time
-            let kInfo = await CofiXCtrl.getKInfo(USDT.address);
+            // get the latest k info from CoFiXController contract, including k value & last updated time
+            let kInfo = await CoFiXCtrl.getKInfo(USDT.address);
             console.log("kInfo> k:", kInfo.k.toString(), "(", kInfo.k.toString() / k_base.toString(), ")", ", updatedAt:", kInfo.updatedAt.toString());
 
             // get price now from NEST3PriceOracleMock Contract

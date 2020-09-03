@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 pragma solidity ^0.6.6;
-import './ICofiXERC20.sol';
+import './ICoFiXERC20.sol';
 
-interface ICofiXPair is ICofiXERC20 {
+interface ICoFiXPair is ICoFiXERC20 {
 
     struct OraclePrice {
         uint256 ethAmount;

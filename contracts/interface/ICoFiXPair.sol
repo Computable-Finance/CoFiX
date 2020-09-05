@@ -10,6 +10,7 @@ interface ICoFiXPair is ICoFiXERC20 {
         uint256 erc20Amount;
         uint256 blockNum;
         uint256 K;
+        uint256 theta;
     }
     
     // All pairs: {ETH <-> ERC20 Token}

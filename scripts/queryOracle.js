@@ -76,7 +76,7 @@ module.exports = async function (callback) {
             // get NAVPS_BASE from CoFiXPair contract
             let navps_base = await Pair.NAVPS_BASE();
             let oraclePrice = [p.ethAmount, p.erc20Amount, new BN("0"), kInfo.k];
-            let navps = await Pair.getNAVPerShare(oraclePrice);
+            let navps = await Pair.getNAVPerShareForMint(oraclePrice);
             console.log(`pair=${Pair.address}, net asset value per share, raw=${navps.toNumber()}, meaning=${navps.toNumber() / navps_base.toNumber()}`);
         }
         callback();

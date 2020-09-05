@@ -405,9 +405,12 @@ contract('CoFiX', (accounts) => {
             console.log("price now> ethAmount:", p.ethAmount.toString(), ", erc20Amount:", p.erc20Amount.toString(), p.erc20Amount.mul(new BN(web3.utils.toWei('1', 'ether'))).div(p.ethAmount).div(new BN('1000000')).toString(), "USDT/ETH");
 
             // get Net Asset Value Per Share for USDTPair contract
-            let oraclePrice = [p.ethAmount, p.erc20Amount, new BN("0"), kInfo.k];
-            let navps = await USDTPair.getNAVPerShare(oraclePrice);
-            console.log("net asset value per share:", navps.toNumber() / navps_base.toNumber());
+            let oraclePrice = [p.ethAmount, p.erc20Amount, new BN("0"), kInfo.k, new BN("0")];
+            let navpsForMint = await USDTPair.getNAVPerShareForMint(oraclePrice);
+            console.log("net asset value per share for mint:", navpsForMint.toNumber() / navps_base.toNumber());
+
+            let navpsForBurn = await USDTPair.getNAVPerShareForBurn(oraclePrice);
+            console.log("net asset value per share for mint:", navpsForBurn.toNumber() / navps_base.toNumber());
 
             // get total liquidity (totalSupply of pair/pool token)
             let totalLiquidity = await USDTPair.totalSupply();
@@ -418,16 +421,16 @@ contract('CoFiX', (accounts) => {
             let amount0 = web3.utils.toWei('1', 'ether'); // ethAmount
             let amount1 = new BN("500000000"); // erc20Amount
             let liquidity = await USDTPair.getLiquidity(amount0, amount1, oraclePrice);
-            console.log("estimate addLiquidity> liquidity:", liquidity.toString(), ", ratio:", liquidity.toNumber() / totalLiquidity.toNumber());
+            console.log("estimate addLiquidity> liquidity:", liquidity.toString(), ", ratio:", liquidity.toString() / totalLiquidity.toString());
 
             // estimate amountOut for removeLiquidityGetETH() function in router
             // calc amountOut for token0 (WETH) when send liquidity token to pool for burning
-            let amountOutETH = await USDTPair.calcOutToken0ForBurn(liquidity, navps, oraclePrice);
+            let amountOutETH = await USDTPair.calcOutToken0ForBurn(liquidity, oraclePrice);
             console.log("estimate removeLiquidityGetETH> amountOutETH:", amountOutETH.toString(), web3.utils.fromWei(amountOutETH, 'ether'), "ETH");
 
             // estimate amountOut for removeLiquidityGetToken() function in router
             // calc amountOut for token1 (ERC20 token) when send liquidity token to pool for burning
-            let amountOutToken = await USDTPair.calcOutToken1ForBurn(liquidity, navps, oraclePrice);
+            let amountOutToken = await USDTPair.calcOutToken1ForBurn(liquidity, oraclePrice);
             console.log("estimate removeLiquidityGetToken> amountOutETH:", amountOutToken.toString(), amountOutToken.div(new BN('1000000')).toString(), "USDT");
 
             // estimate amountOut for swapExactETHForTokens() function in router

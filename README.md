@@ -63,6 +63,19 @@ truffle migrate --network ropsten
 | CoFiXFactory | 0xD9aB2Ca67641f11e808d32ffc5741a3A0d44E05c |
 | CoFiXRouter | 0x442A92e41EEFA4567a75d27773A9A64e8d3A6880 |
 
+### Beta-V0.4
+
+|       Contract       |                  Address                   |
+| :------------------: | :----------------------------------------: |
+| USDT | 0x11D9e0Cf91A33C76ABaF921ac945CC3b56E039A2 |
+| HBTC | 0x20E491Ed8915561EfF4b7f67D32DB7805baD8c71 |
+| WETH9 | 0xc1237B8f5081Dc1678668bd99EAfffDC85826211 |
+| NEST3PriceOracleMock | 0xF7d849622fF48A6ad082D923a99a26FCD7D35307 |
+| CoFiXController | 0x6b21fAd05646042c36E896346Ed74B2a1f7b94cE |
+| CoFiXFactory | 0xD2FD9B718359d943597ab209cb31B71740b0D1Fa |
+| CoFiXKTable | 0x944AF601d6aCf56EE4C81282ac7cE19987D25E3B |
+| CoFiXRouter | 0x63bf14E4514D7aBa14A3c6eafAd5258487663783 |
+
 ## Test Flow
 
 check [`test/CoFiX.test.js`](test/CoFiX.test.js) for details.

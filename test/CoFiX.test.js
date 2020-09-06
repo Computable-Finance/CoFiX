@@ -15,11 +15,13 @@ const CoFiXRouter = artifacts.require("CoFiXRouter");
 const CoFiXFactory = artifacts.require("CoFiXFactory");
 const CoFiXPair = artifacts.require("CoFiXPair");
 const WETH9 = artifacts.require("WETH9");
-const NEST3PriceOracleMock = artifacts.require("NEST3PriceOracleMock");
+const NEST3PriceOracleMock = artifacts.require("mock/NEST3PriceOracleMock");
 const CoFiXController = artifacts.require("CoFiXController");
+const CoFiXKTable = artifacts.require("CoFiXKTable");
 const TestUSDT = artifacts.require("test/USDT");
 const TestHBTC = artifacts.require("test/HBTC");
 const TestNEST = artifacts.require("test/NEST");
+const { printKInfoEvent } = require('../lib/print');
 
 contract('CoFiX', (accounts) => {
 // describe('CoFiX', function () {
@@ -47,13 +49,23 @@ contract('CoFiX', (accounts) => {
         // HBTC = await ERC20.new("100000000000000000000000000", "Huobi BTC", "HBTC", 18, { from: deployer });
         USDT = await TestUSDT.new();
         HBTC = await TestHBTC.new();
-        WETH = await WETH9.deployed();
-        NEST = await TestNEST.deployed()
-        PriceOracle = await NEST3PriceOracleMock.deployed();
-        CoFiXCtrl = await CoFiXController.deployed();
-        // CoFiXCtrl.initialize(PriceOracle.address, { from: deployer });
-        CFactory = await CoFiXFactory.deployed();
-        CRouter = await CoFiXRouter.deployed();
+        // WETH = await WETH9.deployed();
+        // NEST = await TestNEST.deployed()
+        // PriceOracle = await NEST3PriceOracleMock.deployed();
+        // CoFiXCtrl = await CoFiXController.deployed();
+        // // CoFiXCtrl.initialize(PriceOracle.address, { from: deployer });
+        // CFactory = await CoFiXFactory.deployed();
+        // CRouter = await CoFiXRouter.deployed();
+
+        NEST = await TestNEST.new({ from: deployer });
+        WETH = await WETH9.new();
+        PriceOracle = await NEST3PriceOracleMock.new(NEST.address, { from: deployer });
+        CFactory = await CoFiXFactory.new(WETH.address, { from: deployer });
+        KTable = await CoFiXKTable.new({ from: deployer });
+        CoFiXCtrl = await CoFiXController.new(PriceOracle.address, NEST.address, CFactory.address, KTable.address);
+        await CFactory.setController(CoFiXCtrl.address);
+        // await CoFiXCtrl.initialize(ConstOracle.address, { from: deployer });
+        CRouter = await CoFiXRouter.new(CFactory.address, WETH.address, { from: deployer });
     });
 
     describe('template', function () {
@@ -105,7 +117,8 @@ contract('CoFiX', (accounts) => {
             let result = await CoFiXCtrl.queryOracle(USDT.address, deployer, { from: deployer, value: _msgValue });
             console.log("USDT>receipt.gasUsed:", result.receipt.gasUsed); // 494562
             let evtArgs0 = result.receipt.logs[0].args;
-            console.log("USDT>evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString());
+            printKInfoEvent(evtArgs0);
+            // console.log("USDT>evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString());
             // K = -0.016826326, when sigma equals to zero
 
             // add more prices
@@ -119,7 +132,8 @@ contract('CoFiX', (accounts) => {
             result = await CoFiXCtrl.queryOracle(USDT.address, deployer, { from: deployer, value: _msgValue });
             console.log("USDT>receipt.gasUsed:", result.receipt.gasUsed); // 544914
             evtArgs0 = result.receipt.logs[0].args;
-            console.log("USDT>evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString())
+            printKInfoEvent(evtArgs0);
+            // console.log("USDT>evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString())
             // python result, K=-0.009217843036355746, sigma=0.0004813196086030222
             // contract result, K=-170039189510192419/(2**64)=-0.00921784293373125, sigma=8878779697438274/(2**64)=0.0004813196118491383
 
@@ -158,6 +172,17 @@ contract('CoFiX', (accounts) => {
             console.log("allowanceUSDT: ", allowance.toString());
             expect(allowance).to.bignumber.equal(USDTTotalSupply_);
 
+
+            let ethAmount = new BN("10000000000000000000");
+            let usdtAmount = new BN("3255000000");
+            let hbtcAmount = new BN("339880000000000000");
+            for (let i = 0; i < 50; i++) {
+                await PriceOracle.addPriceToList(USDT.address, ethAmount, usdtAmount, "0", { from: deployer });
+            }
+            for (let i = 0; i < 50; i++) {
+                await PriceOracle.addPriceToList(HBTC.address, ethAmount, hbtcAmount, "0", { from: deployer });
+            }
+
             // addLiquidity (create pair included)
             //  - address token,
             //  - uint amountETH,
@@ -186,11 +211,20 @@ contract('CoFiX', (accounts) => {
             console.log("user balance USDT:", usdtUserBalance.toString());
             console.log("user balance HBTC:", hbtcUserBalance.toString());
             
+            
             {
                 // for benchmark gas cost when not creating new pair
                 for (let i = 0; i < 10; i++) {
                     await CRouter.addLiquidity(USDT.address, _amountETH, _amountToken, 0, LP, "99999999999", { from: LP, value: _msgValue });
                 }
+            }
+
+            // refresh price list
+            for (let i = 0; i < 1; i++) {
+                await PriceOracle.addPriceToList(USDT.address, ethAmount, usdtAmount, "0", { from: deployer });
+            }
+            for (let i = 0; i < 1; i++) {
+                await PriceOracle.addPriceToList(HBTC.address, ethAmount, hbtcAmount, "0", { from: deployer });
             }
 
             // add liquidity for HBTC

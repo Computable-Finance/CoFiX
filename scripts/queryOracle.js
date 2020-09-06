@@ -1,10 +1,12 @@
-const NEST3PriceOracleMock = artifacts.require("NEST3PriceOracleMock");
+const NEST3PriceOracleMock = artifacts.require("mock/NEST3PriceOracleMock");
 const ERC20 = artifacts.require("ERC20");
 const { BN } = require('@openzeppelin/test-helpers');
 const { web3 } = require('@openzeppelin/test-environment');
 const CoFiXController = artifacts.require("CoFiXController");
 const CoFiXPair = artifacts.require("CoFiXPair");
 const Decimal = require('decimal.js');
+const { printKInfoEvent } = require('../lib/print');
+
 
 const argv = require('yargs').argv;
 
@@ -67,7 +69,8 @@ module.exports = async function (callback) {
         let result = await CoFiXCtrl.queryOracle(Token.address, argv.account, { value: _msgValue });
         console.log("receipt.gasUsed:", result.receipt.gasUsed); // 494562
         let evtArgs0 = result.receipt.logs[0].args;
-        console.log("evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString())
+        printKInfoEvent(evtArgs0);
+        // console.log("evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString())
 
         // getKInfo
         let kInfo = await CoFiXCtrl.getKInfo(Token.address);

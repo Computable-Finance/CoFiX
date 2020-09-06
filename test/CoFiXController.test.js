@@ -6,11 +6,14 @@ const { printKInfoEvent } = require('../lib/print');
 
 const ERC20 = artifacts.require("ERC20");
 const CoFiXController = artifacts.require("CoFiXController");
-const NEST3PriceOracleMock = artifacts.require("NEST3PriceOracleMock");
+const NEST3PriceOracleMock = artifacts.require("mock/NEST3PriceOracleMock");
 const NEST3PriceOracleConstMock = artifacts.require("NEST3PriceOracleConstMock");
 const TestUSDT = artifacts.require("test/USDT");
 const TestNEST = artifacts.require("test/NEST");
 const CoFiXFactory = artifacts.require("CoFiXFactory");
+const CoFiXKTable = artifacts.require("CoFiXKTable");
+const WETH9 = artifacts.require("WETH9");
+
 
 const errorDelta = 10 ** -15;
 
@@ -38,7 +41,8 @@ contract('CoFiXController', (accounts) => {
     NEST = await TestNEST.new()
     CFactory = await CoFiXFactory.deployed(); // no need to deploy a new one here
     Oracle = await NEST3PriceOracleMock.new(NEST.address, { from: deployer });
-    CoFiXCtrl = await CoFiXController.new(Oracle.address, NEST.address, CFactory.address, { from: deployer });
+    KTable = await CoFiXKTable.new({ from: deployer });
+    CoFiXCtrl = await CoFiXController.new(Oracle.address, NEST.address, CFactory.address, KTable.address, { from: deployer });
     // Controller.initialize(Oracle.address, { from: deployer });
   });
 
@@ -96,9 +100,10 @@ contract('CoFiXController', (accounts) => {
 
     before(async function () {
       _msgValue = web3.utils.toWei('0.01', 'ether');
-      tmpCFactory = await CoFiXFactory.deployed();
+      // tmpCFactory = await CoFiXFactory.deployed();
+      tmpCFactory = await CoFiXFactory.new(WETH.address, { from: deployer });
       constOracle = await NEST3PriceOracleConstMock.new(NEST.address, { from: deployer });
-      tmpController = await CoFiXController.new(constOracle.address, NEST.address, tmpCFactory.address, { from: deployer });
+      tmpController = await CoFiXController.new(constOracle.address, NEST.address, tmpCFactory.address, KTable.address, { from: deployer });
       // tmpController.initialize(constOracle.address, { from: deployer });
     });
 
@@ -120,7 +125,8 @@ contract('CoFiXController', (accounts) => {
       // k calculated from contract
       // evtArgs0.K.toNumber() / 
       // k for constant price, T = 28
-      let kExpected = calcK(alpha, beta_one, beta_two, theta, evtArgs0.sigma.toNumber(), evtArgs0.T.toNumber());
+      // let kExpected = calcK(alpha, beta_one, beta_two, theta, evtArgs0.sigma.toNumber(), evtArgs0.T.toNumber());
+      let kExpected = calcK(convert_from_fixed_point(evtArgs0.K0), evtArgs0.sigma.toNumber(), evtArgs0.T.toNumber());
       let kActual = convert_from_fixed_point(evtArgs0.K);
       // let error = Math.abs((kActual - kExpected) / kExpected);
       let error = calcRelativeDiff(kExpected, kActual);
@@ -135,7 +141,8 @@ contract('CoFiXController', (accounts) => {
       await constOracle.feedPrice(Token.address, ethAmount, tokenAmount, { from: deployer });
       // k = alpha + beta_one * sigma^2 + beta_two*T
       // (max_k - (alpha))/beta_two
-      let max_interval_block = (max_k - (alpha))/beta_two/block_time;
+      // let max_interval_block = (max_k - (alpha))/beta_two/block_time;
+      let max_interval_block = 900/block_time;
       console.log(`max_interval_block=${max_interval_block}`)
       for (let i = 0; i < max_interval_block-3; i++) {
         await time.advanceBlock();
@@ -144,7 +151,8 @@ contract('CoFiXController', (accounts) => {
       console.log("queryOracle> receipt.gasUsed:", result.receipt.gasUsed);
       let evtArgs0 = result.receipt.logs[0].args;
       printKInfoEvent(evtArgs0);
-      await expectRevert(tmpController.queryOracle(Token.address, deployer, { from: deployer, value: _msgValue }), "CoFiXCtrl: K");
+      // await expectRevert(tmpController.queryOracle(Token.address, deployer, { from: deployer, value: _msgValue }), "CoFiXCtrl: K");
+      await expectRevert.unspecified(tmpController.queryOracle(Token.address, deployer, { from: deployer, value: _msgValue }));
     });
 
     it("should revert if someone not allowed calling queryOracle", async () => {

@@ -8,5 +8,5 @@ interface ICoFiXController {
 
     function addCaller(address caller) external;
 
-    function queryOracle(address token, address payback) external payable returns (uint256 k, uint256 ethAmount, uint256 erc20Amount, uint256 blockNum);
+    function queryOracle(address token, address payback) external payable returns (uint256 k, uint256 ethAmount, uint256 erc20Amount, uint256 blockNum, uint256 theta);
 }

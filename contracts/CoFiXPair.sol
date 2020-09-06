@@ -96,7 +96,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         { // scope for ethAmount/erc20Amount/blockNum to avoid stack too deep error
             // query price
             OraclePrice memory _op;
-            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum) = queryOracle(_token1, to);
+            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = queryOracle(_token1, to);
             // TODO: validate
             uint256 navps = calcNAVPerShareForMint(_reserve0, _reserve1, _op);
             liquidity = calcLiquidity(amount0, amount1, navps, _op);
@@ -124,7 +124,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         {
             // query price
             OraclePrice memory _op;
-            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum) = queryOracle(_token1, to);
+            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = queryOracle(_token1, to);
             // TODO: validate
             if (outToken == _token0) {
                 amountOut = calcOutToken0ForBurn(liquidity, _op); // navps calculated
@@ -159,7 +159,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         { // scope for ethAmount/erc20Amount/blockNum to avoid stack too deep error
             uint256 _ethBalanceBefore = address(this).balance;
             // query price
-            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum) = queryOracle(_token1, to);
+            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = queryOracle(_token1, to);
             // TODO: validate
             feeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
         }
@@ -213,7 +213,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             uint256 _ethBalanceBefore = address(this).balance;
             // query price
             OraclePrice memory _op;
-            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum) = queryOracle(_token1, to);
+            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = queryOracle(_token1, to);
             // TODO: validate
 
             (uint112 _reserve0, uint112 _reserve1) = getReserves(); // gas savings
@@ -406,7 +406,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         return amountOut.mul(_op.erc20Amount).mul(K_BASE.add(_op.K)).mul(THETA_BASE).div(_op.ethAmount).div(K_BASE).div(THETA_BASE.sub(_op.theta));
     }
 
-    function queryOracle(address token, address to) internal returns (uint256, uint256, uint256, uint256) {
+    function queryOracle(address token, address to) internal returns (uint256, uint256, uint256, uint256, uint256) {
         return ICoFiXController(ICoFiXFactory(factory).getController()).queryOracle{value: msg.value}(token, to);
     }
 

@@ -20,7 +20,8 @@
     "ethlint": "^1.2.5",
     "ganache-cli": "^6.9.1",
     "solhint": "^3.2.0",
-    "truffle-assertions": "^0.9.2"
+    "truffle-assertions": "^0.9.2",
+    "xlsx": "^0.16.6"
   },
   "devDependencies": {
     "@openzeppelin/cli": "^2.8.2",

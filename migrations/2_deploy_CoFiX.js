@@ -2,9 +2,11 @@ const USDT = artifacts.require("test/USDT");
 const HBTC = artifacts.require("test/HBTC");
 const NEST = artifacts.require("test/NEST");
 const WETH9 = artifacts.require("test/WETH9");
-const NEST3PriceOracleMock = artifacts.require("mock/NEST3PriceOracleMock");
+// const NEST3PriceOracleMock = artifacts.require("mock/NEST3PriceOracleMock");
+const NEST3PriceOracleMock = artifacts.require("mock/NEST3PriceOracleAutoUpdateConstMock");
 const CoFiXFactory = artifacts.require("CoFiXFactory");
 const CoFiXRouter = artifacts.require("CoFiXRouter");
+const CoFiXKTable = artifacts.require("CoFiXKTable");
 const CoFiXController = artifacts.require("CoFiXController");
 const { deployProxy } = require('@openzeppelin/truffle-upgrades');
 
@@ -35,8 +37,10 @@ module.exports = async function(deployer) {
     // CoFiXFactory
     await deployer.deploy(CoFiXFactory, WETH9.address);
 
+    await deployer.deploy(CoFiXKTable);
+
     // CoFiXController
-    await deployer.deploy(CoFiXController, NEST3PriceOracleMock.address, NEST.address, CoFiXFactory.address);
+    await deployer.deploy(CoFiXController, NEST3PriceOracleMock.address, NEST.address, CoFiXFactory.address, CoFiXKTable.address);
 
     // set controller in factory
     let factory = await CoFiXFactory.deployed();
@@ -52,5 +56,6 @@ module.exports = async function(deployer) {
     console.log(`| NEST3PriceOracleMock | ${NEST3PriceOracleMock.address} |`);
     console.log(`| CoFiXController | ${CoFiXController.address} |`);
     console.log(`| CoFiXFactory | ${CoFiXFactory.address} |`);
+    console.log(`| CoFiXKTable | ${CoFiXKTable.address} |`);
     console.log(`| CoFiXRouter | ${CoFiXRouter.address} |`);
 };

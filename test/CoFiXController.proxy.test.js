@@ -7,7 +7,7 @@
 // const CoFiXController = artifacts.require("CoFiXController");
 // const CoFiXControllerV2 = artifacts.require('CoFiXControllerV2Test');
 
-// const NEST3PriceOracleMock = artifacts.require("NEST3PriceOracleMock");
+// const NEST3PriceOracleMock = artifacts.require("mock/NEST3PriceOracleMock");
 // const TestUSDT = artifacts.require("test/USDT");
 // const TestNEST = artifacts.require("test/NEST");
 

@@ -39,6 +39,7 @@ contract CoFiXController {
     address public governance;
     address public factory;
     address public kTable;
+    uint256 public kRefreshInterval = 5 minutes;
 
     bool public activated;
 
@@ -115,14 +116,23 @@ contract CoFiXController {
 
     function queryOracle(address token, address /*payback*/) external payable returns (uint256 _k, uint256, uint256, uint256, uint256) {
         require(callerAllowed[msg.sender] == true, "CoFiXCtrl: caller not allowed");
+
+        {
+            uint256 _now = block.timestamp % TIMESTAMP_MODULUS;
+            uint256 _lastUpdate = KInfoMap[token][1];
+            if (_now >= _lastUpdate && _now.sub(_lastUpdate) <= kRefreshInterval) { // lastUpdate (2105) | 2106 | now (1)
+                return getLatestPrice(token);
+            }
+        }
+
         uint256 _balanceBefore = address(this).balance;
-        
         // int128 K0; // K0AndK[0]
         // int128 K; // K0AndK[1]
         int128[2] memory K0AndK;
         // TODO: cache K to reduce gas cost
         // OraclePrice memory _op;
         uint256[7] memory _op;
+
         int128 _variance;
         // (_variance, _op.T, _op.ethAmount, _op.erc20Amount, _op.blockNum) = calcVariance(token);
         (_variance, _op[0], _op[1], _op[2], _op[3]) = calcVariance(token);
@@ -195,6 +205,15 @@ contract CoFiXController {
         k = KInfoMap[token][0];
         updatedAt = KInfoMap[token][1];
         theta = KInfoMap[token][2];
+    }
+
+
+    function getLatestPrice(address token) internal returns (uint256 _k, uint256 _ethAmount, uint256 _erc20Amount, uint256 _blockNum, uint256 _theta) {
+        uint256 _balanceBefore = address(this).balance;
+        uint256[] memory _rawPriceList = INest_3_OfferPrice(oracle).updateAndCheckPriceList{value: msg.value}(token, 1);
+        require(_rawPriceList.length == 3, "CoFiXCtrl: bad price len");
+        TransferHelper.safeTransferETH(msg.sender, msg.value.sub(_balanceBefore.sub(address(this).balance)));
+        return (KInfoMap[token][0], _rawPriceList[0], _rawPriceList[1], _rawPriceList[2], KInfoMap[token][2]);
     }
 
     // TODO: oracle & token could be state varaibles

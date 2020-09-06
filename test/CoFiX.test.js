@@ -131,8 +131,11 @@ contract('CoFiX', (accounts) => {
             expect(priceLen).to.bignumber.equal(new BN("100"));
             result = await CoFiXCtrl.queryOracle(USDT.address, deployer, { from: deployer, value: _msgValue });
             console.log("USDT>receipt.gasUsed:", result.receipt.gasUsed); // 544914
-            evtArgs0 = result.receipt.logs[0].args;
-            printKInfoEvent(evtArgs0);
+            if (result.receipt.logs[0]) {
+                evtArgs0 = result.receipt.logs[0].args;
+                printKInfoEvent(evtArgs0);
+            }
+
             // console.log("USDT>evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString())
             // python result, K=-0.009217843036355746, sigma=0.0004813196086030222
             // contract result, K=-170039189510192419/(2**64)=-0.00921784293373125, sigma=8878779697438274/(2**64)=0.0004813196118491383

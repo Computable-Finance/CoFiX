@@ -149,8 +149,12 @@ contract('CoFiXController', (accounts) => {
       }
       let result = await tmpController.queryOracle(Token.address, deployer, { from: deployer, value: _msgValue });
       console.log("queryOracle> receipt.gasUsed:", result.receipt.gasUsed);
-      let evtArgs0 = result.receipt.logs[0].args;
-      printKInfoEvent(evtArgs0);
+      if (result.receipt.logs[0]) {
+        let evtArgs0 = result.receipt.logs[0].args;
+        printKInfoEvent(evtArgs0);
+      }
+
+      await time.increase(time.duration.minutes(5)); // increase time to make activation be effective
       // await expectRevert(tmpController.queryOracle(Token.address, deployer, { from: deployer, value: _msgValue }), "CoFiXCtrl: K");
       await expectRevert.unspecified(tmpController.queryOracle(Token.address, deployer, { from: deployer, value: _msgValue }));
     });

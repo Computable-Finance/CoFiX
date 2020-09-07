@@ -57,9 +57,9 @@ contract NEST3PriceOracleAutoUpdateConstMock {
         return data;
     }
 
-    function feedPrice(address token, uint256 /*ethAmount*/, uint256 /*erc20Amount*/) external {
-        priceInfoMap[token].ethAmount = block.number;
-        priceInfoMap[token].erc20Amount = block.number;
+    function feedPrice(address token, uint256 ethAmount, uint256 erc20Amount) external {
+        priceInfoMap[token].ethAmount = ethAmount;
+        priceInfoMap[token].erc20Amount = erc20Amount;
         priceInfoMap[token].lastUpdateBlock = block.number;
     }
 

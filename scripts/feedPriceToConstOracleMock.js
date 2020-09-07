@@ -41,7 +41,7 @@ module.exports = async function (callback) {
         await PriceOracle.feedPrice(Token.address, ethAmount, tokenAmount);
 
         // get price now from NEST3PriceOracleMock Contract
-        let p = await PriceOracle.priceInfoMap(Token.address);
+        let p = await PriceOracle.checkPriceNow(Token.address);
         let decimal = await Token.decimals();
 
         // p.erc20Amount.mul(new BN(web3.utils.toWei('1', 'ether'))).div(p.ethAmount).div((new BN('10')).pow(decimal)).toString()

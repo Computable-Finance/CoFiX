@@ -107,7 +107,7 @@ contract('CoFiXController', (accounts) => {
     before(async function () {
       _msgValue = web3.utils.toWei('0.01', 'ether');
       // tmpCFactory = await CoFiXFactory.deployed();
-      WETH = await WETH9.new();
+      let WETH = await WETH9.new();
       tmpCFactory = await CoFiXFactory.new(WETH.address, { from: deployer });
       constOracle = await NEST3PriceOracleConstMock.new(NEST.address, { from: deployer });
       tmpController = await CoFiXController.new(constOracle.address, NEST.address, tmpCFactory.address, KTable.address, { from: deployer });
@@ -212,18 +212,25 @@ contract('CoFiXController', (accounts) => {
     });
   });
 
-  const the_governance = newGovernance;
+  const the_governance = deployer;
   const non_governance = accounts[3];
 
   describe('many setters', function () {
+    let tmpCtrl;
+    before(async function () {
+      let WETH = await WETH9.new();
+      let tmpCFactory = await CoFiXFactory.new(WETH.address, { from: deployer });
+      let constOracle = await NEST3PriceOracleConstMock.new(NEST.address, { from: deployer });
+      tmpCtrl = await CoFiXController.new(constOracle.address, NEST.address, tmpCFactory.address, KTable.address, { from: deployer });
+    });
 
     // setTimespan(uint256 _timeSpan)
     it("should setTimespan correctly", async () => {
       const newTimespan = new BN(10);
-      await CoFiXCtrl.setTimespan(10, { from: the_governance });
-      const timeSpan = await CoFiXCtrl.timespan();
+      await tmpCtrl.setTimespan(10, { from: the_governance });
+      const timeSpan = await tmpCtrl.timespan();
       expect(timeSpan).to.bignumber.equal(newTimespan);
-      expectRevert(CoFiXCtrl.setTimespan(10, { from: non_governance }), "CFactory: !governance");
+      await expectRevert(tmpCtrl.setTimespan(10, { from: non_governance }), "CFactory: !governance");
     });
 
     // setKLimit(int128 minK, int128 maxK, int128 maxK0)
@@ -231,51 +238,51 @@ contract('CoFiXController', (accounts) => {
       const minK = new BN(1);
       const maxK = new BN(10);
       const maxK0 = new BN(5);
-      await CoFiXCtrl.setKLimit(minK, maxK, maxK0, { from: the_governance });
-      const newMinK = await CoFiXCtrl.MIN_K();
-      const newMaxK = await CoFiXCtrl.MAX_K();
-      const newMaxK0 = await CoFiXCtrl.MAX_K0();
+      await tmpCtrl.setKLimit(minK, maxK, maxK0, { from: the_governance });
+      const newMinK = await tmpCtrl.MIN_K();
+      const newMaxK = await tmpCtrl.MAX_K();
+      const newMaxK0 = await tmpCtrl.MAX_K0();
       expect(newMinK).to.bignumber.equal(minK);
       expect(newMaxK).to.bignumber.equal(maxK);
       expect(newMaxK0).to.bignumber.equal(maxK0);
-      expectRevert(CoFiXCtrl.setKLimit(minK, maxK, maxK0, { from: non_governance }), "CFactory: !governance");
+      await expectRevert(tmpCtrl.setKLimit(minK, maxK, maxK0, { from: non_governance }), "CFactory: !governance");
     });
 
     // setOracle(address _priceOracle)
     it("should setOracle correctly", async () => {
       const newOracle = constants.ZERO_ADDRESS;
-      await CoFiXCtrl.setOracle(newOracle, { from: the_governance });
-      const oracle = await CoFiXCtrl.oracle();
+      await tmpCtrl.setOracle(newOracle, { from: the_governance });
+      const oracle = await tmpCtrl.oracle();
       expect(oracle).to.bignumber.equal(newOracle);
-      expectRevert(CoFiXCtrl.setOracle(newOracle, { from: non_governance }), "CFactory: !governance");
+      await expectRevert(tmpCtrl.setOracle(newOracle, { from: non_governance }), "CFactory: !governance");
     });
 
     // setKTable(address _kTable)
     it("should setKTable correctly", async () => {
       const kTable = constants.ZERO_ADDRESS;
-      await CoFiXCtrl.setKTable(kTable, { from: the_governance });
-      const newkTable = await CoFiXCtrl.kTable();
+      await tmpCtrl.setKTable(kTable, { from: the_governance });
+      const newkTable = await tmpCtrl.kTable();
       expect(newkTable).to.bignumber.equal(kTable);
-      expectRevert(CoFiXCtrl.setKTable(kTable, { from: non_governance }), "CFactory: !governance");
+      await expectRevert(tmpCtrl.setKTable(kTable, { from: non_governance }), "CFactory: !governance");
     });
 
     // setTheta(address token, uint32 theta)
     it("should setTheta correctly", async () => {
       const token = constants.ZERO_ADDRESS;
       const theta = new BN(100);
-      await CoFiXCtrl.setTheta(token, theta, { from: the_governance });
-      const kInfo = await CoFiXCtrl.getKInfo(token);
+      await tmpCtrl.setTheta(token, theta, { from: the_governance });
+      const kInfo = await tmpCtrl.getKInfo(token);
       expect(kInfo.theta).to.bignumber.equal(theta);
-      expectRevert(CoFiXCtrl.setTheta(token, theta, { from: non_governance }), "CFactory: !governance");
+      await expectRevert(tmpCtrl.setTheta(token, theta, { from: non_governance }), "CFactory: !governance");
     });
 
     // setKRefreshInterval(uint256 _interval)
     it("should setKRefreshInterval correctly", async () => {
       const interval = new BN(100);
-      await CoFiXCtrl.setKRefreshInterval(interval, { from: the_governance });
-      const newInterval = await CoFiXCtrl.kRefreshInterval();
+      await tmpCtrl.setKRefreshInterval(interval, { from: the_governance });
+      const newInterval = await tmpCtrl.kRefreshInterval();
       expect(newInterval).to.bignumber.equal(interval);
-      expectRevert(CoFiXCtrl.setKRefreshInterval(interval, { from: non_governance }), "CFactory: !governance");
+      await expectRevert(tmpCtrl.setKRefreshInterval(interval, { from: non_governance }), "CFactory: !governance");
     });
 
   });

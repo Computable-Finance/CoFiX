@@ -74,7 +74,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         token1 = _token1;
     }
 
-    // update reserves and, on the first call per block, price accumulators
+    // update reserves
     function _update(uint balance0, uint balance1) private {
         require(balance0 <= uint112(-1) && balance1 <= uint112(-1), 'CPair: OVERFLOW');
         reserve0 = uint112(balance0);
@@ -107,9 +107,9 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         _mint(to, liquidity);
 
         _update(balance0, balance1);
-        emit Mint(msg.sender, amount0, amount1);
-
         TransferHelper.safeTransferETH(msg.sender, feeChange);
+
+        emit Mint(msg.sender, amount0, amount1);
     }
 
     // this low-level function should be called from a contract which performs important safety checks
@@ -143,6 +143,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
 
         _update(balance0, balance1);
         TransferHelper.safeTransferETH(msg.sender, feeChange);
+
         emit Burn(msg.sender, outToken, amountOut, to);
     }
 
@@ -241,6 +242,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
 
         _update(balance0, balance1);
         TransferHelper.safeTransferETH(msg.sender, feeChange);
+
         emit Swap(msg.sender, amountIn, amountOut, outToken, to);
     }
 

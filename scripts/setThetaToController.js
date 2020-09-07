@@ -37,7 +37,3 @@ module.exports = async function (callback) {
         callback(e);
     }
 }
-
-function getRandomArbitrary(min, max) {
-    return Math.random() * (max - min) + min;
-  }

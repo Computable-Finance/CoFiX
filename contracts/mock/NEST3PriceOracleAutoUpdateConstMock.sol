@@ -63,6 +63,15 @@ contract NEST3PriceOracleAutoUpdateConstMock {
         priceInfoMap[token].lastUpdateBlock = block.number;
     }
 
+    function checkPriceNow(address token)
+        public view
+        returns (uint256 ethAmount, uint256 erc20Amount, uint256 blockNum)
+    {
+        ethAmount = priceInfoMap[token].ethAmount;
+        erc20Amount = priceInfoMap[token].erc20Amount;
+        blockNum = block.number - 5;
+    }
+
     function make_payable(address x) internal pure returns (address payable) {
       return address(uint160(x));
     }

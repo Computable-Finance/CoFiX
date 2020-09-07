@@ -1,4 +1,4 @@
-const NEST3PriceOracleMock = artifacts.require("NEST3PriceOracleConstMock");
+const NEST3PriceOracleMock = artifacts.require("NEST3PriceOracleAutoUpdateConstMock");
 const ERC20 = artifacts.require("ERC20");
 const { BN } = require('@openzeppelin/test-helpers');
 const { web3 } = require('@openzeppelin/test-environment');
@@ -57,7 +57,3 @@ module.exports = async function (callback) {
         callback(e);
     }
 }
-
-function getRandomArbitrary(min, max) {
-    return Math.random() * (max - min) + min;
-  }

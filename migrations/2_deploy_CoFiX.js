@@ -52,6 +52,7 @@ module.exports = async function(deployer) {
     console.log(`Contract Deployed Summary\n=========================`);
     console.log(`| USDT | ${USDT.address} |`);
     console.log(`| HBTC | ${HBTC.address} |`);
+    console.log(`| NEST | ${NEST.address} |`);
     console.log(`| WETH9 | ${WETH9.address} |`);
     console.log(`| NEST3PriceOracleMock | ${NEST3PriceOracleMock.address} |`);
     console.log(`| CoFiXController | ${CoFiXController.address} |`);

@@ -81,16 +81,27 @@ contract CoFiXController {
     }
 
     // TODO: Not sure to keep these setters
-    // function setTimespan(uint256 _timeSpan) external {
-    //     require(msg.sender == governance, "CFactory: !governance");
-    //     timespan_ = _timeSpan;
-    // }
+    function setTimespan(uint256 _timeSpan) external {
+        require(msg.sender == governance, "CFactory: !governance");
+        timespan_ = _timeSpan;
+    }
 
-    // function setKLimit(int128 min, int128 max) external {
-    //     require(msg.sender == governance, "CFactory: !governance");
-    //     MIN_K = min;
-    //     MAX_K = max;
-    // }
+    function setKLimit(int128 minK, int128 maxK, int128 maxK0) external {
+        require(msg.sender == governance, "CFactory: !governance");
+        MIN_K = minK;
+        MAX_K = maxK;
+        MAX_K0 = maxK0;
+    }
+
+    function setOracle(address _priceOracle) external {
+        require(msg.sender == governance, "CFactory: !governance");
+        oracle = _priceOracle;
+    }
+
+    function setKTable(address _kTable) external {
+        require(msg.sender == governance, "CFactory: !governance");
+        kTable = _kTable;
+    }
 
     function setTheta(address token, uint32 theta) external {
         require(msg.sender == governance, "CFactory: !governance");

@@ -26,10 +26,7 @@ contract CoFiXRouter is ICoFiXRouter {
         WETH = _WETH;
     }
 
-    receive() external payable {
-        // assert(msg.sender == WETH); // only accept ETH via fallback from the WETH contract
-        // TODO: strict limit
-    }
+    receive() external payable {}
 
     // calculates the CREATE2 address for a pair without making any external calls
     function pairFor(address _factory, address token) internal view returns (address pair) {

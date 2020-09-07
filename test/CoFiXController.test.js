@@ -21,6 +21,8 @@ contract('CoFiXController', (accounts) => {
 
   const deployer = accounts[0];
   const callerNotAllowed = accounts[1];
+  const oldGovernance = deployer;
+  const newGovernance = accounts[2];
 
   let CoFiXCtrl;
   let Oracle;
@@ -32,6 +34,7 @@ contract('CoFiXController', (accounts) => {
   const theta = 0.002;
   const max_k = 0.1;
   const min_k = 0.005;
+  const max_k0 = 0.05;
   const block_time = 14;
 
   const DESTRUCTION_AMOUNT = web3.utils.toWei('10000', 'ether');
@@ -54,22 +57,24 @@ contract('CoFiXController', (accounts) => {
   // });
 
   it("should have correct K coefficients", async () => {
-    let ALPHA = await CoFiXCtrl.ALPHA({ from: deployer });
-    let BETA_ONE = await CoFiXCtrl.BETA_ONE({ from: deployer });
-    let BETA_TWO = await CoFiXCtrl.BETA_TWO({ from: deployer });
-    let THETA = await CoFiXCtrl.THETA({ from: deployer });
+    // let ALPHA = await CoFiXCtrl.ALPHA({ from: deployer });
+    // let BETA_ONE = await CoFiXCtrl.BETA_ONE({ from: deployer });
+    // let BETA_TWO = await CoFiXCtrl.BETA_TWO({ from: deployer });
+    // let THETA = await CoFiXCtrl.THETA({ from: deployer });
     let MAX_K = await CoFiXCtrl.MAX_K({ from: deployer });
     let MIN_K = await CoFiXCtrl.MIN_K({ from: deployer });
+    let MAX_K0 = await CoFiXCtrl.MAX_K0({ from: deployer });
     // console.log(`alpha:${ALPHA.toString()}}, beta_one:${BETA_ONE.toString()}, beta_two:${BETA_TWO.toString()}, theta:${THETA.toString()}`);
-    expect(ALPHA).to.bignumber.equal((convert_into_fixed_point(alpha)));
-    expect(BETA_ONE).to.bignumber.equal((convert_into_fixed_point(beta_one)));
-    expect(BETA_TWO).to.bignumber.equal((convert_into_fixed_point(beta_two)));
-    expect(THETA).to.bignumber.equal((convert_into_fixed_point(theta)));
+    // expect(ALPHA).to.bignumber.equal((convert_into_fixed_point(alpha)));
+    // expect(BETA_ONE).to.bignumber.equal((convert_into_fixed_point(beta_one)));
+    // expect(BETA_TWO).to.bignumber.equal((convert_into_fixed_point(beta_two)));
+    // expect(THETA).to.bignumber.equal((convert_into_fixed_point(theta)));
     expect(MAX_K).to.bignumber.equal((convert_into_fixed_point(max_k)));
     expect(MIN_K).to.bignumber.equal((convert_into_fixed_point(min_k)));
+    expect(MAX_K0).to.bignumber.equal((convert_into_fixed_point(max_k0)));
   });
 
-  describe('activate', function() {
+  describe('activate', function () {
     let _msgValue = web3.utils.toWei('0.01', 'ether');
 
     it("should revert if not activated", async () => {
@@ -84,9 +89,10 @@ contract('CoFiXController', (accounts) => {
       await time.increase(time.duration.minutes(1)); // increase time to make activation be effective
     });
 
-    it("should not activate again", async () => {
+    it("should activate again correctly by governance", async () => {
       await NEST.approve(CoFiXCtrl.address, DESTRUCTION_AMOUNT);
-      await expectRevert(CoFiXCtrl.activate(), 'CoFiXCtrl: activated');
+      await CoFiXCtrl.activate();
+      await time.increase(time.duration.minutes(1)); // increase time to make activation be effective
     });
   });
 
@@ -101,6 +107,7 @@ contract('CoFiXController', (accounts) => {
     before(async function () {
       _msgValue = web3.utils.toWei('0.01', 'ether');
       // tmpCFactory = await CoFiXFactory.deployed();
+      WETH = await WETH9.new();
       tmpCFactory = await CoFiXFactory.new(WETH.address, { from: deployer });
       constOracle = await NEST3PriceOracleConstMock.new(NEST.address, { from: deployer });
       tmpController = await CoFiXController.new(constOracle.address, NEST.address, tmpCFactory.address, KTable.address, { from: deployer });
@@ -112,7 +119,7 @@ contract('CoFiXController', (accounts) => {
         await time.advanceBlock();
       }
       await constOracle.feedPrice(Token.address, ethAmount, tokenAmount, { from: deployer });
-      
+
       // add caller
       await tmpController.addCaller(deployer, { from: deployer });
 
@@ -142,9 +149,9 @@ contract('CoFiXController', (accounts) => {
       // k = alpha + beta_one * sigma^2 + beta_two*T
       // (max_k - (alpha))/beta_two
       // let max_interval_block = (max_k - (alpha))/beta_two/block_time;
-      let max_interval_block = 900/block_time;
+      let max_interval_block = 900 / block_time;
       console.log(`max_interval_block=${max_interval_block}`)
-      for (let i = 0; i < max_interval_block-3; i++) {
+      for (let i = 0; i < max_interval_block - 3; i++) {
         await time.advanceBlock();
       }
       let result = await tmpController.queryOracle(Token.address, deployer, { from: deployer, value: _msgValue });
@@ -165,8 +172,6 @@ contract('CoFiXController', (accounts) => {
     });
   });
 
-  const oldGovernance = deployer;
-  const newGovernance = accounts[2];
 
   describe('setGovernance', function () {
     it("should setGovernance correctly", async () => {
@@ -195,7 +200,7 @@ contract('CoFiXController', (accounts) => {
   });
 
   // move to the end to avoid unknown errors in coverage test
-  describe('queryOracle', function() {
+  describe('queryOracle', function () {
     let _msgValue = web3.utils.toWei('0.01', 'ether');
 
     it("should revert if not price available", async () => {
@@ -207,4 +212,71 @@ contract('CoFiXController', (accounts) => {
     });
   });
 
+  const the_governance = newGovernance;
+  const non_governance = accounts[3];
+
+  describe('many setters', function () {
+
+    // setTimespan(uint256 _timeSpan)
+    it("should setTimespan correctly", async () => {
+      const newTimespan = new BN(10);
+      await CoFiXCtrl.setTimespan(10, { from: the_governance });
+      const timeSpan = await CoFiXCtrl.timespan();
+      expect(timeSpan).to.bignumber.equal(newTimespan);
+      expectRevert(CoFiXCtrl.setTimespan(10, { from: non_governance }), "CFactory: !governance");
+    });
+
+    // setKLimit(int128 minK, int128 maxK, int128 maxK0)
+    it("should setKLimit correctly", async () => {
+      const minK = new BN(1);
+      const maxK = new BN(10);
+      const maxK0 = new BN(5);
+      await CoFiXCtrl.setKLimit(minK, maxK, maxK0, { from: the_governance });
+      const newMinK = await CoFiXCtrl.MIN_K();
+      const newMaxK = await CoFiXCtrl.MAX_K();
+      const newMaxK0 = await CoFiXCtrl.MAX_K0();
+      expect(newMinK).to.bignumber.equal(minK);
+      expect(newMaxK).to.bignumber.equal(maxK);
+      expect(newMaxK0).to.bignumber.equal(maxK0);
+      expectRevert(CoFiXCtrl.setKLimit(minK, maxK, maxK0, { from: non_governance }), "CFactory: !governance");
+    });
+
+    // setOracle(address _priceOracle)
+    it("should setOracle correctly", async () => {
+      const newOracle = constants.ZERO_ADDRESS;
+      await CoFiXCtrl.setOracle(newOracle, { from: the_governance });
+      const oracle = await CoFiXCtrl.oracle();
+      expect(oracle).to.bignumber.equal(newOracle);
+      expectRevert(CoFiXCtrl.setOracle(newOracle, { from: non_governance }), "CFactory: !governance");
+    });
+
+    // setKTable(address _kTable)
+    it("should setKTable correctly", async () => {
+      const kTable = constants.ZERO_ADDRESS;
+      await CoFiXCtrl.setKTable(kTable, { from: the_governance });
+      const newkTable = await CoFiXCtrl.kTable();
+      expect(newkTable).to.bignumber.equal(kTable);
+      expectRevert(CoFiXCtrl.setKTable(kTable, { from: non_governance }), "CFactory: !governance");
+    });
+
+    // setTheta(address token, uint32 theta)
+    it("should setTheta correctly", async () => {
+      const token = constants.ZERO_ADDRESS;
+      const theta = new BN(100);
+      await CoFiXCtrl.setTheta(token, theta, { from: the_governance });
+      const kInfo = await CoFiXCtrl.getKInfo(token);
+      expect(kInfo.theta).to.bignumber.equal(theta);
+      expectRevert(CoFiXCtrl.setTheta(token, theta, { from: non_governance }), "CFactory: !governance");
+    });
+
+    // setKRefreshInterval(uint256 _interval)
+    it("should setKRefreshInterval correctly", async () => {
+      const interval = new BN(100);
+      await CoFiXCtrl.setKRefreshInterval(interval, { from: the_governance });
+      const newInterval = await CoFiXCtrl.kRefreshInterval();
+      expect(newInterval).to.bignumber.equal(interval);
+      expectRevert(CoFiXCtrl.setKRefreshInterval(interval, { from: non_governance }), "CFactory: !governance");
+    });
+
+  });
 });

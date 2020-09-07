@@ -88,9 +88,10 @@ contract('CoFiX', (accounts) => {
             await time.increase(time.duration.minutes(1)); // increase time to make activation be effective
         });
 
-        it("should not activate again", async () => {
+        it("should activate again correctly by governance", async () => {
             await NEST.approve(CoFiXCtrl.address, DESTRUCTION_AMOUNT);
-            await expectRevert(CoFiXCtrl.activate(), 'CoFiXCtrl: activated');
+            await CoFiXCtrl.activate();
+            await time.increase(time.duration.minutes(1)); // increase time to make activation be effective
         });
 
         it("K calculation", async () => {
@@ -447,12 +448,12 @@ contract('CoFiX', (accounts) => {
             let navpsForMint = await USDTPair.getNAVPerShareForMint(oraclePrice);
             let navps_value_for_mint = navpsForMint.toNumber() / navps_base.toNumber();
             console.log("net asset value per share for mint:", navps_value_for_mint);
-            expect(navps_value_for_mint).to.equal(1.0236);
+            expect(navps_value_for_mint).to.equal(1);
 
             let navpsForBurn = await USDTPair.getNAVPerShareForBurn(oraclePrice);
             let navps_value_for_burn = navpsForBurn.toNumber() / navps_base.toNumber();
             console.log("net asset value per share for burn:", navps_value_for_burn);
-            expect(navps_value_for_burn).to.equal(1.0158);
+            expect(navps_value_for_burn).to.equal(1);
 
             // get total liquidity (totalSupply of pair/pool token)
             let totalLiquidity = await USDTPair.totalSupply();

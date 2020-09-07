@@ -25,24 +25,16 @@ contract CoFiXFactory is ICoFiXFactory {
         WETH = _WETH;
     }
 
-    receive() external payable {
-        // TODO: strict check here
-    }
+    receive() external payable {}
 
     function allPairsLength() external override view returns (uint256) {
         return allPairs.length;
     }
 
-    // For Debug
-    event ByteCode(bytes _bytes);
-    event ByteCodeHash(bytes32 _hash);
-
     function createPair(address token) external override returns (address pair) {
         require(token != address(0), 'CFactory: ZERO_ADDRESS');
         require(getPair[token] == address(0), 'CFactory: PAIR_EXISTS');
         bytes memory bytecode = type(CoFiXPair).creationCode;
-        // emit ByteCode(bytecode);
-        emit ByteCodeHash(keccak256(bytecode));
         bytes32 salt = keccak256(abi.encodePacked(token));
         assembly {
             pair := create2(0, add(bytecode, 32), mload(bytecode), salt)

@@ -5,7 +5,7 @@ import "./lib/SafeMath.sol";
 import "./lib/ABDKMath64x64.sol";
 import "./interface/INest_3_OfferPrice.sol";
 import "./interface/ICoFiXKTable.sol";
-import './lib/TransferHelpers.sol';
+import "./lib/TransferHelpers.sol";
 
 // Controller contract to call NEST Oracle for prices, no special ownership
 contract CoFiXController {
@@ -14,10 +14,10 @@ contract CoFiXController {
     
     event newK(address token, int128 K, int128 sigma, uint256 T, uint256 ethAmount, uint256 erc20Amount, uint256 blockNum, uint256 tIdx, uint256 sigmaIdx, int128 K0);
 
-    int128 constant public ALPHA = 0x1342825B8F72CF0; // (0.0047021*2**64).toString(16), 0.0047021 as 64.64-bit fixed point
-    int128 constant public BETA_ONE = 0x35D7F9C779A6B6000000; // (13783.9757*2**64).toString(16), 13783.9757 as 64-bit fixed point
-    int128 constant public BETA_TWO = 0x19A5EE66A57B7; // (2.446*10**(-5)*2**64).toString(16), 2.446*10**(-5) as 64.64-bit fixed point
-    int128 constant public THETA = 0x83126E978D4FE0; // (0.002*2**64).toString(16), 0.002 as 64.64-bit fixed point
+    // int128 constant public ALPHA = 0x1342825B8F72CF0; // (0.0047021*2**64).toString(16), 0.0047021 as 64.64-bit fixed point
+    // int128 constant public BETA_ONE = 0x35D7F9C779A6B6000000; // (13783.9757*2**64).toString(16), 13783.9757 as 64-bit fixed point
+    // int128 constant public BETA_TWO = 0x19A5EE66A57B7; // (2.446*10**(-5)*2**64).toString(16), 2.446*10**(-5) as 64.64-bit fixed point
+    // int128 constant public THETA = 0x83126E978D4FE0; // (0.002*2**64).toString(16), 0.002 as 64.64-bit fixed point
 
     int128 constant public SIGMA_STEP = 0x68DB8BAC710CB; // (0.0001*2**64).toString(16), 0.0001 as 64.64-bit fixed point
     int128 constant public ZERO_POINT_FIVE = 0x8000000000000000; // (0.5*2**64).toString(16), 0.5 as 64.64-bit fixed point
@@ -29,40 +29,24 @@ contract CoFiXController {
     uint256 constant internal TIMESTAMP_MODULUS = 2**32;
     uint256 constant DESTRUCTION_AMOUNT = 10000 ether; // from nest oracle
 
-    // TODO: setter for these variables
-    uint256 public timespan_;
+    address public factory;
+
+    mapping(address => uint32[3]) internal KInfoMap; // gas saving, index [0] is k vlaue, index [1] is updatedAt, index [2] is theta
+    mapping(address => bool) public callerAllowed;
+
+    // managed by governance
+    uint256 public timespan;
     int128 public MIN_K;
     int128 public MAX_K;
     int128 public MAX_K0;
     address public oracle;
     address public nestToken;
     address public governance;
-    address public factory;
     address public kTable;
     uint256 public kRefreshInterval = 5 minutes;
 
-    bool public activated;
-
-    mapping(address => uint32[3]) internal KInfoMap; // gas saving, index [0] is k vlaue, index [1] is updatedAt, index [2] is theta
-    mapping(address => bool) public callerAllowed;
-
-    // use uint32[2] instead
-    // struct KInfo {
-    //     uint256 k;
-    //     uint256 updatedAt;
-    //     uint256 theta;
-    // }
-
-    // use uint256[4] instead
-    // struct OraclePrice {
-    //     uint256 ethAmount;
-    //     uint256 erc20Amount;
-    //     uint256 blockNum;
-    //     uint256 T;
-    // }
-
     constructor(address _priceOracle, address _nest, address _factory, address _kTable) public {
-        timespan_ = 14;
+        timespan = 14;
         MIN_K = 0x147AE147AE147B0; // (0.005*2**64).toString(16), 0.5% as 64.64-bit fixed point
         MAX_K = 0x1999999999999A00; // (0.1*2**64).toString(16),  10% as 64.64-bit fixed point
         MAX_K0 = 0xCCCCCCCCCCCCD00; // (0.05*2**64).toString(16),  5% as 64.64-bit fixed point
@@ -80,10 +64,9 @@ contract CoFiXController {
         governance = _new;
     }
 
-    // TODO: Not sure to keep these setters
     function setTimespan(uint256 _timeSpan) external {
         require(msg.sender == governance, "CFactory: !governance");
-        timespan_ = _timeSpan;
+        timespan = _timeSpan;
     }
 
     function setKLimit(int128 minK, int128 maxK, int128 maxK0) external {
@@ -108,16 +91,20 @@ contract CoFiXController {
         KInfoMap[token][2] = theta;
     }
 
+    function setKRefreshInterval(uint256 _interval) external {
+        require(msg.sender == governance, "CFactory: !governance");
+        kRefreshInterval = _interval;
+    }
+
     // Activate on NEST Oracle
     function activate() external {
-        require(activated == false, "CoFiXCtrl: activated");
+        require(msg.sender == governance, "CFactory: !governance");
         // address token, address from, address to, uint value
         TransferHelper.safeTransferFrom(nestToken, msg.sender, address(this), DESTRUCTION_AMOUNT);
         // address token, address to, uint value
         TransferHelper.safeApprove(nestToken, oracle, DESTRUCTION_AMOUNT);
         INest_3_OfferPrice(oracle).activation(); // nest.transferFrom will be called
         TransferHelper.safeApprove(nestToken, oracle, 0); // ensure safety
-        activated = true;
     }
 
     function addCaller(address caller) external {
@@ -150,8 +137,8 @@ contract CoFiXController {
 
         {
             // int128 _volatility = ABDKMath64x64.sqrt(_variance);
-            // int128 _sigma = ABDKMath64x64.div(_volatility, ABDKMath64x64.sqrt(ABDKMath64x64.fromUInt(timespan_)));
-            int128 _sigma = ABDKMath64x64.sqrt(ABDKMath64x64.div(_variance, ABDKMath64x64.fromUInt(timespan_))); // combined into one sqrt
+            // int128 _sigma = ABDKMath64x64.div(_volatility, ABDKMath64x64.sqrt(ABDKMath64x64.fromUInt(timespan)));
+            int128 _sigma = ABDKMath64x64.sqrt(ABDKMath64x64.div(_variance, ABDKMath64x64.fromUInt(timespan))); // combined into one sqrt
             // // 𝐾 = α + β_1 * sigma^2  + β_2 * T
             // K = ABDKMath64x64.add(
             //                 ALPHA, 
@@ -174,9 +161,6 @@ contract CoFiXController {
                 _op[5] = _op[5].sub(1);
             }
 
-            require(_op[4] <= 90, "CoFiXCtrl: tIdx must <= 91");
-            require(_op[5] <= 30, "CoFiXCtrl: sigmaIdx must <= 30");
-
             // getK0(uint256 tIdx, uint256 sigmaIdx)
             // K0 is K0AndK[0]
             K0AndK[0] = ICoFiXKTable(kTable).getK0(
@@ -191,12 +175,6 @@ contract CoFiXController {
         }
 
         require(K0AndK[0] <= MAX_K0, "CoFiXCtrl: K0");
-
-        if (K0AndK[1] < MIN_K) {
-            K0AndK[1] = MIN_K;
-        } else if (K0AndK[1] > MAX_K) {
-            revert("CoFiXCtrl: K");
-        }
 
         {
             // TODO: payback param ununsed now
@@ -278,7 +256,7 @@ contract CoFiXController {
         // }
         // _variance = ABDKMath64x64.div(_variance, ABDKMath64x64.fromUInt(49));
         
-        _T = block.number.sub(_rawPriceList[2]).mul(timespan_);
+        _T = block.number.sub(_rawPriceList[2]).mul(timespan);
         return (_variance, _T, _rawPriceList[0], _rawPriceList[1], _rawPriceList[2]);
     }
 

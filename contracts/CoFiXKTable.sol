@@ -31,6 +31,8 @@ contract CoFiXKTable is ICoFiXKTable {
     }
 
     function getK0(uint256 tIdx, uint256 sigmaIdx) external view override returns (int128) {
+        require(tIdx < 91, "CoFiXCtrl: tIdx must < 91");
+        require(sigmaIdx < 30, "CoFiXCtrl: sigmaIdx must < 30");
         return k0Table[tIdx][sigmaIdx];
     }
 }

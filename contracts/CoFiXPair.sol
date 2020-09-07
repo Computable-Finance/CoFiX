@@ -64,8 +64,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         factory = msg.sender;
     }
 
-    receive() external payable {
-    }
+    receive() external payable {}
 
     // called once by the factory at time of deployment
     function initialize(address _token0, address _token1) external override {

@@ -7,7 +7,6 @@ import '../interface/IERC20.sol';
 contract NEST3PriceOracleMock {
     
     // 10 Ether <=> 3,255 USDT
-    // TODO: should use mapping for these variables
     // uint256 public ethAmount_ = 10000000000000000000;
     // uint256 public erc20Amount_ = 3255000000;
     mapping(address => PriceInfo[]) public priceInfoList_;

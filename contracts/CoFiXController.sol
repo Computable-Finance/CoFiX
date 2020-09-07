@@ -127,7 +127,6 @@ contract CoFiXController {
         // int128 K0; // K0AndK[0]
         // int128 K; // K0AndK[1]
         int128[2] memory K0AndK;
-        // TODO: cache K to reduce gas cost
         // OraclePrice memory _op;
         uint256[7] memory _op;
 
@@ -205,8 +204,7 @@ contract CoFiXController {
         return (KInfoMap[token][0], _rawPriceList[0], _rawPriceList[1], _rawPriceList[2], KInfoMap[token][2]);
     }
 
-    // TODO: oracle & token could be state varaibles
-     // calc Variance, a.k.a. sigma squared
+    // calc Variance, a.k.a. sigma squared
     function calcVariance(address token) internal returns (int128 _variance, uint256 _T, uint256 _ethAmount, uint256 _erc20Amount, uint256 _blockNum) {
 
         // query raw price list from nest oracle (newest to oldest)

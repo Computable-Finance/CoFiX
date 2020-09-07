@@ -443,11 +443,16 @@ contract('CoFiX', (accounts) => {
 
             // get Net Asset Value Per Share for USDTPair contract
             let oraclePrice = [p.ethAmount, p.erc20Amount, new BN("0"), kInfo.k, new BN("0")];
+
             let navpsForMint = await USDTPair.getNAVPerShareForMint(oraclePrice);
-            console.log("net asset value per share for mint:", navpsForMint.toNumber() / navps_base.toNumber());
+            let navps_value_for_mint = navpsForMint.toNumber() / navps_base.toNumber();
+            console.log("net asset value per share for mint:", navps_value_for_mint);
+            expect(navps_value_for_mint).to.equal(1.0236);
 
             let navpsForBurn = await USDTPair.getNAVPerShareForBurn(oraclePrice);
-            console.log("net asset value per share for mint:", navpsForBurn.toNumber() / navps_base.toNumber());
+            let navps_value_for_burn = navpsForBurn.toNumber() / navps_base.toNumber();
+            console.log("net asset value per share for burn:", navps_value_for_burn);
+            expect(navps_value_for_burn).to.equal(1.0158);
 
             // get total liquidity (totalSupply of pair/pool token)
             let totalLiquidity = await USDTPair.totalSupply();

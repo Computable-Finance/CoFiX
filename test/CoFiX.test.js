@@ -22,6 +22,11 @@ const TestUSDT = artifacts.require("test/USDT");
 const TestHBTC = artifacts.require("test/HBTC");
 const TestNEST = artifacts.require("test/NEST");
 const { printKInfoEvent } = require('../lib/print');
+const Decimal = require('decimal.js');
+const { calcK, convert_from_fixed_point, convert_into_fixed_point, calcRelativeDiff } = require('../lib/calc');
+
+const errorDelta = 10 ** -14;
+
 
 contract('CoFiX', (accounts) => {
 // describe('CoFiX', function () {
@@ -326,7 +331,7 @@ contract('CoFiX', (accounts) => {
             // setTheta
             const theta = new BN(10);
             await CoFiXCtrl.setTheta(USDT.address, theta, { from: deployer });
-            const kInfo = await CoFiXCtrl.getKInfo(USDT.address);
+            let kInfo = await CoFiXCtrl.getKInfo(USDT.address);
             expect(kInfo.theta).to.bignumber.equal(theta);
             // swapExactTokensForTokens
             // - address tokenIn,
@@ -338,6 +343,9 @@ contract('CoFiX', (accounts) => {
             // USDT -> HBTC
             _amountIn = "100000000";
             _msgValue = web3.utils.toWei('0.1', 'ether');
+            // get price now from NEST3PriceOracleMock Contract
+            let p = await PriceOracle.checkPriceNow(USDT.address);
+            console.log("price now> ethAmount:", p.ethAmount.toString(), ", erc20Amount:", p.erc20Amount.toString(), p.erc20Amount.mul(new BN(web3.utils.toWei('1', 'ether'))).div(p.ethAmount).div(new BN('1000000')).toString(), "USDT/ETH");
             result = await CRouter.swapExactTokensForTokens(USDT.address, HBTC.address, _amountIn, 0, trader, "99999999999", { from: trader, value: _msgValue });
             console.log("------------swapExactTokensForTokens------------");
             usdtInUSDTPool = await USDT.balanceOf(usdtPairAddr);
@@ -364,6 +372,17 @@ contract('CoFiX', (accounts) => {
             let feeReceiver = await CFactory.getFeeReceiver();
             let wethInFeeReceiver = await WETH.balanceOf(feeReceiver);
             console.log("WETH balance in feeReceiver:", wethInFeeReceiver.toString(), ", feeReceiver:", feeReceiver);
+            kInfo = await CoFiXCtrl.getKInfo(USDT.address);
+            let k_base = await CoFiXCtrl.K_BASE(); 
+            console.log("kInfo> k:", kInfo.k.toString(), "(", kInfo.k.toString() / k_base.toString(), ")", ", updatedAt:", kInfo.updatedAt.toString());
+            // get the latest k info from CoFiXController contract, including k value & last updated time
+            // fee = amountIn.mul(_op.ethAmount).mul(K_BASE).mul(_op.theta).div(_op.erc20Amount).div(K_BASE.add(_op.K)).div(THETA_BASE);
+            const THETA_BASE = "10000";
+            const expectedFee = Decimal(_amountIn).mul(Decimal(p.ethAmount.toString())).mul(Decimal(k_base.toString())).mul(Decimal(theta.toString())).div(Decimal(p.erc20Amount.toString())).div(Decimal(k_base.toString()).add(Decimal(kInfo.k.toString()))).div(Decimal(THETA_BASE));
+            console.log(`expectedFee: ${expectedFee.toString()}, calculatedFee: ${wethInFeeReceiver.toString()}`);
+            let error = calcRelativeDiff(expectedFee, wethInFeeReceiver.toString());
+            console.log(`expected: ${expectedFee}, actual:${wethInFeeReceiver}, error:${error}`);
+            assert.isAtMost(error.toNumber(), errorDelta);
 
             // removeLiquidityGetETH
             // - address token,

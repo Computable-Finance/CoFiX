@@ -138,7 +138,8 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
 
         _burn(address(this), liquidity);
         _safeTransfer(outToken, to, amountOut);
-        if (fee > 0) _safeTransfer(_token0, ICoFiXFactory(factory).getController(), fee);
+        if (fee > 0) _safeTransfer(_token0, ICoFiXFactory(factory).getFeeReceiver(), fee);
+
         balance0 = IERC20(_token0).balanceOf(address(this));
         balance1 = IERC20(_token1).balanceOf(address(this));
 
@@ -238,7 +239,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         require(to != _token0 && to != _token1, 'CPair: INVALID_TO');
 
         _safeTransfer(outToken, to, amountOut); // optimistically transfer tokens
-        if (fee > 0) _safeTransfer(_token0, ICoFiXFactory(factory).getController(), fee);
+        if (fee > 0) _safeTransfer(_token0, ICoFiXFactory(factory).getFeeReceiver(), fee);
 
         balance0 = IERC20(_token0).balanceOf(address(this));
         balance1 = IERC20(_token1).balanceOf(address(this));

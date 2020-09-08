@@ -499,7 +499,7 @@ contract('CoFiX', (accounts) => {
 
             // estimate amountIn for swapETHForExactTokens() function in router
             // get estimate amountInNeeded for token0 (WETH) when swapForExact
-            result = await USDTPair.calcInNeededToken0(amountOutToken, oraclePrice);
+            result = await USDTPair.calcInNeededToken0(result.amountOut, oraclePrice);
             console.log("estimate swapETHForExactTokens> amountInETHNeeded:", result.amountInNeeded.toString(), web3.utils.fromWei(result.amountInNeeded, 'ether'), "ETH");
 
 

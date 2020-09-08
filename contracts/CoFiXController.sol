@@ -19,7 +19,7 @@ contract CoFiXController {
     uint256 constant public THETA_BASE = 10000;
     uint256 constant internal TIMESTAMP_MODULUS = 2**32;
     int128 constant internal SIGMA_STEP = 0x68DB8BAC710CB; // (0.0001*2**64).toString(16), 0.0001 as 64.64-bit fixed point
-    int128 constant internal ZERO_POINT_FIVE = 0x8000000000000000; // (0.5*2**64).toString(16), 0.5 as 64.64-bit fixed point
+    int128 constant internal ZERO_POINT_FIVE = 0x8000000000000000; // (0.5*2**64).toString(16)
 
     mapping(address => uint32[3]) internal KInfoMap; // gas saving, index [0] is k vlaue, index [1] is updatedAt, index [2] is theta
     mapping(address => bool) public callerAllowed;
@@ -33,8 +33,8 @@ contract CoFiXController {
     uint256 public timespan = 14;
     uint256 public kRefreshInterval = 5 minutes;
     uint256 public DESTRUCTION_AMOUNT = 10000 ether; // from nest oracle
-    int128 public MAX_K0 = 0xCCCCCCCCCCCCD00; // (0.05*2**64).toString(16),  5% as 64.64-bit fixed point
-    int128 public GAMMA = 0x8000000000000000; // (0.5*2**64).toString(16), 0.5 as 64.64-bit fixed point
+    int128 public MAX_K0 = 0xCCCCCCCCCCCCD00; // (0.05*2**64).toString(16)
+    int128 public GAMMA = 0x8000000000000000; // (0.5*2**64).toString(16)
 
     constructor(address _priceOracle, address _nest, address _factory, address _kTable) public {
         governance = msg.sender;
@@ -121,8 +121,9 @@ contract CoFiXController {
     function queryOracle(address token, address /*payback*/) external payable returns (uint256 _k, uint256, uint256, uint256, uint256) {
         require(callerAllowed[msg.sender] == true, "CoFiXCtrl: caller not allowed");
 
+        uint256 _now = block.timestamp % TIMESTAMP_MODULUS; // 2106
+
         {
-            uint256 _now = block.timestamp % TIMESTAMP_MODULUS;
             uint256 _lastUpdate = KInfoMap[token][1];
             if (_now >= _lastUpdate && _now.sub(_lastUpdate) <= kRefreshInterval) { // lastUpdate (2105) | 2106 | now (1)
                 return getLatestPrice(token);
@@ -154,7 +155,7 @@ contract CoFiXController {
                             ZERO_POINT_FIVE // e.g. (0.00098/0.0001)+0.5=10.299 => 10
                         )
                     );
-            if (_op[5] >= 1) {
+            if (_op[5] > 0) {
                 _op[5] = _op[5].sub(1);
             }
 
@@ -181,7 +182,7 @@ contract CoFiXController {
             _k = ABDKMath64x64.toUInt(ABDKMath64x64.mul(K0AndK[1], ABDKMath64x64.fromUInt(K_BASE)));
             _op[6] = KInfoMap[token][2]; // theta
             KInfoMap[token][0] = uint32(_k); // k < MAX_K << uint32(-1)
-            KInfoMap[token][1] = uint32(block.timestamp % TIMESTAMP_MODULUS); // 2106
+            KInfoMap[token][1] = uint32(_now); // 2106
             return (_k, _op[1], _op[2], _op[3], _op[6]);
         }
     }

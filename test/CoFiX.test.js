@@ -494,20 +494,20 @@ contract('CoFiX', (accounts) => {
             // estimate amountOut for swapExactTokenForETH() function in router
             // get estimated amountOut for token0 (WETH) when swapWithExact
             amountInToken = new BN("530000000");
-            result = await USDTPair.calcOutToken0(amountInToken, oraclePrice);
-            console.log("estimate swapExactTokenForETH> amountOutETH:", result.amountOut.toString(), web3.utils.fromWei(result.amountOut, 'ether'), "ETH");
+            let calcOutToken0Result = await USDTPair.calcOutToken0(amountInToken, oraclePrice);
+            console.log("estimate swapExactTokenForETH> amountOutETH:", calcOutToken0Result.amountOut.toString(), web3.utils.fromWei(calcOutToken0Result.amountOut, 'ether'), "ETH");
 
             // estimate amountIn for swapETHForExactTokens() function in router
             // get estimate amountInNeeded for token0 (WETH) when swapForExact
-            result = await USDTPair.calcInNeededToken0(result.amountOut, oraclePrice);
-            console.log("estimate swapETHForExactTokens> amountInETHNeeded:", result.amountInNeeded.toString(), web3.utils.fromWei(result.amountInNeeded, 'ether'), "ETH");
+            let amountInETHNeeded = await USDTPair.calcInNeededToken0(result.amountOut, oraclePrice);
+            console.log("estimate swapETHForExactTokens> amountInETHNeeded:", amountInETHNeeded.toString(), web3.utils.fromWei(amountInETHNeeded, 'ether'), "ETH");
 
 
             // estimate amountIn for swapTokensForExactETH() function in router
             // get estimate amountInNeeded for token1 (ERC20 token) when swapForExact
-            result = await USDTPair.calcInNeededToken1(amountOutETH, oraclePrice);
+            let amountInTokenNeeded = await USDTPair.calcInNeededToken1(calcOutToken0Result.amountOut, oraclePrice);
             // get estimate amountInNeeded for token0 (WETH) when swapForExact
-            console.log("estimate swapTokensForExactETH> amountInTokenNeeded:", result.amountInNeeded.toString(), result.amountInNeeded.div(new BN('1000000')).toString(), "USDT");
+            console.log("estimate swapTokensForExactETH> amountInTokenNeeded:", amountInTokenNeeded.toString(), amountInTokenNeeded.div(new BN('1000000')).toString(), "USDT");
         });
     });
 

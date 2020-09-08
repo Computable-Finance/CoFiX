@@ -121,4 +121,9 @@ contract('CoFiXKTable', (accounts) => {
     it("should revert if try to set k again", async () => {
         await expectRevert(KTable.setK0(0, 0, 0, { from: deployer }), "CKTable: already set");
     });
+
+    it("should revert if tIdx or sigmaIdx exceed", async () => {
+        await expectRevert(KTable.getK0(91, 0, { from: deployer }), "CKTable: tIdx must < 91");
+        await expectRevert(KTable.getK0(0, 30, { from: deployer }), "CKTable: sigmaIdx must < 30");
+    });
 });

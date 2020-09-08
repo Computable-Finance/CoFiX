@@ -20,6 +20,7 @@ contract('CoFiXKTable', (accounts) => {
 
     const tLen = 91;
     const sigmaLen = 30;
+    const sigmaStep = 0.0001;
 
     before(async () => {
         KTable = await CoFiXKTable.new({ from: deployer });
@@ -64,9 +65,9 @@ contract('CoFiXKTable', (accounts) => {
                     continue;
                 }
                 tIdxs.push(tIdx);
-                let sigma = Decimal(key).div(Decimal(0.0001)).sub(Decimal(1));
+                let sigma = Decimal(key).div(Decimal(sigmaStep)).sub(Decimal(1));
                 sigmaIdxs.push(sigma.toString());
-                // console.log(`key: ${key}, Decimal(key).div(Decimal(0.0001)).sub(1): ${Decimal(key).div(Decimal(0.0001)).sub(1)}`);
+                // console.log(`key: ${key}, Decimal(key).div(Decimal(sigmaStep)).sub(1): ${Decimal(key).div(Decimal(0.0001)).sub(1)}`);
                 k0s.push(convert_into_fixed_point(value));
             }
         }
@@ -105,7 +106,7 @@ contract('CoFiXKTable', (accounts) => {
             expect(kData[i].__EMPTY).to.equal(i*10);
             for (let j = 0; j < sigmaLen; j++) {
                 const k0 = await KTable.getK0(i, j);
-                const sigma = Decimal(j+1).mul(Decimal(0.0001)).toString();
+                const sigma = Decimal(j+1).mul(Decimal(sigmaStep)).toString();
                 // console.log(`kData[i][sigma]: ${kData[i][sigma]}, i:${i}, sigma:${sigma}`);
 
                 const expected = kData[i][sigma];
@@ -123,7 +124,7 @@ contract('CoFiXKTable', (accounts) => {
     });
 
     it("should revert if tIdx or sigmaIdx exceed", async () => {
-        await expectRevert(KTable.getK0(91, 0, { from: deployer }), "CKTable: tIdx must < 91");
-        await expectRevert(KTable.getK0(0, 30, { from: deployer }), "CKTable: sigmaIdx must < 30");
+        await expectRevert(KTable.getK0(tLen, 0, { from: deployer }), "CKTable: tIdx must < 91");
+        await expectRevert(KTable.getK0(0, sigmaLen, { from: deployer }), "CKTable: sigmaIdx must < 30");
     });
 });

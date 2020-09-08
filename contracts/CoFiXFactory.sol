@@ -14,9 +14,10 @@ contract CoFiXFactory is ICoFiXFactory {
 
     mapping(address => address) public override getPair;
     address[] public override allPairs;
+    address public immutable WETH;
     address public governance;
     address public controller;
-    address public immutable WETH;
+    address public feeReceiver;
 
     event PairCreated(address indexed token, address pair, uint);
 
@@ -56,7 +57,16 @@ contract CoFiXFactory is ICoFiXFactory {
         controller = _new;
     }
 
+    function setFeeReceiver(address _new) external override {
+        require(msg.sender == governance, "CFactory: !governance");
+        feeReceiver = _new;
+    }
+
     function getController() external view override returns (address) {
         return controller;
+    }
+
+    function getFeeReceiver() external view override returns (address) {
+        return feeReceiver;
     }
 }

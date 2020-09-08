@@ -120,15 +120,16 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         uint liquidity = balanceOf[address(this)];
 
         uint256 _ethBalanceBefore = address(this).balance;
+        uint256 fee;
         {
             // query price
             OraclePrice memory _op;
             (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = queryOracle(_token1, to);
             // TODO: validate
             if (outToken == _token0) {
-                amountOut = calcOutToken0ForBurn(liquidity, _op); // navps calculated
+                (amountOut, fee) = calcOutToken0ForBurn(liquidity, _op); // navps calculated
             } else if (outToken == _token1) {
-                amountOut = calcOutToken1ForBurn(liquidity, _op); // navps calculated
+                (amountOut, fee) = calcOutToken1ForBurn(liquidity, _op); // navps calculated
             }  else {
                 revert("CPair: wrong outToken");
             }
@@ -137,6 +138,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
 
         _burn(address(this), liquidity);
         _safeTransfer(outToken, to, amountOut);
+        if (fee > 0) _safeTransfer(_token0, ICoFiXFactory(factory).getController(), fee);
         balance0 = IERC20(_token0).balanceOf(address(this));
         balance1 = IERC20(_token1).balanceOf(address(this));
 
@@ -209,6 +211,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         uint256 balance0 = IERC20(_token0).balanceOf(address(this));
         uint256 balance1 = IERC20(_token1).balanceOf(address(this));
 
+        uint256 fee;
         { // scope for ethAmount/erc20Amount/blockNum to avoid stack too deep error
             uint256 _ethBalanceBefore = address(this).balance;
             // query price
@@ -221,11 +224,11 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             if (outToken == _token1) {
                 amountIn = balance0.sub(_reserve0);
                 require(amountIn > 0, "CPair: wrong amount0In");
-                amountOut = calcOutToken1(amountIn, _op);
+                (amountOut, fee) = calcOutToken1(amountIn, _op);
             } else if (outToken == _token0) {
                 amountIn = balance1.sub(_reserve1);
                 require(amountIn > 0, "CPair: wrong amount1In");
-                amountOut = calcOutToken0(amountIn, _op);
+                (amountOut, fee) = calcOutToken0(amountIn, _op);
             } else {
                 revert("CPair: wrong outToken");
             }
@@ -235,6 +238,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         require(to != _token0 && to != _token1, 'CPair: INVALID_TO');
 
         _safeTransfer(outToken, to, amountOut); // optimistically transfer tokens
+        if (fee > 0) _safeTransfer(_token0, ICoFiXFactory(factory).getController(), fee);
 
         balance0 = IERC20(_token0).balanceOf(address(this));
         balance1 = IERC20(_token1).balanceOf(address(this));
@@ -345,7 +349,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
     }
 
     // calc amountOut for token0 (WETH) when send liquidity token to pool for burning
-    function calcOutToken0ForBurn(uint256 liquidity, OraclePrice memory _op) public view returns (uint256 amountOut) {
+    function calcOutToken0ForBurn(uint256 liquidity, OraclePrice memory _op) public view returns (uint256 amountOut, uint256 fee) {
         /*
         e &= c * (N_{p}^{'} / NAVPS_{BASE}) * (THETA_{BASE} - \theta)/THETA_{BASE} \\\\
           &= c * \frac{N_{p}^{'}}{NAVPS_{BASE}} * \frac{THETA_{BASE} - \theta}{THETA_{BASE}} \\\\
@@ -353,12 +357,17 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         // amountOut = liquidity * navps * (THETA_BASE - _op.theta) / NAVPS_BASE / THETA_BASE;
         */
         uint256 navps = calcNAVPerShareForBurn(reserve0, reserve1, _op);
-        return liquidity.mul(navps).mul(THETA_BASE.sub(_op.theta)).div(NAVPS_BASE).div(THETA_BASE);
+        amountOut = liquidity.mul(navps).mul(THETA_BASE.sub(_op.theta)).div(NAVPS_BASE).div(THETA_BASE);
+        if (_op.theta != 0) {
+            // fee = liquidity * navps * (_op.theta) / NAVPS_BASE / THETA_BASE;
+            fee = liquidity.mul(navps).mul(_op.theta).div(NAVPS_BASE).div(THETA_BASE);
+        }
+        return (amountOut, fee);
     }
 
 
     // calc amountOut for token1 (ERC20 token) when send liquidity token to pool for burning
-    function calcOutToken1ForBurn(uint256 liquidity, OraclePrice memory _op) public view returns (uint256 amountOut) {
+    function calcOutToken1ForBurn(uint256 liquidity, OraclePrice memory _op) public view returns (uint256 amountOut, uint256 fee) {
         /*
         u &= c * (N_{p}^{'} / NAVPS_{BASE}) * P_{s}^{'} * (THETA_{BASE} - \theta)/THETA_{BASE} \\\\
           &= c * \frac{N_{p}^{'}}{NAVPS_{BASE}} * \frac{erc20Amount}{ethAmount} * \frac{(k_{BASE} - k)}{(k_{BASE})} * \frac{THETA_{BASE} - \theta}{THETA_{BASE}} \\\\
@@ -367,11 +376,16 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         */
         uint256 navps = calcNAVPerShareForBurn(reserve0, reserve1, _op);
         uint256 liqMulMany = liquidity.mul(navps).mul(_op.erc20Amount).mul(K_BASE.sub(_op.K)).mul(THETA_BASE.sub(_op.theta));
-        return liqMulMany.div(NAVPS_BASE).div(_op.ethAmount).div(K_BASE).div(THETA_BASE);
+        amountOut = liqMulMany.div(NAVPS_BASE).div(_op.ethAmount).div(K_BASE).div(THETA_BASE);
+        if (_op.theta != 0) {
+            // fee = liquidity * navps * (_op.theta) / NAVPS_BASE / THETA_BASE;
+            fee = liquidity.mul(navps).mul(_op.theta).div(NAVPS_BASE).div(THETA_BASE);
+        }
+        return (amountOut, fee);
     }
 
     // get estimated amountOut for token0 (WETH) when swapWithExact
-    function calcOutToken0(uint256 amountIn, OraclePrice memory _op) public pure returns (uint256 amountOut) {
+    function calcOutToken0(uint256 amountIn, OraclePrice memory _op) public pure returns (uint256 amountOut, uint256 fee) {
         /*
         x &= (a/P_{b}^{'})*\frac{THETA_{BASE} - \theta}{THETA_{BASE}} \\\\
           &= a / (\frac{erc20Amount}{ethAmount} * \frac{(k_{BASE} + k)}{(k_{BASE})}) * \frac{THETA_{BASE} - \theta}{THETA_{BASE}} \\\\
@@ -379,18 +393,28 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
           &= \frac{a*ethAmount*k_{BASE}*(THETA_{BASE} - \theta)}{erc20Amount*(k_{BASE} + k)*THETA_{BASE}} \\\\
         // amountOut = amountIn * _op.ethAmount * K_BASE * (THETA_BASE - _op.theta) / _op.erc20Amount / (K_BASE + _op.K) / THETA_BASE;
         */
-        return amountIn.mul(_op.ethAmount).mul(K_BASE).mul(THETA_BASE.sub(_op.theta)).div(_op.erc20Amount).div(K_BASE.add(_op.K)).div(THETA_BASE);
+        amountOut = amountIn.mul(_op.ethAmount).mul(K_BASE).mul(THETA_BASE.sub(_op.theta)).div(_op.erc20Amount).div(K_BASE.add(_op.K)).div(THETA_BASE);
+        if (_op.theta != 0) {
+            // fee = amountIn * _op.ethAmount * K_BASE * (_op.theta) / _op.erc20Amount / (K_BASE + _op.K) / THETA_BASE;
+            fee = amountIn.mul(_op.ethAmount).mul(K_BASE).mul(_op.theta).div(_op.erc20Amount).div(K_BASE.add(_op.K)).div(THETA_BASE);
+        }
+        return (amountOut, fee);
     }
 
     // get estimated amountOut for token1 (ERC20 token) when swapWithExact
-    function calcOutToken1(uint256 amountIn, OraclePrice memory _op) public pure returns (uint256 amountOut) {
+    function calcOutToken1(uint256 amountIn, OraclePrice memory _op) public pure returns (uint256 amountOut, uint256 fee) {
         /*
         y &= b*P_{s}^{'}*\frac{THETA_{BASE} - \theta}{THETA_{BASE}} \\\\
           &= b * \frac{erc20Amount}{ethAmount} * \frac{(k_{BASE} - k)}{(k_{BASE})} * \frac{THETA_{BASE} - \theta}{THETA_{BASE}} \\\\
           &= \frac{b*erc20Amount*(k_{BASE} - k)*(THETA_{BASE} - \theta)}{ethAmount*k_{BASE}*THETA_{BASE}} \\\\
         // amountOut = amountIn * _op.erc20Amount * (K_BASE - _op.K) * (THETA_BASE - _op.theta) / _op.ethAmount / K_BASE / THETA_BASE;
         */
-        return amountIn.mul(_op.erc20Amount).mul(K_BASE.sub(_op.K)).mul(THETA_BASE.sub(_op.theta)).div(_op.ethAmount).div(K_BASE).div(THETA_BASE);
+        amountOut = amountIn.mul(_op.erc20Amount).mul(K_BASE.sub(_op.K)).mul(THETA_BASE.sub(_op.theta)).div(_op.ethAmount).div(K_BASE).div(THETA_BASE);
+        if (_op.theta != 0) {
+            // fee = amountIn * _op.theta / THETA_BASE;
+            fee = amountIn.mul(_op.theta).div(THETA_BASE);
+        }
+        return (amountOut, fee);
     }
 
     // get estimate amountInNeeded for token0 (WETH) when swapForExact

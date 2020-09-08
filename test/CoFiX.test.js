@@ -323,6 +323,11 @@ contract('CoFiX', (accounts) => {
             console.log("user balance USDT:", usdtUserBalance.toString());
             console.log("user balance HBTC:", hbtcUserBalance.toString());
 
+            // setTheta
+            const theta = new BN(10);
+            await CoFiXCtrl.setTheta(USDT.address, theta, { from: deployer });
+            const kInfo = await CoFiXCtrl.getKInfo(USDT.address);
+            expect(kInfo.theta).to.bignumber.equal(theta);
             // swapExactTokensForTokens
             // - address tokenIn,
             // - address tokenOut,
@@ -355,6 +360,10 @@ contract('CoFiX', (accounts) => {
             console.log("user balance ETH:", ethUserBalance.toString());
             console.log("user balance USDT:", usdtUserBalance.toString());
             console.log("user balance HBTC:", hbtcUserBalance.toString());
+            // check if fee receiver get the fee reward
+            let feeReceiver = await CFactory.getFeeReceiver();
+            let wethInFeeReceiver = await WETH.balanceOf(feeReceiver);
+            console.log("WETH balance in feeReceiver:", wethInFeeReceiver.toString(), ", feeReceiver:", feeReceiver);
 
             // removeLiquidityGetETH
             // - address token,
@@ -468,37 +477,37 @@ contract('CoFiX', (accounts) => {
 
             // estimate amountOut for removeLiquidityGetETH() function in router
             // calc amountOut for token0 (WETH) when send liquidity token to pool for burning
-            let amountOutETH = await USDTPair.calcOutToken0ForBurn(liquidity, oraclePrice);
-            console.log("estimate removeLiquidityGetETH> amountOutETH:", amountOutETH.toString(), web3.utils.fromWei(amountOutETH, 'ether'), "ETH");
+            let result = await USDTPair.calcOutToken0ForBurn(liquidity, oraclePrice);
+            console.log("estimate removeLiquidityGetETH> amountOutETH:", result.amountOut.toString(), web3.utils.fromWei(result.amountOut, 'ether'), "ETH");
 
             // estimate amountOut for removeLiquidityGetToken() function in router
             // calc amountOut for token1 (ERC20 token) when send liquidity token to pool for burning
-            let amountOutToken = await USDTPair.calcOutToken1ForBurn(liquidity, oraclePrice);
-            console.log("estimate removeLiquidityGetToken> amountOutETH:", amountOutToken.toString(), amountOutToken.div(new BN('1000000')).toString(), "USDT");
+            result = await USDTPair.calcOutToken1ForBurn(liquidity, oraclePrice);
+            console.log("estimate removeLiquidityGetToken> amountOutETH:", result.amountOut.toString(), result.amountOut.div(new BN('1000000')).toString(), "USDT");
 
             // estimate amountOut for swapExactETHForTokens() function in router
             // get estimated amountOut for token1 (ERC20 token) when swapWithExact
             let amountInETH = web3.utils.toWei('1', 'ether');
-            amountOutToken = await USDTPair.calcOutToken1(amountInETH, oraclePrice);
-            console.log("estimate swapExactETHForTokens> amountOutToken:", amountOutToken.toString(), amountOutToken.div(new BN('1000000')).toString(), "USDT");
+            result = await USDTPair.calcOutToken1(amountInETH, oraclePrice);
+            console.log("estimate swapExactETHForTokens> amountOutToken:", result.amountOut.toString(), result.amountOut.div(new BN('1000000')).toString(), "USDT");
 
             // estimate amountOut for swapExactTokenForETH() function in router
             // get estimated amountOut for token0 (WETH) when swapWithExact
             amountInToken = new BN("530000000");
-            amountOutETH = await USDTPair.calcOutToken0(amountInToken, oraclePrice);
-            console.log("estimate swapExactTokenForETH> amountOutETH:", amountOutETH.toString(), web3.utils.fromWei(amountOutETH, 'ether'), "ETH");
+            result = await USDTPair.calcOutToken0(amountInToken, oraclePrice);
+            console.log("estimate swapExactTokenForETH> amountOutETH:", result.amountOut.toString(), web3.utils.fromWei(result.amountOut, 'ether'), "ETH");
 
             // estimate amountIn for swapETHForExactTokens() function in router
             // get estimate amountInNeeded for token0 (WETH) when swapForExact
-            let amountInETHNeeded = await USDTPair.calcInNeededToken0(amountOutToken, oraclePrice);
-            console.log("estimate swapETHForExactTokens> amountInETHNeeded:", amountInETHNeeded.toString(), web3.utils.fromWei(amountInETHNeeded, 'ether'), "ETH");
+            result = await USDTPair.calcInNeededToken0(amountOutToken, oraclePrice);
+            console.log("estimate swapETHForExactTokens> amountInETHNeeded:", result.amountInNeeded.toString(), web3.utils.fromWei(result.amountInNeeded, 'ether'), "ETH");
 
 
             // estimate amountIn for swapTokensForExactETH() function in router
             // get estimate amountInNeeded for token1 (ERC20 token) when swapForExact
-            let amountInTokenNeeded = await USDTPair.calcInNeededToken1(amountOutETH, oraclePrice);
+            result = await USDTPair.calcInNeededToken1(amountOutETH, oraclePrice);
             // get estimate amountInNeeded for token0 (WETH) when swapForExact
-            console.log("estimate swapTokensForExactETH> amountInTokenNeeded:", amountInTokenNeeded.toString(), amountInTokenNeeded.div(new BN('1000000')).toString(), "USDT");
+            console.log("estimate swapTokensForExactETH> amountInTokenNeeded:", result.amountInNeeded.toString(), result.amountInNeeded.div(new BN('1000000')).toString(), "USDT");
         });
     });
 

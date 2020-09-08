@@ -61,16 +61,16 @@ contract('CoFiXController', (accounts) => {
     // let BETA_ONE = await CoFiXCtrl.BETA_ONE({ from: deployer });
     // let BETA_TWO = await CoFiXCtrl.BETA_TWO({ from: deployer });
     // let THETA = await CoFiXCtrl.THETA({ from: deployer });
-    let MAX_K = await CoFiXCtrl.MAX_K({ from: deployer });
-    let MIN_K = await CoFiXCtrl.MIN_K({ from: deployer });
+    // let MAX_K = await CoFiXCtrl.MAX_K({ from: deployer });
+    // let MIN_K = await CoFiXCtrl.MIN_K({ from: deployer });
     let MAX_K0 = await CoFiXCtrl.MAX_K0({ from: deployer });
     // console.log(`alpha:${ALPHA.toString()}}, beta_one:${BETA_ONE.toString()}, beta_two:${BETA_TWO.toString()}, theta:${THETA.toString()}`);
     // expect(ALPHA).to.bignumber.equal((convert_into_fixed_point(alpha)));
     // expect(BETA_ONE).to.bignumber.equal((convert_into_fixed_point(beta_one)));
     // expect(BETA_TWO).to.bignumber.equal((convert_into_fixed_point(beta_two)));
     // expect(THETA).to.bignumber.equal((convert_into_fixed_point(theta)));
-    expect(MAX_K).to.bignumber.equal((convert_into_fixed_point(max_k)));
-    expect(MIN_K).to.bignumber.equal((convert_into_fixed_point(min_k)));
+    // expect(MAX_K).to.bignumber.equal((convert_into_fixed_point(max_k)));
+    // expect(MIN_K).to.bignumber.equal((convert_into_fixed_point(min_k)));
     expect(MAX_K0).to.bignumber.equal((convert_into_fixed_point(max_k0)));
   });
 
@@ -224,30 +224,6 @@ contract('CoFiXController', (accounts) => {
       tmpCtrl = await CoFiXController.new(constOracle.address, NEST.address, tmpCFactory.address, KTable.address, { from: deployer });
     });
 
-    // setTimespan(uint256 _timeSpan)
-    it("should setTimespan correctly", async () => {
-      const newTimespan = new BN(10);
-      await tmpCtrl.setTimespan(10, { from: the_governance });
-      const timeSpan = await tmpCtrl.timespan();
-      expect(timeSpan).to.bignumber.equal(newTimespan);
-      await expectRevert(tmpCtrl.setTimespan(10, { from: non_governance }), "CFactory: !governance");
-    });
-
-    // setKLimit(int128 minK, int128 maxK, int128 maxK0)
-    it("should setKLimit correctly", async () => {
-      const minK = new BN(1);
-      const maxK = new BN(10);
-      const maxK0 = new BN(5);
-      await tmpCtrl.setKLimit(minK, maxK, maxK0, { from: the_governance });
-      const newMinK = await tmpCtrl.MIN_K();
-      const newMaxK = await tmpCtrl.MAX_K();
-      const newMaxK0 = await tmpCtrl.MAX_K0();
-      expect(newMinK).to.bignumber.equal(minK);
-      expect(newMaxK).to.bignumber.equal(maxK);
-      expect(newMaxK0).to.bignumber.equal(maxK0);
-      await expectRevert(tmpCtrl.setKLimit(minK, maxK, maxK0, { from: non_governance }), "CFactory: !governance");
-    });
-
     // setOracle(address _priceOracle)
     it("should setOracle correctly", async () => {
       const newOracle = constants.ZERO_ADDRESS;
@@ -255,6 +231,24 @@ contract('CoFiXController', (accounts) => {
       const oracle = await tmpCtrl.oracle();
       expect(oracle).to.bignumber.equal(newOracle);
       await expectRevert(tmpCtrl.setOracle(newOracle, { from: non_governance }), "CFactory: !governance");
+    });
+
+    // setNestToken(address _nest)
+    it("should setNestToken correctly", async () => {
+      const nest = constants.ZERO_ADDRESS;
+      await tmpCtrl.setNestToken(nest, { from: the_governance });
+      const newNest = await tmpCtrl.nestToken();
+      expect(newNest).to.bignumber.equal(nest);
+      await expectRevert(tmpCtrl.setNestToken(nest, { from: non_governance }), "CFactory: !governance");
+    });
+
+    // setFactory(address _factory)
+    it("should setFactory correctly", async () => {
+      const factory = constants.ZERO_ADDRESS;
+      await tmpCtrl.setFactory(factory, { from: the_governance });
+      const newFactory = await tmpCtrl.factory();
+      expect(newFactory).to.bignumber.equal(factory);
+      await expectRevert(tmpCtrl.setFactory(factory, { from: non_governance }), "CFactory: !governance");
     });
 
     // setKTable(address _kTable)
@@ -266,14 +260,13 @@ contract('CoFiXController', (accounts) => {
       await expectRevert(tmpCtrl.setKTable(kTable, { from: non_governance }), "CFactory: !governance");
     });
 
-    // setTheta(address token, uint32 theta)
-    it("should setTheta correctly", async () => {
-      const token = constants.ZERO_ADDRESS;
-      const theta = new BN(100);
-      await tmpCtrl.setTheta(token, theta, { from: the_governance });
-      const kInfo = await tmpCtrl.getKInfo(token);
-      expect(kInfo.theta).to.bignumber.equal(theta);
-      await expectRevert(tmpCtrl.setTheta(token, theta, { from: non_governance }), "CFactory: !governance");
+    // setTimespan(uint256 _timeSpan)
+    it("should setTimespan correctly", async () => {
+      const newTimespan = new BN(10);
+      await tmpCtrl.setTimespan(10, { from: the_governance });
+      const timeSpan = await tmpCtrl.timespan();
+      expect(timeSpan).to.bignumber.equal(newTimespan);
+      await expectRevert(tmpCtrl.setTimespan(10, { from: non_governance }), "CFactory: !governance");
     });
 
     // setKRefreshInterval(uint256 _interval)
@@ -283,6 +276,43 @@ contract('CoFiXController', (accounts) => {
       const newInterval = await tmpCtrl.kRefreshInterval();
       expect(newInterval).to.bignumber.equal(interval);
       await expectRevert(tmpCtrl.setKRefreshInterval(interval, { from: non_governance }), "CFactory: !governance");
+    });
+
+    // setOracleDestructionAmount(uint256 _amount)
+    it("should setOracleDestructionAmount correctly", async () => {
+      const amount = new BN(100);
+      await tmpCtrl.setOracleDestructionAmount(amount, { from: the_governance });
+      const newAmount = await tmpCtrl.DESTRUCTION_AMOUNT();
+      expect(newAmount).to.bignumber.equal(amount);
+      await expectRevert(tmpCtrl.setOracleDestructionAmount(amount, { from: non_governance }), "CFactory: !governance");
+    });
+
+    // setKLimit(int128 maxK0)
+    it("should setKLimit correctly", async () => {
+      const maxK0 = new BN(5);
+      await tmpCtrl.setKLimit(maxK0, { from: the_governance });
+      const newMaxK0 = await tmpCtrl.MAX_K0();
+      expect(newMaxK0).to.bignumber.equal(maxK0);
+      await expectRevert(tmpCtrl.setKLimit(maxK0, { from: non_governance }), "CFactory: !governance");
+    });
+
+    // setGamma(int128 _gamma)
+    it("should setGamma correctly", async () => {
+      const gamma = new BN(100);
+      await tmpCtrl.setGamma(gamma, { from: the_governance });
+      const newGamma = await tmpCtrl.DESTRUCTION_AMOUNT();
+      expect(newGamma).to.bignumber.equal(gamma);
+      await expectRevert(tmpCtrl.setGamma(gamma, { from: non_governance }), "CFactory: !governance");
+    });
+
+    // setTheta(address token, uint32 theta)
+    it("should setTheta correctly", async () => {
+      const token = constants.ZERO_ADDRESS;
+      const theta = new BN(100);
+      await tmpCtrl.setTheta(token, theta, { from: the_governance });
+      const kInfo = await tmpCtrl.getKInfo(token);
+      expect(kInfo.theta).to.bignumber.equal(theta);
+      await expectRevert(tmpCtrl.setTheta(token, theta, { from: non_governance }), "CFactory: !governance");
     });
 
   });

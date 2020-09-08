@@ -14,66 +14,42 @@ contract CoFiXController {
     
     event newK(address token, int128 K, int128 sigma, uint256 T, uint256 ethAmount, uint256 erc20Amount, uint256 blockNum, uint256 tIdx, uint256 sigmaIdx, int128 K0);
 
-    // int128 constant public ALPHA = 0x1342825B8F72CF0; // (0.0047021*2**64).toString(16), 0.0047021 as 64.64-bit fixed point
-    // int128 constant public BETA_ONE = 0x35D7F9C779A6B6000000; // (13783.9757*2**64).toString(16), 13783.9757 as 64-bit fixed point
-    // int128 constant public BETA_TWO = 0x19A5EE66A57B7; // (2.446*10**(-5)*2**64).toString(16), 2.446*10**(-5) as 64.64-bit fixed point
-    // int128 constant public THETA = 0x83126E978D4FE0; // (0.002*2**64).toString(16), 0.002 as 64.64-bit fixed point
-
-    int128 constant public SIGMA_STEP = 0x68DB8BAC710CB; // (0.0001*2**64).toString(16), 0.0001 as 64.64-bit fixed point
-    int128 constant public ZERO_POINT_FIVE = 0x8000000000000000; // (0.5*2**64).toString(16), 0.5 as 64.64-bit fixed point
-    int128 public GAMMA = 0x8000000000000000; // (0.5*2**64).toString(16), 0.5 as 64.64-bit fixed point
-
     uint256 constant public AONE = 1 ether;
     uint256 constant public K_BASE = 100000;
     uint256 constant public THETA_BASE = 10000;
     uint256 constant internal TIMESTAMP_MODULUS = 2**32;
-    uint256 constant DESTRUCTION_AMOUNT = 10000 ether; // from nest oracle
-
-    address public factory;
+    int128 constant internal SIGMA_STEP = 0x68DB8BAC710CB; // (0.0001*2**64).toString(16), 0.0001 as 64.64-bit fixed point
+    int128 constant internal ZERO_POINT_FIVE = 0x8000000000000000; // (0.5*2**64).toString(16), 0.5 as 64.64-bit fixed point
 
     mapping(address => uint32[3]) internal KInfoMap; // gas saving, index [0] is k vlaue, index [1] is updatedAt, index [2] is theta
     mapping(address => bool) public callerAllowed;
 
     // managed by governance
-    uint256 public timespan;
-    int128 public MIN_K;
-    int128 public MAX_K;
-    int128 public MAX_K0;
+    address public governance;
     address public oracle;
     address public nestToken;
-    address public governance;
+    address public factory;
     address public kTable;
+    uint256 public timespan = 14;
     uint256 public kRefreshInterval = 5 minutes;
+    uint256 public DESTRUCTION_AMOUNT = 10000 ether; // from nest oracle
+    int128 public MAX_K0 = 0xCCCCCCCCCCCCD00; // (0.05*2**64).toString(16),  5% as 64.64-bit fixed point
+    int128 public GAMMA = 0x8000000000000000; // (0.5*2**64).toString(16), 0.5 as 64.64-bit fixed point
 
     constructor(address _priceOracle, address _nest, address _factory, address _kTable) public {
-        timespan = 14;
-        MIN_K = 0x147AE147AE147B0; // (0.005*2**64).toString(16), 0.5% as 64.64-bit fixed point
-        MAX_K = 0x1999999999999A00; // (0.1*2**64).toString(16),  10% as 64.64-bit fixed point
-        MAX_K0 = 0xCCCCCCCCCCCCD00; // (0.05*2**64).toString(16),  5% as 64.64-bit fixed point
+        governance = msg.sender;
         oracle = _priceOracle;
         nestToken = _nest;
-        governance = msg.sender;
         factory = _factory;
         kTable = _kTable;
     }
 
     receive() external payable {}
 
+    /* setters for protocol governance */
     function setGovernance(address _new) external {
         require(msg.sender == governance, "CFactory: !governance");
         governance = _new;
-    }
-
-    function setTimespan(uint256 _timeSpan) external {
-        require(msg.sender == governance, "CFactory: !governance");
-        timespan = _timeSpan;
-    }
-
-    function setKLimit(int128 minK, int128 maxK, int128 maxK0) external {
-        require(msg.sender == governance, "CFactory: !governance");
-        MIN_K = minK;
-        MAX_K = maxK;
-        MAX_K0 = maxK0;
     }
 
     function setOracle(address _priceOracle) external {
@@ -81,14 +57,24 @@ contract CoFiXController {
         oracle = _priceOracle;
     }
 
+    function setNestToken(address _nest) external {
+        require(msg.sender == governance, "CFactory: !governance");
+        nestToken = _nest;
+    }
+
+    function setFactory(address _factory) external {
+        require(msg.sender == governance, "CFactory: !governance");
+        factory = _factory;
+    }
+
     function setKTable(address _kTable) external {
         require(msg.sender == governance, "CFactory: !governance");
         kTable = _kTable;
-    }
+    }    
 
-    function setTheta(address token, uint32 theta) external {
+    function setTimespan(uint256 _timeSpan) external {
         require(msg.sender == governance, "CFactory: !governance");
-        KInfoMap[token][2] = theta;
+        timespan = _timeSpan;
     }
 
     function setKRefreshInterval(uint256 _interval) external {
@@ -96,7 +82,27 @@ contract CoFiXController {
         kRefreshInterval = _interval;
     }
 
-    // Activate on NEST Oracle
+    function setOracleDestructionAmount(uint256 _amount) external {
+        require(msg.sender == governance, "CFactory: !governance");
+        DESTRUCTION_AMOUNT = _amount;
+    }
+
+    function setKLimit(int128 maxK0) external {
+        require(msg.sender == governance, "CFactory: !governance");
+        MAX_K0 = maxK0;
+    }
+
+    function setGamma(int128 _gamma) external {
+        require(msg.sender == governance, "CFactory: !governance");
+        GAMMA = _gamma;
+    }
+    
+    function setTheta(address token, uint32 theta) external {
+        require(msg.sender == governance, "CFactory: !governance");
+        KInfoMap[token][2] = theta;
+    }
+
+    // Activate on NEST Oracle, should not be called twice for the same nest oracle
     function activate() external {
         require(msg.sender == governance, "CFactory: !governance");
         // address token, address from, address to, uint value
@@ -138,14 +144,6 @@ contract CoFiXController {
             // int128 _volatility = ABDKMath64x64.sqrt(_variance);
             // int128 _sigma = ABDKMath64x64.div(_volatility, ABDKMath64x64.sqrt(ABDKMath64x64.fromUInt(timespan)));
             int128 _sigma = ABDKMath64x64.sqrt(ABDKMath64x64.div(_variance, ABDKMath64x64.fromUInt(timespan))); // combined into one sqrt
-            // // 𝐾 = α + β_1 * sigma^2  + β_2 * T
-            // K = ABDKMath64x64.add(
-            //                 ALPHA, 
-            //                 ABDKMath64x64.add(
-            //                     ABDKMath64x64.mul(BETA_ONE, ABDKMath64x64.pow(_sigma, 2)),
-            //                     ABDKMath64x64.mul(BETA_TWO, ABDKMath64x64.fromUInt(_op[0]))
-            //                 )
-            //             );
 
             // tIdx is _op[4]
             // sigmaIdx is _op[5]
@@ -181,7 +179,6 @@ contract CoFiXController {
             // TransferHelper.safeTransferETH(payback, msg.value.sub(_balanceBefore.sub(address(this).balance)));
             TransferHelper.safeTransferETH(msg.sender, msg.value.sub(_balanceBefore.sub(address(this).balance)));
             _k = ABDKMath64x64.toUInt(ABDKMath64x64.mul(K0AndK[1], ABDKMath64x64.fromUInt(K_BASE)));
-            // _op[6] = ABDKMath64x64.toUInt(ABDKMath64x64.mul(KInfoMap[token][2], ABDKMath64x64.fromUInt(THETA_BASE))); // theta
             _op[6] = KInfoMap[token][2]; // theta
             KInfoMap[token][0] = uint32(_k); // k < MAX_K << uint32(-1)
             KInfoMap[token][1] = uint32(block.timestamp % TIMESTAMP_MODULUS); // 2106
@@ -224,6 +221,8 @@ contract CoFiXController {
         }
 
         // Option 1: calc variance of x
+        // Option 2: calc mean value first and then calc variance
+        // Use option 1 for gas saving
         int128 _sumSq; // sum of squares of x
         int128 _sum; // sum of x
         for (uint256 i = 0; i < 49; i++) {
@@ -240,19 +239,6 @@ contract CoFiXController {
                 ABDKMath64x64.fromUInt(49*49)
             )
         );
-
-        // // Option 2: calc mean value first and then calc variance
-        // int128 _sum; // suppose each stdEarningRate should be small or we'll calc mean vlaue in another way. TODO: validate
-        // for (uint256 i = 0; i < 49; i++) {
-        //     _sum = ABDKMath64x64.add(_stdSeq[i], _sum);
-        // }
-        // int128 _mean = ABDKMath64x64.div(_sum, ABDKMath64x64.fromUInt(49));
-        // int128 _tmp;
-        // for (uint256 i = 0; i < 49; i++) {
-        //     _tmp = ABDKMath64x64.sub(_stdSeq[i], _mean);
-        //     _variance = ABDKMath64x64.add(_variance, ABDKMath64x64.pow(_tmp, 2));
-        // }
-        // _variance = ABDKMath64x64.div(_variance, ABDKMath64x64.fromUInt(49));
         
         _T = block.number.sub(_rawPriceList[2]).mul(timespan);
         return (_variance, _T, _rawPriceList[0], _rawPriceList[1], _rawPriceList[2]);

@@ -19,15 +19,15 @@ contract('CoFiXKTable', (accounts) => {
 
 
     const tLen = 91;
-    const sigmaLen = 30;
-    const sigmaStep = 0.0001;
+    const sigmaLen = 20;
+    const sigmaStep = 0.00005;
 
     before(async () => {
         KTable = await CoFiXKTable.new({ from: deployer });
     });
 
     it("should read k-table.xls correctly", async () => {
-        const workbook = XLSX.readFile('./data/k-table.xls');
+        const workbook = XLSX.readFile('./data/k-table-v2.xlsx');
         const sheet_name_list = workbook.SheetNames;
         kData = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]]);
         // console.log("kData:", kData);
@@ -125,6 +125,6 @@ contract('CoFiXKTable', (accounts) => {
 
     it("should revert if tIdx or sigmaIdx exceed", async () => {
         await expectRevert(KTable.getK0(tLen, 0, { from: deployer }), "CKTable: tIdx must < 91");
-        await expectRevert(KTable.getK0(0, sigmaLen, { from: deployer }), "CKTable: sigmaIdx must < 30");
+        await expectRevert(KTable.getK0(0, sigmaLen, { from: deployer }), "CKTable: sigmaIdx must < 20");
     });
 });

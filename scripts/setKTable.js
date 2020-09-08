@@ -29,8 +29,9 @@ module.exports = async function (callback) {
 
         const tLen = 91;
         const sigmaLen = 30;
+        const sigmaStep = 0.00005;
 
-        const workbook = XLSX.readFile('./data/k-table.xls');
+        const workbook = XLSX.readFile('./data/k-table-v2.xlsx');
         const sheet_name_list = workbook.SheetNames;
         kData = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]]);
         // console.log("kData:", kData);
@@ -51,9 +52,9 @@ module.exports = async function (callback) {
                     continue;
                 }
                 tIdxs.push(tIdx);
-                let sigma = Decimal(key).div(Decimal(0.0001)).sub(Decimal(1));
+                let sigma = Decimal(key).div(Decimal(sigmaStep)).sub(Decimal(1));
                 sigmaIdxs.push(sigma.toString());
-                // console.log(`key: ${key}, Decimal(key).div(Decimal(0.0001)).sub(1): ${Decimal(key).div(Decimal(0.0001)).sub(1)}`);
+                // console.log(`key: ${key}, Decimal(key).div(Decimal(sigmaStep)).sub(1): ${Decimal(key).div(Decimal(sigmaStep)).sub(1)}`);
                 k0s.push(convert_into_fixed_point(value));
             }
         }

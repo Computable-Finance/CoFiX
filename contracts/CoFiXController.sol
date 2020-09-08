@@ -18,7 +18,7 @@ contract CoFiXController {
     uint256 constant public K_BASE = 100000;
     uint256 constant public THETA_BASE = 10000;
     uint256 constant internal TIMESTAMP_MODULUS = 2**32;
-    int128 constant internal SIGMA_STEP = 0x68DB8BAC710CB; // (0.0001*2**64).toString(16), 0.0001 as 64.64-bit fixed point
+    int128 constant internal SIGMA_STEP = 0x346DC5D638865; // (0.00005*2**64).toString(16), 0.00005 as 64.64-bit fixed point
     int128 constant internal ZERO_POINT_FIVE = 0x8000000000000000; // (0.5*2**64).toString(16)
 
     mapping(address => uint32[3]) internal KInfoMap; // gas saving, index [0] is k vlaue, index [1] is updatedAt, index [2] is theta

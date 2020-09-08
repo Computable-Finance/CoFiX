@@ -7,7 +7,7 @@ contract CoFiXKTable is ICoFiXKTable {
 
     address public governance;
 
-    int128[30][91] public k0Table; // sigmaIdx (0~29), tIdx (0~90)
+    int128[20][91] public k0Table; // sigmaIdx (0~29), tIdx (0~90)
 
     constructor() public {
         governance = msg.sender;
@@ -32,7 +32,7 @@ contract CoFiXKTable is ICoFiXKTable {
 
     function getK0(uint256 tIdx, uint256 sigmaIdx) external view override returns (int128) {
         require(tIdx < 91, "CKTable: tIdx must < 91");
-        require(sigmaIdx < 30, "CKTable: sigmaIdx must < 30");
+        require(sigmaIdx < 20, "CKTable: sigmaIdx must < 20");
         return k0Table[tIdx][sigmaIdx];
     }
 }

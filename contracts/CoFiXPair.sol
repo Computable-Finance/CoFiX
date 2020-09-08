@@ -82,7 +82,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function mint(address to) external payable override lock returns (uint liquidity, uint feeChange) {
+    function mint(address to) external payable override lock returns (uint liquidity, uint oracleFeeChange) {
         address _token0 = token0;                                // gas savings
         address _token1 = token1;                                // gas savings
         (uint112 _reserve0, uint112 _reserve1) = getReserves(); // gas savings
@@ -100,19 +100,19 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             uint256 navps = calcNAVPerShareForMint(_reserve0, _reserve1, _op);
             liquidity = calcLiquidity(amount0, amount1, navps, _op);
         }
-        feeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
+        oracleFeeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
 
         require(liquidity > 0, 'CPair: INSUFFICIENT_LIQUIDITY_MINTED');
         _mint(to, liquidity);
 
         _update(balance0, balance1);
-        TransferHelper.safeTransferETH(msg.sender, feeChange);
+        TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
 
         emit Mint(msg.sender, amount0, amount1);
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function burn(address outToken, address to) external payable override lock returns (uint amountOut, uint feeChange) {
+    function burn(address outToken, address to) external payable override lock returns (uint amountOut, uint oracleFeeChange) {
         address _token0 = token0;                                // gas savings
         address _token1 = token1;                                // gas savings
         uint balance0 = IERC20(_token0).balanceOf(address(this));
@@ -133,7 +133,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
                 revert("CPair: wrong outToken");
             }
         }
-        feeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
+        oracleFeeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
 
         _burn(address(this), liquidity);
         _safeTransfer(outToken, to, amountOut);
@@ -141,7 +141,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         balance1 = IERC20(_token1).balanceOf(address(this));
 
         _update(balance0, balance1);
-        TransferHelper.safeTransferETH(msg.sender, feeChange);
+        TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
 
         emit Burn(msg.sender, outToken, amountOut, to);
     }
@@ -150,7 +150,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
     function swapForExact(address outToken, uint amountOutExact, address to)
         external
         payable override lock
-        returns (uint amountIn, uint amountOut, uint feeChange)
+        returns (uint amountIn, uint amountOut, uint oracleFeeChange)
     {
         address _token0 = token0;
         address _token1 = token1;
@@ -161,7 +161,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             // query price
             (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = queryOracle(_token1, to);
             // TODO: validate
-            feeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
+            oracleFeeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
         }
 
         {
@@ -196,14 +196,14 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             uint256 balance1 = IERC20(_token1).balanceOf(address(this));
 
             _update(balance0, balance1);
-            TransferHelper.safeTransferETH(msg.sender, feeChange);
+            TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
         }
 
         emit Swap(msg.sender, amountIn, amountOut, outToken, to);
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function swapWithExact(address outToken, address to) external payable override lock returns (uint amountIn, uint amountOut, uint feeChange) {
+    function swapWithExact(address outToken, address to) external payable override lock returns (uint amountIn, uint amountOut, uint oracleFeeChange) {
         address _token0 = token0;
         address _token1 = token1;
         uint256 balance0 = IERC20(_token0).balanceOf(address(this));
@@ -229,7 +229,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             } else {
                 revert("CPair: wrong outToken");
             }
-            feeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
+            oracleFeeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
         }
         
         require(to != _token0 && to != _token1, 'CPair: INVALID_TO');
@@ -240,7 +240,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         balance1 = IERC20(_token1).balanceOf(address(this));
 
         _update(balance0, balance1);
-        TransferHelper.safeTransferETH(msg.sender, feeChange);
+        TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
 
         emit Swap(msg.sender, amountIn, amountOut, outToken, to);
     }

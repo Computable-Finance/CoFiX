@@ -32,10 +32,10 @@ interface ICoFiXPair is ICoFiXERC20 {
     function token1() external view returns (address);
     function getReserves() external view returns (uint112 reserve0, uint112 reserve1);
 
-    function mint(address to) external payable returns (uint liquidity, uint feeChange);
-    function burn(address outToken, address to) external payable returns (uint amountOut, uint feeChange);
-    function swapWithExact(address outToken, address to) external payable returns (uint amountIn, uint amountOut, uint feeChange);
-    function swapForExact(address outToken, uint amountOutExact, address to) external payable returns (uint amountIn, uint amountOut, uint feeChange);
+    function mint(address to) external payable returns (uint liquidity, uint oracleFeeChange);
+    function burn(address outToken, address to) external payable returns (uint amountOut, uint oracleFeeChange);
+    function swapWithExact(address outToken, address to) external payable returns (uint amountIn, uint amountOut, uint oracleFeeChange);
+    function swapForExact(address outToken, uint amountOutExact, address to) external payable returns (uint amountIn, uint amountOut, uint oracleFeeChange);
     function skim(address to) external;
     function sync() external;
 

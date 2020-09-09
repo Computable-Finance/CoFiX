@@ -7,19 +7,18 @@ const { web3 } = require('@openzeppelin/test-environment');
 
 const CoFiXKTable = artifacts.require("CoFiXKTable");
 const verbose = process.env.VERBOSE;
+const { calcK, convert_from_fixed_point, convert_into_fixed_point, calcRelativeDiff } = require('../lib/calc');
+const assert = require("chai").assert;
 
+const errorDelta = 10 ** -15;
 const argv = require('yargs').argv;
 
-
-function convert_into_fixed_point(coeff) {
-    return web3.utils.toBN("0x" + (coeff * 2 ** 64).toString(16).toUpperCase().split(".")[0]); // e.g. 0x19A5EE66A57B7.A, ignore every digis after the dot
-}
 
 module.exports = async function (callback) {
     try {
         var KTable;
 
-        console.log(`argv> oracle=${argv.ktable}`);
+        console.log(`argv> oracle=${argv.ktable}, check=${argv.validate}`);
 
         if (argv.ktable === "" || argv.ktable === undefined) {
             KTable = await CoFiXKTable.deployed();
@@ -28,7 +27,7 @@ module.exports = async function (callback) {
         }
 
         const tLen = 91;
-        const sigmaLen = 30;
+        const sigmaLen = 20;
         const sigmaStep = 0.00005;
 
         const workbook = XLSX.readFile('./data/k-table-v2.xlsx');
@@ -72,18 +71,40 @@ module.exports = async function (callback) {
         let start = 0;
         let end = start + step;
 
-        for (let i = 0; i < tIdxs.length / step; i++) {
-            let subTArray = tIdxs.slice(start, end);
-            let subSigmaArray = sigmaIdxs.slice(start, end);
-            let subK0Array = k0s.slice(start, end);
-            console.log(`i: ${i}, subTArray.len: ${subTArray.length}, start:${start}, end:${end}`);
-            await KTable.setK0InBatch(subTArray, subSigmaArray, subK0Array);
-            start = end;
-            end = start + step;
-            if (end > tIdxs.length) {
-                end = tIdxs.length;
+        if (!argv.validate) {
+            for (let i = 0; i < tIdxs.length / step; i++) {
+                let subTArray = tIdxs.slice(start, end);
+                let subSigmaArray = sigmaIdxs.slice(start, end);
+                let subK0Array = k0s.slice(start, end);
+                console.log(`i: ${i}, subTArray.len: ${subTArray.length}, start:${start}, end:${end}`);
+                await KTable.setK0InBatch(subTArray, subSigmaArray, subK0Array);
+                start = end;
+                end = start + step;
+                if (end > tIdxs.length) {
+                    end = tIdxs.length;
+                }
             }
         }
+
+        console.log("check onchain k table");
+
+        for (let i = 0; i < tLen; i++) {
+            expect(kData[i].__EMPTY).to.equal(i*10);
+            for (let j = 0; j < sigmaLen; j++) {
+                const k0 = await KTable.getK0(i, j);
+                const sigma = Decimal(j+1).mul(Decimal(sigmaStep)).toString();
+                // console.log(`kData[i][sigma]: ${kData[i][sigma]}, i:${i}, sigma:${sigma}`);
+
+                const expected = kData[i][sigma];
+                const actual = convert_from_fixed_point(k0);
+
+                let error = calcRelativeDiff(expected, actual);
+                console.log(`i: ${i}, j: ${j}, expected: ${expected}, actual:${actual}, error:${error}`);
+                assert.isAtMost(error.toNumber(), errorDelta);
+            }
+            console.log(`T index ${i} verified`);
+        }
+        console.log(`full k table verified`);
 
         callback();
     } catch (e) {

@@ -9,8 +9,8 @@ import './CoFiXPair.sol';
 contract CoFiXFactory is ICoFiXFactory {
     using SafeMath for uint;
 
-    string constant internal pairNamePrefix = "CoFiX Pool Token ";
-    string constant internal pairSymbolPrefix = "CPT-";
+    string constant internal pairNamePrefix = "XToken ";
+    string constant internal pairSymbolPrefix = "XT-";
 
     mapping(address => address) public override getPair;
     address[] public override allPairs;

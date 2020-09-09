@@ -211,8 +211,8 @@ contract('CoFiX', (accounts) => {
             console.log(`pair name: ${pairName}, pair symbol: ${pairSymbol}`);
             // pair name: CoFiX Pool Token 1, pair symbol: CPT-1
 
-            expect(pairName).to.equal("CoFiX Pool Token 1");
-            expect(pairSymbol).to.equal("CPT-1");
+            expect(pairName).to.equal("XToken 1");
+            expect(pairSymbol).to.equal("XT-1");
 
             let liquidityUSDTPair = await USDTPair.balanceOf(LP);
             let usdtInUSDTPool = await USDT.balanceOf(usdtPairAddr);

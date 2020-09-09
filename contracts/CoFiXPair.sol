@@ -20,7 +20,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
     uint public override constant MINIMUM_LIQUIDITY = 10**3;
     bytes4 private constant SELECTOR = bytes4(keccak256(bytes('transfer(address,uint256)')));
     uint256 constant public K_BASE = 1E8; // K
-    uint256 constant public NAVPS_BASE = 1E8; // NAVPS (Net Asset Value Per Share)
+    uint256 constant public NAVPS_BASE = 1E18; // NAVPS (Net Asset Value Per Share), need accuracy
     uint256 constant public THETA_BASE = 1E8; // theta
 
     string public name;

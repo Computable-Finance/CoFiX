@@ -208,7 +208,7 @@ contract('CoFiX', (accounts) => {
             console.log("------------addLiquidity for USDT/ETH------------");
             const pairName = await USDTPair.name();
             const pairSymbol = await USDTPair.symbol();
-            console.log(`pair name: $pairName}, pair symbol: ${pairSymbol}`);
+            console.log(`pair name: ${pairName}, pair symbol: ${pairSymbol}`);
             // pair name: CoFiX Pool Token 1, pair symbol: CPT-1
 
             expect(pairName).to.equal("CoFiX Pool Token 1");
@@ -468,7 +468,7 @@ contract('CoFiX', (accounts) => {
 
             // get NAVPS_BASE from CoFiXPair contract
             let navps_base = await USDTPair.NAVPS_BASE();
-            expect(navps_base).to.bignumber.equal(new BN(1E8));
+            expect(navps_base).to.bignumber.equal((new BN('10')).pow(new BN(18)));
 
             // get the latest k info from CoFiXController contract, including k value & last updated time
             let kInfo = await CoFiXCtrl.getKInfo(USDT.address);
@@ -482,14 +482,23 @@ contract('CoFiX', (accounts) => {
             let oraclePrice = [p.ethAmount, p.erc20Amount, new BN("0"), kInfo.k, new BN("0")];
 
             let navpsForMint = await USDTPair.getNAVPerShareForMint(oraclePrice);
-            let navps_value_for_mint = navpsForMint.toNumber() / navps_base.toNumber();
+
+            let navps_value_for_mint = (Decimal(navpsForMint.toString())).div(Decimal(navps_base.toString()));
             console.log("net asset value per share for mint:", navps_value_for_mint);
-            expect(navps_value_for_mint).to.equal(1);
+
+            const expected = "1";
+            let error = calcRelativeDiff(expected, navps_value_for_mint.toString());
+            console.log(`navps_value_for_mint> expected: ${expected}, actual: ${navps_value_for_mint.toString()}, error: ${error}`);
+            assert.isAtMost(error.toNumber(), errorDelta);
 
             let navpsForBurn = await USDTPair.getNAVPerShareForBurn(oraclePrice);
-            let navps_value_for_burn = navpsForBurn.toNumber() / navps_base.toNumber();
+            let navps_value_for_burn = (Decimal(navpsForBurn.toString())).div(Decimal(navps_base.toString()));
+            // let navps_value_for_burn = navpsForBurn.toNumber() / navps_base.toNumber();
             console.log("net asset value per share for burn:", navps_value_for_burn);
-            expect(navps_value_for_burn).to.equal(1);
+
+            error = calcRelativeDiff(expected, navps_value_for_burn.toString());
+            console.log(`navps_value_for_burn> expected: ${expected}, actual: ${navps_value_for_burn.toString()}, error: ${error}`);
+            assert.isAtMost(error.toNumber(), errorDelta);
 
             // get total liquidity (totalSupply of pair/pool token)
             let totalLiquidity = await USDTPair.totalSupply();

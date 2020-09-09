@@ -40,7 +40,7 @@ contract('CoFiX', (accounts) => {
     const USDTTotalSupply_ = new BN("10000000000000000");
     const HBTCTotalSupply_ = new BN("100000000000000000000000000");
 
-    const DESTRUCTION_AMOUNT = web3.utils.toWei('10000', 'ether');
+    const DESTRUCTION_AMOUNT = web3.utils.toWei('0', 'ether');
 
     before(async () => {
         // change to openzeppelin/test-environment if it has better support for test coverage and gas cost measure

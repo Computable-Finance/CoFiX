@@ -37,7 +37,7 @@ contract('CoFiXController', (accounts) => {
   const max_k0 = 0.05;
   const block_time = 14;
 
-  const DESTRUCTION_AMOUNT = web3.utils.toWei('10000', 'ether');
+  const DESTRUCTION_AMOUNT = web3.utils.toWei('0', 'ether');
 
   before(async function () {
     Token = await TestUSDT.new();

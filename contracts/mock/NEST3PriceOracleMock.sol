@@ -13,7 +13,7 @@ contract NEST3PriceOracleMock {
     mapping(address => uint256) public addressEffect_; //  Effective time of address to call prices
 
     address public nestToken_;
-    uint256 destructionAmount = 10000 ether; //  Amount of NEST to destroy to call prices
+    uint256 destructionAmount = 0 ether; //  Amount of NEST to destroy to call prices
     uint256 effectTime = 1 minutes; //  Waiting time to start calling prices
 
     struct PriceInfo {

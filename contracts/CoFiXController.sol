@@ -32,7 +32,7 @@ contract CoFiXController {
     address public kTable;
     uint256 public timespan = 14;
     uint256 public kRefreshInterval = 5 minutes;
-    uint256 public DESTRUCTION_AMOUNT = 10000 ether; // from nest oracle
+    uint256 public DESTRUCTION_AMOUNT = 0 ether; // from nest oracle
     int128 public MAX_K0 = 0xCCCCCCCCCCCCD00; // (0.05*2**64).toString(16)
     int128 public GAMMA = 0x8000000000000000; // (0.5*2**64).toString(16)
 

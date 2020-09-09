@@ -23,6 +23,7 @@ contract CoFiXFactory is ICoFiXFactory {
 
     constructor(address _WETH) public {
         governance = msg.sender;
+        feeReceiver = msg.sender; // set feeReceiver to a feeReceiver contract later
         WETH = _WETH;
     }
 

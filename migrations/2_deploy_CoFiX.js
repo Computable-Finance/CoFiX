@@ -11,27 +11,29 @@ const CoFiXRouter = artifacts.require("CoFiXRouter");
 const { deployProxy } = require('@openzeppelin/truffle-upgrades');
 
 
-module.exports = async function(deployer) {
+module.exports = async function (deployer, network) {
 
-    // USDT Test Token
-    await deployer.deploy(USDT);
+    console.log(`truffle deploying to ${network} network`);
 
-    // HBTC Test Token
-    await deployer.deploy(HBTC);
+    if (network == "mainnet" || network == "mainnet-fork") {
+        USDT = await USDT.at("0xdAC17F958D2ee523a2206206994597C13D831ec7");
+        HBTC = await HBTC.at("0x0316EB71485b0Ab14103307bf65a021042c6d380");
+        NEST = await NEST.at("0x04abEdA201850aC0124161F037Efd70c74ddC74C");
+        WETH9 = await WETH9.at("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2");
+        NestPriceOracle = await NestPriceOracle.at("0x7722891Ee45aD38AE05bDA8349bA4CF23cFd270F");
+    } else {
+        // USDT Test Token
+        await deployer.deploy(USDT);
+        // HBTC Test Token
+        await deployer.deploy(HBTC);
+        // NEST Test Token
+        await deployer.deploy(NEST);
+        // WETH contract
+        await deployer.deploy(WETH9);
+        // NEST3 Price Oracle Mock
+        await deployer.deploy(NestPriceOracle, NEST.address);
+    }
 
-    // NEST Test Token
-    await deployer.deploy(NEST);
-
-    // WETH contract
-    await deployer.deploy(WETH9);
-
-    // USDT = await USDT.at("0xD52d3bfCA0d39E4bD5378e0BBa8AD245C3F58C17");
-    // HBTC = await HBTC.at("0x9aA0AF152cf141740f19D335b5ddE1F0E51008A7");
-    // NEST = await NEST.at("0xB9746A8572DB5C27597fE88B86B6520599Bf62d4");
-    // WETH9 = await WETH9.at("0xB3d7C7993BE7bEec23D005552224B2dAf18Bd85E");
-
-    // NEST3 Price Oracle Mock
-    await deployer.deploy(NestPriceOracle, NEST.address);
 
     // CoFiXFactory
     await deployer.deploy(CoFiXFactory, WETH9.address);

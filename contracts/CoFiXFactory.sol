@@ -27,8 +27,6 @@ contract CoFiXFactory is ICoFiXFactory {
         WETH = _WETH;
     }
 
-    receive() external payable {}
-
     function allPairsLength() external override view returns (uint256) {
         return allPairs.length;
     }

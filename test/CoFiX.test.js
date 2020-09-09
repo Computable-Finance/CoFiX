@@ -206,6 +206,14 @@ contract('CoFiX', (accounts) => {
             let usdtPairAddr = await CFactory.getPair(USDT.address);
             let USDTPair = await CoFiXPair.at(usdtPairAddr);
             console.log("------------addLiquidity for USDT/ETH------------");
+            const pairName = await USDTPair.name();
+            const pairSymbol = await USDTPair.symbol();
+            console.log(`pair name: $pairName}, pair symbol: ${pairSymbol}`);
+            // pair name: CoFiX Pool Token 1, pair symbol: CPT-1
+
+            expect(pairName).to.equal("CoFiX Pool Token 1");
+            expect(pairSymbol).to.equal("CPT-1");
+
             let liquidityUSDTPair = await USDTPair.balanceOf(LP);
             let usdtInUSDTPool = await USDT.balanceOf(usdtPairAddr);
             let wethInUSDTPool = await WETH.balanceOf(usdtPairAddr);

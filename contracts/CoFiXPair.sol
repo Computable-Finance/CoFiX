@@ -19,18 +19,19 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
 
     uint public override constant MINIMUM_LIQUIDITY = 10**3;
     bytes4 private constant SELECTOR = bytes4(keccak256(bytes('transfer(address,uint256)')));
+    uint256 constant public K_BASE = 1E8; // K
+    uint256 constant public NAVPS_BASE = 1E8; // NAVPS (Net Asset Value Per Share)
+    uint256 constant public THETA_BASE = 1E8; // theta
+
+    string public name;
+    string public symbol;
 
     address public override factory;
     address public override token0; // WETH token
     address public override token1; // any ERC20 token
 
-
     uint112 private reserve0;           // uses single storage slot, accessible via getReserves
     uint112 private reserve1;           // uses single storage slot, accessible via getReserves
-
-    uint256 constant public K_BASE = 1E8; // K
-    uint256 constant public NAVPS_BASE = 1E8; // NAVPS (Net Asset Value Per Share)
-    uint256 constant public THETA_BASE = 1E8; // theta
 
     uint private unlocked = 1;
     modifier lock() {
@@ -69,10 +70,12 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
     receive() external payable {}
 
     // called once by the factory at time of deployment
-    function initialize(address _token0, address _token1) external override {
+    function initialize(address _token0, address _token1, string memory _name, string memory _symbol) external override {
         require(msg.sender == factory, 'CPair: FORBIDDEN'); // sufficient check
         token0 = _token0;
         token1 = _token1;
+        name = _name;
+        symbol = _symbol;
     }
 
     // update reserves

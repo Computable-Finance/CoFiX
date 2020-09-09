@@ -5,12 +5,12 @@ pragma solidity ^0.6.6;
 import './interface/ICoFiXFactory.sol';
 import './interface/ICoFiXController.sol';
 import './CoFiXPair.sol';
-import './interface/INest_3_OfferPrice.sol';
-import './lib/SafeMath.sol';
-
 
 contract CoFiXFactory is ICoFiXFactory {
     using SafeMath for uint;
+
+    string constant internal pairNamePrefix = "CoFiX Pool Token ";
+    string constant internal pairSymbolPrefix = "CPT-";
 
     mapping(address => address) public override getPair;
     address[] public override allPairs;
@@ -41,11 +41,18 @@ contract CoFiXFactory is ICoFiXFactory {
         assembly {
             pair := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        ICoFiXPair(pair).initialize(WETH, token);
+
         getPair[token] = pair;
         allPairs.push(pair);
+
+        uint256 pairLen = allPairs.length;
+        string memory _idx = uint2str(pairLen);
+        string memory _name = append(pairNamePrefix, _idx);
+        string memory _symbol = append(pairSymbolPrefix, _idx);
+        ICoFiXPair(pair).initialize(WETH, token, _name, _symbol);
+
         ICoFiXController(controller).addCaller(pair);
-        emit PairCreated(token, pair, allPairs.length);
+        emit PairCreated(token, pair, pairLen);
     }
 
     function setGovernance(address _new) external override {
@@ -69,5 +76,28 @@ contract CoFiXFactory is ICoFiXFactory {
 
     function getFeeReceiver() external view override returns (address) {
         return feeReceiver;
+    }
+
+    function append(string memory a, string memory b) internal pure returns (string memory _concatenatedString) {
+        return string(abi.encodePacked(a, b));
+    }
+
+    function uint2str(uint _i) internal pure returns (string memory _uintAsString) {
+        if (_i == 0) {
+            return "0";
+        }
+        uint j = _i;
+        uint len;
+        while (j != 0) {
+            len++;
+            j /= 10;
+        }
+        bytes memory bstr = new bytes(len);
+        uint k = len - 1;
+        while (_i != 0) {
+            bstr[k--] = byte(uint8(48 + _i % 10));
+            _i /= 10;
+        }
+        return string(bstr);
     }
 }

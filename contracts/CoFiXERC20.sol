@@ -8,8 +8,7 @@ import './lib/SafeMath.sol';
 contract CoFiXERC20 is ICoFiXERC20 {
     using SafeMath for uint;
 
-    string public override constant name = 'CoFiX Pool Token';
-    string public override constant symbol = 'CPT';
+    string public nameForDomain = 'CoFiX Pool Token';
     uint8 public override constant decimals = 18;
     uint  public override totalSupply;
     mapping(address => uint) public override balanceOf;
@@ -31,7 +30,7 @@ contract CoFiXERC20 is ICoFiXERC20 {
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 keccak256('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'),
-                keccak256(bytes(name)),
+                keccak256(bytes(nameForDomain)),
                 keccak256(bytes('1')),
                 chainId,
                 address(this)

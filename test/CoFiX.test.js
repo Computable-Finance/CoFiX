@@ -25,7 +25,7 @@ const { printKInfoEvent } = require('../lib/print');
 const Decimal = require('decimal.js');
 const { calcK, convert_from_fixed_point, convert_into_fixed_point, calcRelativeDiff } = require('../lib/calc');
 
-const errorDelta = 10 ** -14;
+const errorDelta = 10 ** -10;
 
 
 contract('CoFiX', (accounts) => {
@@ -377,7 +377,7 @@ contract('CoFiX', (accounts) => {
             console.log("kInfo> k:", kInfo.k.toString(), "(", kInfo.k.toString() / k_base.toString(), ")", ", updatedAt:", kInfo.updatedAt.toString());
             // get the latest k info from CoFiXController contract, including k value & last updated time
             // fee = amountIn.mul(_op.ethAmount).mul(K_BASE).mul(_op.theta).div(_op.erc20Amount).div(K_BASE.add(_op.K)).div(THETA_BASE);
-            const THETA_BASE = "10000";
+            const THETA_BASE = "1E8";
             const expectedFee = Decimal(_amountIn).mul(Decimal(p.ethAmount.toString())).mul(Decimal(k_base.toString())).mul(Decimal(theta.toString())).div(Decimal(p.erc20Amount.toString())).div(Decimal(k_base.toString()).add(Decimal(kInfo.k.toString()))).div(Decimal(THETA_BASE));
             console.log(`expectedFee: ${expectedFee.toString()}, calculatedFee: ${wethInFeeReceiver.toString()}`);
             let error = calcRelativeDiff(expectedFee, wethInFeeReceiver.toString());
@@ -451,8 +451,8 @@ contract('CoFiX', (accounts) => {
     describe('Read from contract', function () {
         it("test", async () => {
             // get K_BASE from CoFiXController contract
-            let k_base = await CoFiXCtrl.K_BASE(); // 100000
-            expect(k_base).to.bignumber.equal(new BN("100000"));
+            let k_base = await CoFiXCtrl.K_BASE(); // 1E8
+            expect(k_base).to.bignumber.equal(new BN(1E8));
 
             // get pair address
             let usdtPairAddr = await CFactory.getPair(USDT.address);
@@ -460,7 +460,7 @@ contract('CoFiX', (accounts) => {
 
             // get NAVPS_BASE from CoFiXPair contract
             let navps_base = await USDTPair.NAVPS_BASE();
-            expect(navps_base).to.bignumber.equal(new BN("10000"));
+            expect(navps_base).to.bignumber.equal(new BN(1E8));
 
             // get the latest k info from CoFiXController contract, including k value & last updated time
             let kInfo = await CoFiXCtrl.getKInfo(USDT.address);

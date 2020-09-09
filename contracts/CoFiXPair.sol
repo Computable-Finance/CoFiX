@@ -26,10 +26,9 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
     uint112 private reserve0;           // uses single storage slot, accessible via getReserves
     uint112 private reserve1;           // uses single storage slot, accessible via getReserves
 
-    // TODO: enlarge these base params
-    uint256 constant public K_BASE = 100000; // K
-    uint256 constant public NAVPS_BASE = 10000; // NAVPS (Net Asset Value Per Share)
-    uint256 constant public THETA_BASE = 10000; // theta
+    uint256 constant public K_BASE = 1E8; // K
+    uint256 constant public NAVPS_BASE = 1E8; // NAVPS (Net Asset Value Per Share)
+    uint256 constant public THETA_BASE = 1E8; // theta
 
     uint private unlocked = 1;
     modifier lock() {

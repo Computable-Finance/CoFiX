@@ -118,7 +118,7 @@ contract CoFiXController {
         callerAllowed[caller] = true;
     }  
 
-    function queryOracle(address token, address /*payback*/) external payable returns (uint256 _k, uint256, uint256, uint256, uint256) {
+    function queryOracle(address token, bytes memory /*data*/) external payable returns (uint256 _k, uint256, uint256, uint256, uint256) {
         require(callerAllowed[msg.sender] == true, "CoFiXCtrl: caller not allowed");
 
         uint256 _now = block.timestamp % TIMESTAMP_MODULUS; // 2106
@@ -175,8 +175,7 @@ contract CoFiXController {
         require(K0AndK[0] <= MAX_K0, "CoFiXCtrl: K0");
 
         {
-            // TODO: payback param ununsed now
-            // we could use this to pay the fee change and mining award token directly to reduce call cost
+            // we could decode data in the future to pay the fee change and mining award token directly to reduce call cost
             // TransferHelper.safeTransferETH(payback, msg.value.sub(_balanceBefore.sub(address(this).balance)));
             uint256 oracleFeeChange = msg.value.sub(_balanceBefore.sub(address(this).balance));
             if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);

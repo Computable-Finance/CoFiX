@@ -15,6 +15,8 @@ import "./lib/ABDKMath64x64.sol";
 contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
     using SafeMath  for uint;
 
+    enum CoFiX_OP { MINT, BURN, SWAP_WITH_EXACT, SWAP_FOR_EXACT } // operations in CoFiX
+
     uint public override constant MINIMUM_LIQUIDITY = 10**3;
     bytes4 private constant SELECTOR = bytes4(keccak256(bytes('transfer(address,uint256)')));
 
@@ -93,9 +95,10 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
 
         uint256 _ethBalanceBefore = address(this).balance;
         { // scope for ethAmount/erc20Amount/blockNum to avoid stack too deep error
+            bytes memory data = abi.encodePacked(msg.sender, CoFiX_OP.MINT, to);
             // query price
             OraclePrice memory _op;
-            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = queryOracle(_token1, to);
+            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = queryOracle(_token1, data);
             uint256 navps = calcNAVPerShareForMint(_reserve0, _reserve1, _op);
             liquidity = calcLiquidity(amount0, amount1, navps, _op);
         }
@@ -121,9 +124,10 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         uint256 _ethBalanceBefore = address(this).balance;
         uint256 fee;
         {
+            bytes memory data = abi.encodePacked(msg.sender, CoFiX_OP.BURN, outToken, to);
             // query price
             OraclePrice memory _op;
-            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = queryOracle(_token1, to);
+            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = queryOracle(_token1, data);
             if (outToken == _token0) {
                 (amountOut, fee) = calcOutToken0ForBurn(liquidity, _op); // navps calculated
             } else if (outToken == _token1) {
@@ -149,6 +153,49 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
     }
 
     // this low-level function should be called from a contract which performs important safety checks
+    function swapWithExact(address outToken, address to) external payable override lock returns (uint amountIn, uint amountOut, uint oracleFeeChange) {
+        address _token0 = token0;
+        address _token1 = token1;
+        uint256 balance0 = IERC20(_token0).balanceOf(address(this));
+        uint256 balance1 = IERC20(_token1).balanceOf(address(this));
+
+        uint256 fee;
+        { // scope for ethAmount/erc20Amount/blockNum to avoid stack too deep error
+            uint256 _ethBalanceBefore = address(this).balance;
+            bytes memory data = abi.encodePacked(msg.sender, CoFiX_OP.SWAP_WITH_EXACT, outToken, to);
+            // query price
+            OraclePrice memory _op;
+            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = queryOracle(_token1, data);
+            (uint112 _reserve0, uint112 _reserve1) = getReserves(); // gas savings
+            if (outToken == _token1) {
+                amountIn = balance0.sub(_reserve0);
+                require(amountIn > 0, "CPair: wrong amount0In");
+                (amountOut, fee) = calcOutToken1(amountIn, _op);
+            } else if (outToken == _token0) {
+                amountIn = balance1.sub(_reserve1);
+                require(amountIn > 0, "CPair: wrong amount1In");
+                (amountOut, fee) = calcOutToken0(amountIn, _op);
+            } else {
+                revert("CPair: wrong outToken");
+            }
+            oracleFeeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
+        }
+        
+        require(to != _token0 && to != _token1, "CPair: INVALID_TO");
+
+        _safeTransfer(outToken, to, amountOut); // optimistically transfer tokens
+        if (fee > 0) _safeTransfer(_token0, ICoFiXFactory(factory).getFeeReceiver(), fee); // transfer fee to protocol feeReceiver
+
+        balance0 = IERC20(_token0).balanceOf(address(this));
+        balance1 = IERC20(_token1).balanceOf(address(this));
+
+        _update(balance0, balance1);
+        if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
+
+        emit Swap(msg.sender, amountIn, amountOut, outToken, to);
+    }
+
+    // this low-level function should be called from a contract which performs important safety checks
     function swapForExact(address outToken, uint amountOutExact, address to)
         external
         payable override lock
@@ -162,8 +209,9 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
 
         { // scope for ethAmount/erc20Amount/blockNum to avoid stack too deep error
             uint256 _ethBalanceBefore = address(this).balance;
+            bytes memory data = abi.encodePacked(msg.sender, CoFiX_OP.SWAP_FOR_EXACT, outToken, amountOutExact, to);
             // query price
-            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = queryOracle(_token1, to);
+            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = queryOracle(_token1, data);
             oracleFeeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
         }
 
@@ -201,7 +249,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
                     _safeTransfer(_token1, to, _amountInLeft); // send back the amount1 token change
                 }
             }
-            require(_amountInNeeded > 0; "CPair: wrong amountIn needed");
+            require(_amountInNeeded > 0, "CPair: wrong amountIn needed");
         }
         
         {
@@ -217,49 +265,6 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             _update(balance0, balance1);
             if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
         }
-
-        emit Swap(msg.sender, amountIn, amountOut, outToken, to);
-    }
-
-    // this low-level function should be called from a contract which performs important safety checks
-    function swapWithExact(address outToken, address to) external payable override lock returns (uint amountIn, uint amountOut, uint oracleFeeChange) {
-        address _token0 = token0;
-        address _token1 = token1;
-        uint256 balance0 = IERC20(_token0).balanceOf(address(this));
-        uint256 balance1 = IERC20(_token1).balanceOf(address(this));
-
-        uint256 fee;
-        { // scope for ethAmount/erc20Amount/blockNum to avoid stack too deep error
-            uint256 _ethBalanceBefore = address(this).balance;
-            // query price
-            OraclePrice memory _op;
-            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = queryOracle(_token1, to);
-            (uint112 _reserve0, uint112 _reserve1) = getReserves(); // gas savings
-
-            if (outToken == _token1) {
-                amountIn = balance0.sub(_reserve0);
-                require(amountIn > 0, "CPair: wrong amount0In");
-                (amountOut, fee) = calcOutToken1(amountIn, _op);
-            } else if (outToken == _token0) {
-                amountIn = balance1.sub(_reserve1);
-                require(amountIn > 0, "CPair: wrong amount1In");
-                (amountOut, fee) = calcOutToken0(amountIn, _op);
-            } else {
-                revert("CPair: wrong outToken");
-            }
-            oracleFeeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
-        }
-        
-        require(to != _token0 && to != _token1, "CPair: INVALID_TO");
-
-        _safeTransfer(outToken, to, amountOut); // optimistically transfer tokens
-        if (fee > 0) _safeTransfer(_token0, ICoFiXFactory(factory).getFeeReceiver(), fee); // transfer fee to protocol feeReceiver
-
-        balance0 = IERC20(_token0).balanceOf(address(this));
-        balance1 = IERC20(_token1).balanceOf(address(this));
-
-        _update(balance0, balance1);
-        if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
 
         emit Swap(msg.sender, amountIn, amountOut, outToken, to);
     }
@@ -456,8 +461,8 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         return (amountInNeeded, fee);
     }
 
-    function queryOracle(address token, address to) internal returns (uint256, uint256, uint256, uint256, uint256) {
-        return ICoFiXController(ICoFiXFactory(factory).getController()).queryOracle{value: msg.value}(token, to);
+    function queryOracle(address token, bytes memory data) internal returns (uint256, uint256, uint256, uint256, uint256) {
+        return ICoFiXController(ICoFiXFactory(factory).getController()).queryOracle{value: msg.value}(token, data);
     }
 
 }

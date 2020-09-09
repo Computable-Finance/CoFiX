@@ -8,7 +8,7 @@ import './lib/SafeMath.sol';
 contract CoFiXERC20 is ICoFiXERC20 {
     using SafeMath for uint;
 
-    string public nameForDomain = 'CoFiX Pool Token';
+    string public constant nameForDomain = 'CoFiX Pool Token';
     uint8 public override constant decimals = 18;
     uint  public override totalSupply;
     mapping(address => uint) public override balanceOf;

@@ -178,7 +178,8 @@ contract CoFiXController {
             // TODO: payback param ununsed now
             // we could use this to pay the fee change and mining award token directly to reduce call cost
             // TransferHelper.safeTransferETH(payback, msg.value.sub(_balanceBefore.sub(address(this).balance)));
-            TransferHelper.safeTransferETH(msg.sender, msg.value.sub(_balanceBefore.sub(address(this).balance)));
+            uint256 oracleFeeChange = msg.value.sub(_balanceBefore.sub(address(this).balance));
+            if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
             _k = ABDKMath64x64.toUInt(ABDKMath64x64.mul(K0AndK[1], ABDKMath64x64.fromUInt(K_BASE)));
             _op[6] = KInfoMap[token][2]; // theta
             KInfoMap[token][0] = uint32(_k); // k < MAX_K << uint32(-1)
@@ -198,7 +199,8 @@ contract CoFiXController {
         uint256 _balanceBefore = address(this).balance;
         uint256[] memory _rawPriceList = INest_3_OfferPrice(oracle).updateAndCheckPriceList{value: msg.value}(token, 1);
         require(_rawPriceList.length == 3, "CoFiXCtrl: bad price len");
-        TransferHelper.safeTransferETH(msg.sender, msg.value.sub(_balanceBefore.sub(address(this).balance)));
+        uint256 oracleFeeChange = msg.value.sub(_balanceBefore.sub(address(this).balance));
+        if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
         return (KInfoMap[token][0], _rawPriceList[0], _rawPriceList[1], _rawPriceList[2], KInfoMap[token][2]);
     }
 

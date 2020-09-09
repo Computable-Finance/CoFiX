@@ -90,7 +90,7 @@ interface ICoFiXRouter {
     /// @dev Trader swap ETH for exact amount of ERC20 Tokens (notice: msg.value = amountInMax + oracle fee)
     /// @param  token The address of ERC20 Token
     /// @param  amountInMax The max amount of ETH a trader want to swap into pool
-    /// @param  amountOut The exact amount of Token a trader want to swap out of pool
+    /// @param  amountOutExact The exact amount of Token a trader want to swap out of pool
     /// @param  to The target address receiving the Token
     /// @param  deadline The dealine of this request
     /// @return _amountIn The real amount of ETH transferred into pool
@@ -98,7 +98,7 @@ interface ICoFiXRouter {
     function swapETHForExactTokens(
         address token,
         uint amountInMax,
-        uint amountOut,
+        uint amountOutExact,
         address to,
         uint deadline
     ) external payable returns (uint _amountIn, uint _amountOut);
@@ -106,7 +106,7 @@ interface ICoFiXRouter {
     /// @dev Trader swap ERC20 Tokens for exact amount of ETH (notice: msg.value = oracle fee)
     /// @param  token The address of ERC20 Token
     /// @param  amountInMax The max amount of Token a trader want to swap into pool
-    /// @param  amountOut The exact amount of ETH a trader want to swap out of pool
+    /// @param  amountOutExact The exact amount of ETH a trader want to swap out of pool
     /// @param  to The target address receiving the ETH
     /// @param  deadline The dealine of this request
     /// @return _amountIn The real amount of Token transferred into pool
@@ -114,7 +114,7 @@ interface ICoFiXRouter {
     function swapTokensForExactETH(
         address token,
         uint amountInMax,
-        uint amountOut,
+        uint amountOutExact,
         address to,
         uint deadline
     ) external payable returns (uint _amountIn, uint _amountOut);

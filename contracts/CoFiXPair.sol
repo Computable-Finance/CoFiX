@@ -26,6 +26,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
     uint112 private reserve0;           // uses single storage slot, accessible via getReserves
     uint112 private reserve1;           // uses single storage slot, accessible via getReserves
 
+    // TODO: enlarge these base params
     uint256 constant public K_BASE = 100000; // K
     uint256 constant public NAVPS_BASE = 10000; // NAVPS (Net Asset Value Per Share)
     uint256 constant public THETA_BASE = 10000; // theta
@@ -56,7 +57,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         uint amountOut,
         address outToken,
         address indexed to
-    );    
+    );
     event Sync(uint112 reserve0, uint112 reserve1);
     
 
@@ -96,7 +97,6 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             // query price
             OraclePrice memory _op;
             (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = queryOracle(_token1, to);
-            // TODO: validate
             uint256 navps = calcNAVPerShareForMint(_reserve0, _reserve1, _op);
             liquidity = calcLiquidity(amount0, amount1, navps, _op);
         }
@@ -106,7 +106,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         _mint(to, liquidity);
 
         _update(balance0, balance1);
-        TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
+        if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
 
         emit Mint(msg.sender, amount0, amount1);
     }
@@ -125,7 +125,6 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             // query price
             OraclePrice memory _op;
             (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = queryOracle(_token1, to);
-            // TODO: validate
             if (outToken == _token0) {
                 (amountOut, fee) = calcOutToken0ForBurn(liquidity, _op); // navps calculated
             } else if (outToken == _token1) {
@@ -136,6 +135,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         }
         oracleFeeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
 
+        require(amountOut > 0, 'CPair: INSUFFICIENT_LIQUIDITY_BURNED');
         _burn(address(this), liquidity);
         _safeTransfer(outToken, to, amountOut);
         if (fee > 0) _safeTransfer(_token0, ICoFiXFactory(factory).getFeeReceiver(), fee);
@@ -144,7 +144,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         balance1 = IERC20(_token1).balanceOf(address(this));
 
         _update(balance0, balance1);
-        TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
+        if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
 
         emit Burn(msg.sender, outToken, amountOut, to);
     }
@@ -163,7 +163,6 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             uint256 _ethBalanceBefore = address(this).balance;
             // query price
             (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = queryOracle(_token1, to);
-            // TODO: validate
             oracleFeeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
         }
 
@@ -175,31 +174,38 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
      
             if (outToken == _token1) {
                 amountIn = balance0.sub(_reserve0);
-                require(amountIn > 0, "CPair: wrong amount0In");
+                require(amountIn > 0, "CPair: wrong amount0In"); // for different revert reason
                 _amountInNeeded = calcInNeededToken0(amountOutExact, _op);
-                _safeTransfer(_token0, to, amountIn.sub(_amountInNeeded)); // send back the token change
+                require(_amountInNeeded <= amountIn, "CPair: wrong amountIn");
+                if (amountIn.sub(_amountInNeeded) > 0) {
+                    _safeTransfer(_token0, to, amountIn.sub(_amountInNeeded)); // send back the amount0 token change
+                }
             } else if (outToken == _token0) {
                 amountIn = balance1.sub(_reserve1);
-                require(amountIn > 0, "CPair: wrong amount1In");
+                require(amountIn > 0, "CPair: wrong amount1In"); // for different revert reason
                 _amountInNeeded = calcInNeededToken1(amountOutExact, _op);
-                _safeTransfer(_token1, to, amountIn.sub(_amountInNeeded)); // TODO: think about a better payee than to
+                require(_amountInNeeded <= amountIn, "CPair: wrong amountIn");
+                if (amountIn.sub(_amountInNeeded) > 0) {
+                    _safeTransfer(_token1, to, amountIn.sub(_amountInNeeded)); // send back the amount1 token change
+                }
             } else {
                 revert("CPair: wrong outToken");
             }
-            require(_amountInNeeded <= amountIn, "CPair: wrong amountIn"); // TODO: useless check
         }
+
+        require(amountIn > 0, "CPair: INSUFFICIENT_INPUT_AMOUNT");
         
         {
-            require(to != _token0 && to != _token1, 'CPair: INVALID_TO');
+            require(to != _token0 && to != _token1, "CPair: INVALID_TO");
 
             amountOut = amountOutExact;
-            _safeTransfer(outToken, to, amountOutExact); // optimistically transfer tokens
+            _safeTransfer(outToken, to, amountOut); // optimistically transfer tokens
 
             uint256 balance0 = IERC20(_token0).balanceOf(address(this));
             uint256 balance1 = IERC20(_token1).balanceOf(address(this));
 
             _update(balance0, balance1);
-            TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
+            if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
         }
 
         emit Swap(msg.sender, amountIn, amountOut, outToken, to);
@@ -218,8 +224,6 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             // query price
             OraclePrice memory _op;
             (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = queryOracle(_token1, to);
-            // TODO: validate
-
             (uint112 _reserve0, uint112 _reserve1) = getReserves(); // gas savings
 
             if (outToken == _token1) {
@@ -245,7 +249,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         balance1 = IERC20(_token1).balanceOf(address(this));
 
         _update(balance0, balance1);
-        TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
+        if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
 
         emit Swap(msg.sender, amountIn, amountOut, outToken, to);
     }
@@ -268,7 +272,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
     function calcNAVPerShareForMint(uint256 balance0, uint256 balance1, OraclePrice memory _op) public view returns (uint256 navps) {
         uint _totalSupply = totalSupply;
         if (_totalSupply == 0) {
-            navps = NAVPS_BASE; // TODO: think about extreme small navps, e.g. 1e-18
+            navps = NAVPS_BASE;
         } else {
             /*
             N_{p} &= (A_{u}/P_{s}^{'} + A_{e})/S \\\\
@@ -291,7 +295,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
     function calcNAVPerShareForBurn(uint256 balance0, uint256 balance1, OraclePrice memory _op) public view returns (uint256 navps) {
         uint _totalSupply = totalSupply;
         if (_totalSupply == 0) {
-            navps = NAVPS_BASE; // TODO: think about extreme small navps, e.g. 1e-18
+            navps = NAVPS_BASE;
         } else {
             /*
             N_{p}^{'} &= (A_{u}/P_{b}^{'} + A_{e})/S \\\\

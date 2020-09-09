@@ -35,7 +35,7 @@ contract CoFiXRouter is ICoFiXRouter {
         //         _factory,
         //         keccak256(abi.encodePacked(token)),
         //         hex'fb0c5470b7fbfce7f512b5035b5c35707fd5c7bd43c8d81959891b0296030118' // init code hash
-        //     )))); // TODO: calc the real init code hash
+        //     )))); // calc the real init code hash, not suitable for us now, could use this in the future
         return ICoFiXFactory(_factory).getPair(token);
     }
 
@@ -66,7 +66,7 @@ contract CoFiXRouter is ICoFiXRouter {
         uint256 oracleFeeChange;
         (liquidity, oracleFeeChange) = ICoFiXPair(pair).mint{value: _oracleFee}(to);
         require(liquidity >= liquidityMin, "CRouter: less liquidity than expected");
-        // refund eth, if any
+        // refund oracle fee to msg.sender, if any
         if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
     }
 
@@ -85,6 +85,7 @@ contract CoFiXRouter is ICoFiXRouter {
         uint oracleFeeChange; 
         (amountToken, oracleFeeChange) = ICoFiXPair(pair).burn{value: msg.value}(token, to);
         require(amountToken >= amountTokenMin, "CRouter: got less than expected");
+        // refund oracle fee to msg.sender, if any
         if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
     }
 
@@ -104,7 +105,9 @@ contract CoFiXRouter is ICoFiXRouter {
         (amountETH, oracleFeeChange) = ICoFiXPair(pair).burn{value: msg.value}(WETH, address(this));
         require(amountETH >= amountETHMin, "CRouter: got less than expected");
         IWETH(WETH).withdraw(amountETH);
-        TransferHelper.safeTransferETH(to, amountETH.add(oracleFeeChange));
+        TransferHelper.safeTransferETH(to, amountETH);
+        // refund oracle fee to msg.sender, if any
+        if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
     }
 
     // msg.value = amountIn + oracle fee
@@ -121,8 +124,10 @@ contract CoFiXRouter is ICoFiXRouter {
         address pair = pairFor(factory, token);
         assert(IWETH(WETH).transfer(pair, amountIn));
         uint oracleFeeChange; 
-        (_amountIn, _amountOut, oracleFeeChange) = ICoFiXPair(pair).swapWithExact{value: msg.value.sub(amountIn)}(token, to);
+        (_amountIn, _amountOut, oracleFeeChange) = ICoFiXPair(pair).swapWithExact{
+            value: msg.value.sub(amountIn)}(token, to);
         require(_amountOut >= amountOutMin, "CRouter: got less than expected");
+        // refund oracle fee to msg.sender, if any
         if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
     }
 
@@ -146,6 +151,7 @@ contract CoFiXRouter is ICoFiXRouter {
         assert(IWETH(WETH).transfer(pairOut, _amountOut)); // swap with all amountOut in last swap
         (, _amountOut, oracleFeeChange) = ICoFiXPair(pairOut).swapWithExact{value: oracleFeeChange}(tokenOut, to);
         require(_amountOut >= amountOutMin, "CRouter: got less than expected");
+        // refund oracle fee to msg.sender, if any
         if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
     }
 
@@ -165,14 +171,16 @@ contract CoFiXRouter is ICoFiXRouter {
         (_amountIn, _amountOut, oracleFeeChange) = ICoFiXPair(pair).swapWithExact{value: msg.value}(WETH, address(this));
         require(_amountOut >= amountOutMin, "CRouter: got less than expected");
         IWETH(WETH).withdraw(_amountOut);
-        TransferHelper.safeTransferETH(to, _amountOut.add(oracleFeeChange));
+        TransferHelper.safeTransferETH(to, _amountOut);
+        // refund oracle fee to msg.sender, if any
+        if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
     }
 
     // msg.value = amountInMax + oracle fee
     function swapETHForExactTokens(
         address token,
         uint amountInMax,
-        uint amountOut,
+        uint amountOutExact,
         address to,
         uint deadline
     ) external override payable ensure(deadline) returns (uint _amountIn, uint _amountOut)
@@ -182,7 +190,8 @@ contract CoFiXRouter is ICoFiXRouter {
         address pair = pairFor(factory, token);
         assert(IWETH(WETH).transfer(pair, amountInMax));
         uint oracleFeeChange; 
-        (_amountIn, _amountOut, oracleFeeChange) = ICoFiXPair(pair).swapForExact{value: msg.value.sub(amountInMax)}(token, amountOut, to); // TODO: handle two *amountOut
+        (_amountIn, _amountOut, oracleFeeChange) = ICoFiXPair(pair).swapForExact{
+            value: msg.value.sub(amountInMax) }(token, amountOutExact, to); // TODO: handle two *amountOut
         require(_amountIn <= amountInMax, "CRouter: spend more than expected");
         if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
     }
@@ -191,7 +200,7 @@ contract CoFiXRouter is ICoFiXRouter {
     function swapTokensForExactETH(
         address token,
         uint amountInMax,
-        uint amountOut,
+        uint amountOutExact,
         address to,
         uint deadline
     ) external override payable ensure(deadline) returns (uint _amountIn, uint _amountOut)
@@ -200,9 +209,12 @@ contract CoFiXRouter is ICoFiXRouter {
         address pair = pairFor(factory, token);
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountInMax);
         uint oracleFeeChange; 
-        (_amountIn, _amountOut, oracleFeeChange) = ICoFiXPair(pair).swapForExact{value: msg.value}(WETH, amountOut, address(this));  // TODO: handle two *amountOut
+        (_amountIn, _amountOut, oracleFeeChange) = ICoFiXPair(pair).swapForExact{
+            value: msg.value}(WETH, amountOutExact, address(this));  // TODO: handle two *amountOut
         require(_amountIn <= amountInMax, "CRouter: got less than expected");
         IWETH(WETH).withdraw(_amountOut);
-        TransferHelper.safeTransferETH(to, amountOut.add(oracleFeeChange));
+        TransferHelper.safeTransferETH(to, amountOutExact);
+        // refund oracle fee to msg.sender, if any
+        if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
     }
 }

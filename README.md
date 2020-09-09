@@ -28,6 +28,22 @@ Use `npx oz compile` to adopt `@openzeppelin/cli` toolchain.
 truffle migrate --network ropsten
 ```
 
+## Mainnet
+
+### Beta-V0.6
+
+|       Contract       |                  Address                   |
+| :------------------: | :----------------------------------------: |
+| USDT | 0xdAC17F958D2ee523a2206206994597C13D831ec7 |
+| HBTC | 0x0316EB71485b0Ab14103307bf65a021042c6d380 |
+| NEST | 0x04abEdA201850aC0124161F037Efd70c74ddC74C |
+| WETH | 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2 |
+| NestPriceOracle | 0x7722891Ee45aD38AE05bDA8349bA4CF23cFd270F |
+| CoFiXController | 0xC16E5eECc0948604eb326296c71311aC8D9BC786 |
+| CoFiXFactory | 0xD5a19E1ADb5592921dcC42E48623d75c4C91e405 |
+| CoFiXKTable | 0x75E360Be6248Bd46030C6818624a09403EF5eC21 |
+| CoFiXRouter | 0x2878469c466638E8c0878bB86898073CA6C91b45 |
+
 ## Testnet (ropsten)
 
 ### Beta-V0.1

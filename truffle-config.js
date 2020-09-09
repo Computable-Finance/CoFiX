@@ -65,7 +65,7 @@ module.exports = {
       provider: () => new HDWalletProvider(process.env.mainnetMnemonic, `wss://mainnet.infura.io/ws/v3/`+ process.env.INFURA_PROJECT_ID),
       network_id: 1,
       gas: 6000000,
-      gasPrice: utils.toWei('88', 'gwei'),
+      gasPrice: utils.toWei('123', 'gwei'),
       confirmations: 2,
       timeoutBlocks: 200,
       skipDryRun: false

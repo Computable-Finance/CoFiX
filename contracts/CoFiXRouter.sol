@@ -191,7 +191,8 @@ contract CoFiXRouter is ICoFiXRouter {
         assert(IWETH(WETH).transfer(pair, amountInMax));
         uint oracleFeeChange; 
         (_amountIn, _amountOut, oracleFeeChange) = ICoFiXPair(pair).swapForExact{
-            value: msg.value.sub(amountInMax) }(token, amountOutExact, to); // TODO: handle two *amountOut
+            value: msg.value.sub(amountInMax) }(token, amountOutExact, to);
+        // assert amountOutExact equals with _amountOut
         require(_amountIn <= amountInMax, "CRouter: spend more than expected");
         if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
     }
@@ -210,7 +211,8 @@ contract CoFiXRouter is ICoFiXRouter {
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountInMax);
         uint oracleFeeChange; 
         (_amountIn, _amountOut, oracleFeeChange) = ICoFiXPair(pair).swapForExact{
-            value: msg.value}(WETH, amountOutExact, address(this));  // TODO: handle two *amountOut
+            value: msg.value}(WETH, amountOutExact, address(this));
+        // assert amountOutExact equals with _amountOut
         require(_amountIn <= amountInMax, "CRouter: got less than expected");
         IWETH(WETH).withdraw(_amountOut);
         TransferHelper.safeTransferETH(to, amountOutExact);

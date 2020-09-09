@@ -134,10 +134,10 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         }
         oracleFeeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
 
-        require(amountOut > 0, 'CPair: INSUFFICIENT_LIQUIDITY_BURNED');
+        require(amountOut > 0, "CPair: INSUFFICIENT_LIQUIDITY_BURNED");
         _burn(address(this), liquidity);
         _safeTransfer(outToken, to, amountOut);
-        if (fee > 0) _safeTransfer(_token0, ICoFiXFactory(factory).getFeeReceiver(), fee);
+        if (fee > 0) _safeTransfer(_token0, ICoFiXFactory(factory).getFeeReceiver(), fee); // transfer fee to protocol feeReceiver
 
         balance0 = IERC20(_token0).balanceOf(address(this));
         balance1 = IERC20(_token1).balanceOf(address(this));
@@ -158,6 +158,8 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         address _token1 = token1;
         OraclePrice memory _op;
 
+        uint256 fee;
+
         { // scope for ethAmount/erc20Amount/blockNum to avoid stack too deep error
             uint256 _ethBalanceBefore = address(this).balance;
             // query price
@@ -165,40 +167,49 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             oracleFeeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
         }
 
-        {
+        { // calc and check amountIn, also outToken
             uint256 balance0 = IERC20(_token0).balanceOf(address(this));
             uint256 balance1 = IERC20(_token1).balanceOf(address(this));
             (uint112 _reserve0, uint112 _reserve1) = getReserves(); // gas savings
-            uint _amountInNeeded;
      
             if (outToken == _token1) {
                 amountIn = balance0.sub(_reserve0);
                 require(amountIn > 0, "CPair: wrong amount0In"); // for different revert reason
-                _amountInNeeded = calcInNeededToken0(amountOutExact, _op);
-                require(_amountInNeeded <= amountIn, "CPair: wrong amountIn");
-                if (amountIn.sub(_amountInNeeded) > 0) {
-                    _safeTransfer(_token0, to, amountIn.sub(_amountInNeeded)); // send back the amount0 token change
-                }
             } else if (outToken == _token0) {
                 amountIn = balance1.sub(_reserve1);
                 require(amountIn > 0, "CPair: wrong amount1In"); // for different revert reason
-                _amountInNeeded = calcInNeededToken1(amountOutExact, _op);
-                require(_amountInNeeded <= amountIn, "CPair: wrong amountIn");
-                if (amountIn.sub(_amountInNeeded) > 0) {
-                    _safeTransfer(_token1, to, amountIn.sub(_amountInNeeded)); // send back the amount1 token change
-                }
             } else {
                 revert("CPair: wrong outToken");
             }
         }
 
-        require(amountIn > 0, "CPair: INSUFFICIENT_INPUT_AMOUNT");
+        { // split with branch upbove to make code more clear
+            uint _amountInNeeded;
+            uint _amountInLeft;
+            if (outToken == _token1) {
+                (_amountInNeeded, fee) = calcInNeededToken0(amountOutExact, _op);
+                require(_amountInNeeded <= amountIn, "CPair: insufficient amount0In"); // for clear revert reason
+                _amountInLeft = amountIn.sub(_amountInNeeded);
+                if (_amountInLeft > 0) {
+                    _safeTransfer(_token0, to, _amountInLeft); // send back the amount0 token change
+                }
+            } else if (outToken == _token0) {
+                (_amountInNeeded, fee) = calcInNeededToken1(amountOutExact, _op);
+                require(_amountInNeeded <= amountIn, "CPair: insufficient wrong amount1In"); // for clear revert reason
+                _amountInLeft = amountIn.sub(_amountInNeeded);
+                if (_amountInLeft > 0) {
+                    _safeTransfer(_token1, to, _amountInLeft); // send back the amount1 token change
+                }
+            }
+            require(_amountInNeeded > 0; "CPair: wrong amountIn needed");
+        }
         
         {
             require(to != _token0 && to != _token1, "CPair: INVALID_TO");
 
             amountOut = amountOutExact;
             _safeTransfer(outToken, to, amountOut); // optimistically transfer tokens
+            if (fee > 0) _safeTransfer(_token0, ICoFiXFactory(factory).getFeeReceiver(), fee); // transfer fee to protocol feeReceiver
 
             uint256 balance0 = IERC20(_token0).balanceOf(address(this));
             uint256 balance1 = IERC20(_token1).balanceOf(address(this));
@@ -239,10 +250,10 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             oracleFeeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
         }
         
-        require(to != _token0 && to != _token1, 'CPair: INVALID_TO');
+        require(to != _token0 && to != _token1, "CPair: INVALID_TO");
 
         _safeTransfer(outToken, to, amountOut); // optimistically transfer tokens
-        if (fee > 0) _safeTransfer(_token0, ICoFiXFactory(factory).getFeeReceiver(), fee);
+        if (fee > 0) _safeTransfer(_token0, ICoFiXFactory(factory).getFeeReceiver(), fee); // transfer fee to protocol feeReceiver
 
         balance0 = IERC20(_token0).balanceOf(address(this));
         balance1 = IERC20(_token1).balanceOf(address(this));
@@ -422,17 +433,27 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
     }
 
     // get estimate amountInNeeded for token0 (WETH) when swapForExact
-    function calcInNeededToken0(uint256 amountOut, OraclePrice memory _op) public pure returns (uint256 amountInNeeded) {
+    function calcInNeededToken0(uint256 amountOut, OraclePrice memory _op) public pure returns (uint256 amountInNeeded, uint256 fee) {
         // inverse of calcOutToken1
         // amountOut = amountIn.mul(_op.erc20Amount).mul(K_BASE.sub(_op.K)).mul(THETA_BASE.sub(_op.theta)).div(_op.ethAmount).div(K_BASE).div(THETA_BASE);
-        return amountOut.mul(_op.ethAmount).mul(K_BASE).mul(THETA_BASE).div(_op.erc20Amount).div(K_BASE.sub(_op.K)).div(THETA_BASE.sub(_op.theta));
+        amountInNeeded = amountOut.mul(_op.ethAmount).mul(K_BASE).mul(THETA_BASE).div(_op.erc20Amount).div(K_BASE.sub(_op.K)).div(THETA_BASE.sub(_op.theta));
+        if (_op.theta != 0) {
+            // fee = amountIn * _op.theta / THETA_BASE;
+            fee = amountInNeeded.mul(_op.theta).div(THETA_BASE);
+        }
+        return (amountInNeeded, fee);
     }
 
     // get estimate amountInNeeded for token1 (ERC20 token) when swapForExact
-    function calcInNeededToken1(uint256 amountOut, OraclePrice memory _op) public pure returns (uint256 amountInNeeded) {
+    function calcInNeededToken1(uint256 amountOut, OraclePrice memory _op) public pure returns (uint256 amountInNeeded, uint256 fee) {
         // inverse of calcOutToken0
         // amountOut = amountIn.mul(_op.ethAmount).mul(K_BASE).mul(THETA_BASE.sub(_op.theta)).div(_op.erc20Amount).div(K_BASE.add(_op.K)).div(THETA_BASE);
-        return amountOut.mul(_op.erc20Amount).mul(K_BASE.add(_op.K)).mul(THETA_BASE).div(_op.ethAmount).div(K_BASE).div(THETA_BASE.sub(_op.theta));
+        amountInNeeded = amountOut.mul(_op.erc20Amount).mul(K_BASE.add(_op.K)).mul(THETA_BASE).div(_op.ethAmount).div(K_BASE).div(THETA_BASE.sub(_op.theta));
+        if (_op.theta != 0) {
+            // fee = amountIn * _op.ethAmount * K_BASE * (_op.theta) / _op.erc20Amount / (K_BASE + _op.K) / THETA_BASE;
+            fee = amountInNeeded.mul(_op.ethAmount).mul(K_BASE).mul(_op.theta).div(_op.erc20Amount).div(K_BASE.add(_op.K)).div(THETA_BASE);
+        }
+        return (amountInNeeded, fee);
     }
 
     function queryOracle(address token, address to) internal returns (uint256, uint256, uint256, uint256, uint256) {

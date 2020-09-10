@@ -63,7 +63,7 @@ You may need to `activate()` the price oracle through `CoFiXController` contract
 
 ### Scripts
 
-There are several scripts used to invoke with the protocol in [`scripts/`](scripts) folder. Simplely run `truffle exec scripts/SPECIFIC_SCRIPT.JS` with flags to execute. Here are some [examples](docs/changeController.md).
+There are several scripts used to invoke with the protocol in [`scripts/`](scripts) folder. Simplely run `truffle exec scripts/SPECIFIC_SCRIPT.JS` with flags to execute. Here are some [examples](docs/changeController.md).
 
 ## Mainnet
 

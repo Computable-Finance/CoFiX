@@ -12,7 +12,7 @@ module.exports = async function (callback) {
         var Controller;
         var Token;
 
-        console.log(`argv> oracle=${argv.controller}, token=${argv.token}, ethAmount=${argv.theta}, query=${argv.query}`);
+        console.log(`argv> controller=${argv.controller}, token=${argv.token}, theta=${argv.theta}, query=${argv.query}`);
 
         Controller = await CoFiXController.at(argv.controller);
 

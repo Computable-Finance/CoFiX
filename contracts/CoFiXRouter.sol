@@ -131,6 +131,7 @@ contract CoFiXRouter is ICoFiXRouter {
         if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
     }
 
+    // msg.value = oracle fee
     function swapExactTokensForTokens(
         address tokenIn,
         address tokenOut,
@@ -138,7 +139,7 @@ contract CoFiXRouter is ICoFiXRouter {
         uint amountOutMin,
         address to,
         uint deadline
-    ) external payable ensure(deadline) returns (uint _amountIn, uint _amountOut) {
+    ) external override payable ensure(deadline) returns (uint _amountIn, uint _amountOut) {
         // swapExactTokensForETH
         require(msg.value > 0, "CRouter: insufficient msg.value");
         address pairIn = pairFor(factory, tokenIn);

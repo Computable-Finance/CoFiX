@@ -8,14 +8,14 @@ interface ICoFiXRouter {
 
     // All pairs: {ETH <-> ERC20 Token}
 
-    /// @dev Maker add liquidity to pool, get pool token (mint sToken to maker) (notice: msg.value = amountETH + oracle fee)
+    /// @dev Maker add liquidity to pool, get pool token (mint XToken to maker) (notice: msg.value = amountETH + oracle fee)
     /// @param  token The address of ERC20 Token
     /// @param  amountETH The amount of ETH added to pool
     /// @param  amountToken The amount of Token added to pool
     /// @param  liquidityMin The minimum liquidity maker wanted
-    /// @param  to The target address receiving the liquidity pool (sToken)
+    /// @param  to The target address receiving the liquidity pool (XToken)
     /// @param  deadline The dealine of this request
-    /// @return liquidity The real liquidity or sToken minted from pool
+    /// @return liquidity The real liquidity or XToken minted from pool
     function addLiquidity(
         address token,
         uint amountETH,
@@ -25,9 +25,9 @@ interface ICoFiXRouter {
         uint deadline
     ) external payable returns (uint liquidity);
 
-    /// @dev Maker remove liquidity from pool to get ERC20 Token back (maker burn sToken) (notice: msg.value = oracle fee)
+    /// @dev Maker remove liquidity from pool to get ERC20 Token back (maker burn XToken) (notice: msg.value = oracle fee)
     /// @param  token The address of ERC20 Token
-    /// @param  liquidity The amount of liquidity (sToken) sent to pool, or the liquidity to remove
+    /// @param  liquidity The amount of liquidity (XToken) sent to pool, or the liquidity to remove
     /// @param  amountTokenMin The minimum amount of Token wanted to get from pool
     /// @param  to The target address receiving the Token
     /// @param  deadline The dealine of this request
@@ -40,9 +40,9 @@ interface ICoFiXRouter {
         uint deadline
     ) external payable returns (uint amountToken);
 
-    /// @dev Maker remove liquidity from pool to get ETH back (maker burn sToken) (notice: msg.value = oracle fee)
+    /// @dev Maker remove liquidity from pool to get ETH back (maker burn XToken) (notice: msg.value = oracle fee)
     /// @param  token The address of ERC20 Token
-    /// @param  liquidity The amount of liquidity (sToken) sent to pool, or the liquidity to remove
+    /// @param  liquidity The amount of liquidity (XToken) sent to pool, or the liquidity to remove
     /// @param  amountETHMin The minimum amount of ETH wanted to get from pool
     /// @param  to The target address receiving the ETH
     /// @param  deadline The dealine of this request
@@ -81,6 +81,24 @@ interface ICoFiXRouter {
     /// @return _amountOut The real amount of ETH transferred out of pool
     function swapExactTokensForETH(
         address token,
+        uint amountIn,
+        uint amountOutMin,
+        address to,
+        uint deadline
+    ) external payable returns (uint _amountIn, uint _amountOut);
+
+    /// @dev Trader swap exact amount of ERC20 Tokens for other ERC20 Tokens (notice: msg.value = oracle fee)
+    /// @param  tokenIn The address of ERC20 Token a trader want to swap into pool
+    /// @param  tokenOut The address of ERC20 Token a trader want to swap out of pool
+    /// @param  amountIn The exact amount of Token a trader want to swap into pool
+    /// @param  amountOutMin The mininum amount of ETH a trader want to swap out of pool
+    /// @param  to The target address receiving the Token
+    /// @param  deadline The dealine of this request
+    /// @return _amountIn The real amount of Token transferred into pool
+    /// @return _amountOut The real amount of Token transferred out of pool
+    function swapExactTokensForTokens(
+        address tokenIn,
+        address tokenOut,
         uint amountIn,
         uint amountOutMin,
         address to,

@@ -12,7 +12,7 @@ module.exports = async function (callback) {
         var Controller;
         var Token;
 
-        console.log(`argv> oracle=${argv.controller}, token=${argv.token}, ethAmount=${argv.theta}`);
+        console.log(`argv> oracle=${argv.controller}, token=${argv.token}, ethAmount=${argv.theta}, query=${argv.query}`);
 
         Controller = await CoFiXController.at(argv.controller);
 
@@ -25,12 +25,14 @@ module.exports = async function (callback) {
         let kInfo = await Controller.getKInfo(Token.address);
         console.log(`before> kInfo.k=${kInfo.k}, kInfo.updatedAt=${kInfo.updatedAt}, kInfo.theta=${kInfo.theta}`);
 
-        // setTheta
-        await Controller.setTheta(Token.address, argv.theta);
+        if (!argv.query) {
+            // setTheta
+            await Controller.setTheta(Token.address, argv.theta);
 
-        // getKInfo
-        kInfo = await Controller.getKInfo(Token.address);
-        console.log(`after> kInfo.k=${kInfo.k}, kInfo.updatedAt=${kInfo.updatedAt}, kInfo.theta=${kInfo.theta}`);
+            // getKInfo
+            kInfo = await Controller.getKInfo(Token.address);
+            console.log(`after> kInfo.k=${kInfo.k}, kInfo.updatedAt=${kInfo.updatedAt}, kInfo.theta=${kInfo.theta}`);
+        }
 
         callback();
     } catch (e) {

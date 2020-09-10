@@ -100,7 +100,15 @@ module.exports = {
     // }
   },
 
-  plugins: ['solidity-coverage'],
+  plugins: ['solidity-coverage', 'truffle-plugin-verify'],
+
+  api_keys: {
+    etherscan: process.env.ETHERSCAN_API_KEY
+  },
+
+  verify: {
+    preamble: "Author: CoFiX Core"
+  },
 
   // Set default mocha options here, use special reporters etc.
   mocha: {

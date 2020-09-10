@@ -1,8 +1,37 @@
-# CoFiX
+<h1 align=center><a href="https://cofix.io"><code>CoFiX</code></a></h1>
+
+<p align=center> <i>A computable financial transaction model</i> </p>
+
+<p align="center">
+  <a href="https://github.com/Computable-Finance/CoFiX/actions?query=workflow%3ACoFiX">
+    <img src="https://github.com/Computable-Finance/CoFiX/workflows/CoFiX/badge.svg" />
+  </a>
+  <a href="https://travis-ci.org/Computable-Finance/CoFiX">
+    <img src="https://travis-ci.org/Computable-Finance/CoFiX.svg?branch=master" />
+  </a>
+  <a href="https://coveralls.io/github/Computable-Finance/CoFiX?branch=master">
+    <img src="https://coveralls.io/repos/github/Computable-Finance/CoFiX/badge.svg?branch=master" />
+  </a>
+  <a href="https://www.gnu.org/licenses/gpl-3.0">
+    <img src="https://img.shields.io/badge/License-GPLv3-green.svg" />
+  </a>
+</p>
+
+<!-- # [CoFiX](https://cofix.io/)
+
+*A computable financial transaction model*
 
 ![CoFiX](https://github.com/Computable-Finance/CoFiX/workflows/CoFiX/badge.svg)
 [![Build Status](https://travis-ci.org/Computable-Finance/CoFiX.svg?branch=master)](https://travis-ci.org/Computable-Finance/CoFiX)
-[![Coverage Status](https://coveralls.io/repos/github/Computable-Finance/CoFiX/badge.svg?branch=master)](https://coveralls.io/github/Computable-Finance/CoFiX?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/Computable-Finance/CoFiX/badge.svg?branch=master)](https://coveralls.io/github/Computable-Finance/CoFiX?branch=master) -->
+
+## Whitepaper
+
+**[https://cofix.io/doc/CoFiX_White_Paper.pdf](https://cofix.io/doc/CoFiX_White_Paper.pdf)**
+
+## Documentation
+
+**[https://docs.cofix.io/](https://docs.cofix.io/)**
 
 ## Usage
 
@@ -24,9 +53,17 @@ Use `npx oz compile` to adopt `@openzeppelin/cli` toolchain.
 
 ### Deploy
 
+Deploy with `truffle` and you will get a contract deployement summary on contract addresses.
+
 ```shell
 truffle migrate --network ropsten
 ```
+
+You may need to `activate()` the price oracle through `CoFiXController` contract manually and set kTable with the help of [scripts/setKTable.js](scripts/setKTable.js).
+
+### Scripts
+
+There are several scripts used to invoke with the protocol in [`scripts/`](scripts) folder. Simplely run `truffle exec scripts/SPECIFIC_SCRIPT.JS` with flags to execute. Here are some [examples](docs/changeController.md).
 
 ## Mainnet
 
@@ -44,7 +81,7 @@ truffle migrate --network ropsten
 | CoFiXKTable | 0x75E360Be6248Bd46030C6818624a09403EF5eC21 |
 | CoFiXRouter | 0x2878469c466638E8c0878bB86898073CA6C91b45 |
 
-## Testnet (ropsten)
+## Ropsten Testnet
 
 ### Beta-V0.1
 
@@ -93,7 +130,7 @@ truffle migrate --network ropsten
 | CoFiXKTable | 0xDB69107004694428aab5E6F196dcdd588F52B745 |
 | CoFiXRouter | 0x2cC5b038bd296779A3a50430179cB8C6a02B9D13 |
 
-## Kovan testnet
+## Kovan Testnet
 
 ### Beta-V0.5
 

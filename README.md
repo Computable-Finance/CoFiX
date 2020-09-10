@@ -1,8 +1,8 @@
 # CoFiX
 
-![CoFiX](https://github.com/kazamio/CoFiX/workflows/CoFiX/badge.svg)
-[![Build Status](https://travis-ci.org/kazamio/CoFiX.svg?branch=master)](https://travis-ci.org/kazamio/CoFiX)
-[![Coverage Status](https://coveralls.io/repos/github/kazamio/CoFiX/badge.svg?branch=master)](https://coveralls.io/github/kazamio/CoFiX?branch=master)
+![CoFiX](https://github.com/Computable-Finance/CoFiX/workflows/CoFiX/badge.svg)
+[![Build Status](https://travis-ci.org/Computable-Finance/CoFiX.svg?branch=master)](https://travis-ci.org/Computable-Finance/CoFiX)
+[![Coverage Status](https://coveralls.io/repos/github/Computable-Finance/CoFiX/badge.svg?branch=master)](https://coveralls.io/github/Computable-Finance/CoFiX?branch=master)
 
 ## Usage
 

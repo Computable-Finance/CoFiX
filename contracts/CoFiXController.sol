@@ -7,7 +7,7 @@ import "./interface/INest_3_OfferPrice.sol";
 import "./interface/ICoFiXKTable.sol";
 import "./lib/TransferHelpers.sol";
 
-// Controller contract to call NEST Oracle for prices, no special ownership
+// Controller contract to call NEST Oracle for prices, managed by governance
 contract CoFiXController {
 
     using SafeMath for uint256;

@@ -31,7 +31,7 @@
 
 ## Documentation
 
-**[https://docs.cofix.io/](https://docs.cofix.io/)**
+- **[https://docs.cofix.io/](https://docs.cofix.io/)**
 
 ## Usage
 

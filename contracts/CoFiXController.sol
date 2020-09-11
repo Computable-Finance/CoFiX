@@ -8,6 +8,7 @@ import "./interface/ICoFiXKTable.sol";
 import "./lib/TransferHelpers.sol";
 
 // Controller contract to call NEST Oracle for prices, managed by governance
+// Governance role of this contract should be the `Timelock` contract, which is further managed by a multisig contract
 contract CoFiXController {
 
     using SafeMath for uint256;

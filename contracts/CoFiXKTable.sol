@@ -3,6 +3,9 @@ pragma solidity ^0.6.6;
 
 import './interface/ICoFiXKTable.sol';
 
+// KTable contract to store k values, used by CoFiXController contract
+// The K0 values are set for only once, and not changeable after set
+// Anyone could validate by https://github.com/Computable-Finance/CoFiX/blob/master/scripts/setKTable.js
 contract CoFiXKTable is ICoFiXKTable {
 
     address public governance;

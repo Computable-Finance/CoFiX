@@ -11,7 +11,8 @@ import './interface/ICoFiXController.sol';
 import './lib/TransferHelpers.sol';
 import "./lib/ABDKMath64x64.sol";
 
-
+// Pair contract for each trading pair, storing assets and handling settlement
+// No owner or governance
 contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
     using SafeMath  for uint;
 

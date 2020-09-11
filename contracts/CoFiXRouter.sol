@@ -10,6 +10,7 @@ import './interface/IERC20.sol';
 import './interface/IWETH.sol';
 import './interface/ICoFiXPair.sol';
 
+// Router contract to interact with each CoFiXPair, no owner or governance
 contract CoFiXRouter is ICoFiXRouter {
     using SafeMath for uint;
 

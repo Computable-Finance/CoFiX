@@ -5,7 +5,7 @@ import "./lib/SafeMath.sol";
 import "./lib/ABDKMath64x64.sol";
 import "./interface/INest_3_OfferPrice.sol";
 import "./interface/ICoFiXKTable.sol";
-import "./lib/TransferHelpers.sol";
+import "./lib/TransferHelper.sol";
 
 // Controller contract to call NEST Oracle for prices, managed by governance
 // Governance role of this contract should be the `Timelock` contract, which is further managed by a multisig contract

@@ -8,7 +8,7 @@ import './CoFiXERC20.sol';
 import './interface/IERC20.sol';
 import './interface/ICoFiXFactory.sol';
 import './interface/ICoFiXController.sol';
-import './lib/TransferHelpers.sol';
+import './lib/TransferHelper.sol';
 import "./lib/ABDKMath64x64.sol";
 
 // Pair contract for each trading pair, storing assets and handling settlement

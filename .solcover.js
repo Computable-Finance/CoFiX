@@ -5,7 +5,7 @@ module.exports = {
         'CoFiXERC20.sol',
         'test/',
         'lib/ABDKMath64x64.sol',
-        'lib/TransferHelpers.sol',
+        'lib/TransferHelper.sol',
         'lib/SafeMath.sol',
         'interface/',
         'mock/NEST3PriceOracleAutoUpdateConstMock.sol'

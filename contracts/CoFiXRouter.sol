@@ -3,7 +3,7 @@
 pragma solidity ^0.6.6;
 
 import './interface/ICoFiXFactory.sol';
-import './lib/TransferHelpers.sol';
+import './lib/TransferHelper.sol';
 import './interface/ICoFiXRouter.sol';
 import './lib/SafeMath.sol';
 import './interface/IERC20.sol';

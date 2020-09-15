@@ -18,7 +18,8 @@ contract StakingRewards is IStakingRewards, ReentrancyGuard {
     uint256 public periodFinish = 0;
     uint256 public rewardRate = 0;
     uint256 public rewardsDuration = 7 days;
-    uint256 public lastUpdateTime;
+    // uint256 public lastUpdateTime;
+    uint256 public lastUpdateBlock;
     uint256 public rewardPerTokenStored;
 
     mapping(address => uint256) public userRewardPerTokenPaid;
@@ -35,6 +36,9 @@ contract StakingRewards is IStakingRewards, ReentrancyGuard {
     ) public {
         rewardsToken = _rewardsToken;
         stakingToken = _stakingToken;
+        lastUpdateBlock = block.number;
+        
+        periodFinish = block.number.add(rewardsDuration);
     }
 
     /* ========== VIEWS ========== */
@@ -47,8 +51,12 @@ contract StakingRewards is IStakingRewards, ReentrancyGuard {
         return _balances[account];
     }
 
-    function lastTimeRewardApplicable() public override view returns (uint256) {
-        return Math.min(block.timestamp, periodFinish);
+    // function lastTimeRewardApplicable() public override view returns (uint256) {
+    //     return Math.min(block.timestamp, periodFinish);
+    // }
+
+    function lastBlockRewardApplicable() public override view returns (uint256) {
+        return block.number;
     }
 
     function rewardPerToken() public override view returns (uint256) {
@@ -57,7 +65,8 @@ contract StakingRewards is IStakingRewards, ReentrancyGuard {
         }
         return
             rewardPerTokenStored.add(
-                lastTimeRewardApplicable().sub(lastUpdateTime).mul(rewardRate).mul(1e18).div(_totalSupply)
+                // lastTimeRewardApplicable().sub(lastUpdateTime).mul(rewardRate).mul(1e18).div(_totalSupply)
+                lastBlockRewardApplicable().sub(lastUpdateBlock).mul(rewardRate).mul(1e18).div(_totalSupply)
             );
     }
 
@@ -105,7 +114,8 @@ contract StakingRewards is IStakingRewards, ReentrancyGuard {
 
     modifier updateReward(address account) {
         rewardPerTokenStored = rewardPerToken();
-        lastUpdateTime = lastTimeRewardApplicable();
+        // lastUpdateTime = lastTimeRewardApplicable();
+        lastUpdateBlock = lastBlockRewardApplicable();
         if (account != address(0)) {
             rewards[account] = earned(account);
             userRewardPerTokenPaid[account] = rewardPerTokenStored;

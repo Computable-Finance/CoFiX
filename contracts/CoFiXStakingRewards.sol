@@ -6,19 +6,16 @@ import "./lib/SafeMath.sol";
 import "./lib/TransferHelper.sol";
 import "@openzeppelin/contracts/math/Math.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "./interface/IStakingRewards.sol";
+import "./interface/ICoFiXStakingRewards.sol";
 
-contract StakingRewards is IStakingRewards, ReentrancyGuard {
+contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
     using SafeMath for uint256;
 
     /* ========== STATE VARIABLES ========== */
 
     address public rewardsToken;
     address public stakingToken;
-    uint256 public periodFinish = 0;
     uint256 public rewardRate = 0;
-    uint256 public rewardsDuration = 7 days;
-    // uint256 public lastUpdateTime;
     uint256 public lastUpdateBlock;
     uint256 public rewardPerTokenStored;
 
@@ -36,9 +33,7 @@ contract StakingRewards is IStakingRewards, ReentrancyGuard {
     ) public {
         rewardsToken = _rewardsToken;
         stakingToken = _stakingToken;
-        lastUpdateBlock = block.number;
-        
-        periodFinish = block.number.add(rewardsDuration);
+        lastUpdateBlock = block.number;        
     }
 
     /* ========== VIEWS ========== */
@@ -51,10 +46,6 @@ contract StakingRewards is IStakingRewards, ReentrancyGuard {
         return _balances[account];
     }
 
-    // function lastTimeRewardApplicable() public override view returns (uint256) {
-    //     return Math.min(block.timestamp, periodFinish);
-    // }
-
     function lastBlockRewardApplicable() public override view returns (uint256) {
         return block.number;
     }
@@ -65,17 +56,16 @@ contract StakingRewards is IStakingRewards, ReentrancyGuard {
         }
         return
             rewardPerTokenStored.add(
-                // lastTimeRewardApplicable().sub(lastUpdateTime).mul(rewardRate).mul(1e18).div(_totalSupply)
-                lastBlockRewardApplicable().sub(lastUpdateBlock).mul(rewardRate).mul(1e18).div(_totalSupply)
+                accrued().mul(1e18).div(_totalSupply) // TODO: 90%
             );
+    }
+
+    function accrued() public override view returns (uint256) {
+        return lastBlockRewardApplicable().sub(lastUpdateBlock).mul(rewardRate);
     }
 
     function earned(address account) public override view returns (uint256) {
         return _balances[account].mul(rewardPerToken().sub(userRewardPerTokenPaid[account])).div(1e18).add(rewards[account]);
-    }
-
-    function getRewardForDuration() external override view returns (uint256) {
-        return rewardRate.mul(rewardsDuration);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -86,6 +76,14 @@ contract StakingRewards is IStakingRewards, ReentrancyGuard {
         _balances[msg.sender] = _balances[msg.sender].add(amount);
         TransferHelper.safeTransferFrom(stakingToken, msg.sender, address(this), amount);
         emit Staked(msg.sender, amount);
+    }
+
+    function stakeForOther(address other, uint256 amount) external override nonReentrant updateReward(other) {
+        require(amount > 0, "Cannot stake 0");
+        _totalSupply = _totalSupply.add(amount);
+        _balances[other] = _balances[other].add(amount);
+        TransferHelper.safeTransferFrom(stakingToken, msg.sender, address(this), amount);
+        emit StakedForOther(msg.sender, other, amount);
     }
 
     function withdraw(uint256 amount) public override nonReentrant updateReward(msg.sender) {
@@ -110,11 +108,25 @@ contract StakingRewards is IStakingRewards, ReentrancyGuard {
         getReward();
     }
 
+    // add reward from trading pool or anyone else
+    function addReward(uint256 amount) public override nonReentrant updateReward(address(0)) {
+        // transfer from caller (router contract)
+        TransferHelper.safeTransferFrom(rewardsToken, msg.sender, address(this), amount);
+        // update rewardPerTokenStored
+        rewardPerTokenStored = rewardPerTokenStored.add(amount.mul(1e18).div(_totalSupply)); // TODO: confirm 1e18 is enough for amount
+        emit RewardAdded(msg.sender, amount);
+    }
+
     /* ========== MODIFIERS ========== */
 
     modifier updateReward(address account) {
         rewardPerTokenStored = rewardPerToken();
-        // lastUpdateTime = lastTimeRewardApplicable();
+        uint256 newAccrued = accrued();
+        if (newAccrued > 0) {
+            // TODO: transfer from CoFiXReservoir
+            // TODO: transfer 10% out
+            // TODO: must never fail
+        } 
         lastUpdateBlock = lastBlockRewardApplicable();
         if (account != address(0)) {
             rewards[account] = earned(account);
@@ -125,10 +137,9 @@ contract StakingRewards is IStakingRewards, ReentrancyGuard {
 
     /* ========== EVENTS ========== */
 
-    event RewardAdded(uint256 reward);
+    event RewardAdded(address sender, uint256 reward);
     event Staked(address indexed user, uint256 amount);
+    event StakedForOther(address indexed user, address indexed other, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
-    event RewardsDurationUpdated(uint256 newDuration);
-    event Recovered(address token, uint256 amount);
 }

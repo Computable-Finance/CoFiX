@@ -7,6 +7,7 @@ import "./lib/TransferHelper.sol";
 import "@openzeppelin/contracts/math/Math.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./interface/ICoFiXStakingRewards.sol";
+import "./interface/ICoFiXReservoir.sol";
 
 contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
     using SafeMath for uint256;
@@ -15,7 +16,8 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
 
     address public rewardsToken;
     address public stakingToken;
-    uint256 public rewardRate = 0;
+    address public cofixReservoir;
+    // uint256 public rewardRate = 0;
     uint256 public lastUpdateBlock;
     uint256 public rewardPerTokenStored;
 
@@ -29,10 +31,12 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
 
     constructor(
         address _rewardsToken,
-        address _stakingToken
+        address _stakingToken,
+        address _cofixReservoir
     ) public {
         rewardsToken = _rewardsToken;
         stakingToken = _stakingToken;
+        cofixReservoir = _cofixReservoir;
         lastUpdateBlock = block.number;        
     }
 
@@ -60,8 +64,23 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
             );
     }
 
+    function _rewardPerTokenAndAccrued() internal view returns (uint256, uint256) {
+        if (_totalSupply == 0) {
+            return (rewardPerTokenStored, 0); // TODO: think about totalSupply = 0 situation
+        }
+        uint256 _accrued = accrued();
+        uint256 _rewardPerToken = rewardPerTokenStored.add(
+                _accrued.mul(1e18).div(_totalSupply) // TODO: 90%
+            );
+        return (_rewardPerToken, _accrued);
+    }
+
+    function rewardRate() public view returns (uint256) {
+        return ICoFiXReservoir(cofixReservoir).currentPoolRate();
+    }
+
     function accrued() public override view returns (uint256) {
-        return lastBlockRewardApplicable().sub(lastUpdateBlock).mul(rewardRate);
+        return lastBlockRewardApplicable().sub(lastUpdateBlock).mul(rewardRate()); // TODO: handle the last mining issue
     }
 
     function earned(address account) public override view returns (uint256) {
@@ -120,12 +139,17 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
     /* ========== MODIFIERS ========== */
 
     modifier updateReward(address account) {
-        rewardPerTokenStored = rewardPerToken();
-        uint256 newAccrued = accrued();
+        // rewardPerTokenStored = rewardPerToken();
+        // uint256 newAccrued = accrued();
+        (uint256 newRewardPerToken, uint256 newAccrued) = _rewardPerTokenAndAccrued();
+        rewardPerTokenStored = newRewardPerToken;
         if (newAccrued > 0) {
             // TODO: transfer from CoFiXReservoir
-            // TODO: transfer 10% out
             // TODO: must never fail
+            uint256 received = ICoFiXReservoir(cofixReservoir).transferCoFi(newAccrued);
+            if (received > 0) {
+                // TODO: transfer 10% out
+            }
         } 
         lastUpdateBlock = lastBlockRewardApplicable();
         if (account != address(0)) {

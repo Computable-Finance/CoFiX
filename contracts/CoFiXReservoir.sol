@@ -4,10 +4,14 @@ pragma solidity ^0.6.6;
 
 import "./lib/SafeMath.sol";
 import "./lib/ABDKMath64x64.sol";
+import "./interface/IERC20.sol";
+import "./interface/ICoFiXReservoir.sol";
 
-contract CoFiXReservoir {
+contract CoFiXReservoir is ICoFiXReservoir {
 
     using SafeMath for uint256;
+
+    address public cofiToken;
 
     uint256 public constant RATE_BASE = 1e18;
 
@@ -25,7 +29,9 @@ contract CoFiXReservoir {
     address[] public allPools;
 
     mapping (address => bool) public cofiPools;
-    mapping (address => uint256) public cofiPoolSpeeds; // yield per block for each pool (CoFiXStakingRewards pool)
+    // mapping (address => uint256) public cofiPoolSpeeds; // yield per block for each pool (CoFiXStakingRewards pool)
+
+    event NewPoolAdded(address pool, uint256 index);
 
     constructor() public {
         governance = msg.sender;
@@ -33,28 +39,48 @@ contract CoFiXReservoir {
     }
 
     /* setters for protocol governance */
-    function setGovernance(address _new) external {
+    function setGovernance(address _new) external override {
         require(msg.sender == governance, "CReservoir: !governance");
         governance = _new;
     }
 
-    function setInitCoFiRate(uint256 _new) external {
+    function setInitCoFiRate(uint256 _new) external override {
         require(msg.sender == governance, "CReservoir: !governance");
         initCoFiRate = _new;
     }
 
-    function setDecayPeriod(uint256 _new) external {
+    function setDecayPeriod(uint256 _new) external override {
         require(msg.sender == governance, "CReservoir: !governance");
         require(_new != 0, "CReservoir: wrong period setting");
         decayPeriod = _new;
     }
 
-    function setDecayRate(uint256 _new) external {
+    function setDecayRate(uint256 _new) external override {
         require(msg.sender == governance, "CReservoir: !governance");
         decayRate = _new;
     }
 
-    function currentPeriod() public view returns (uint256) {
+    function addPool(address pool) external override {
+        require(msg.sender == governance, "CReservoir: !governance");
+        require(cofiPools[pool] == false, "CReservoir: pool added");
+        cofiPools[pool] = true;
+        allPools.push(pool);
+        emit NewPoolAdded(pool, allPools.length);
+    }
+
+    // this function should never fail when pool contract calling it
+    function transferCoFi(uint256 amount) external override returns (uint256) {
+        // TODO: not sure if we could let governance exec this, so we can support other distribute methods in the future
+        require(cofiPools[msg.sender] == true, "CReservoir: only pool allowed");
+        uint256 balance = IERC20(cofiToken).balanceOf(address(this));
+        if (amount > balance) {
+            amount = balance;
+        }
+        IERC20(cofiToken).transfer(msg.sender, amount); // allow zero amount
+        return amount;
+    }    
+
+    function currentPeriod() public override view returns (uint256) {
         return (block.number).sub(genesisBlock).div(decayPeriod);
         // TODO: prevent index too large
     }
@@ -74,7 +100,7 @@ contract CoFiXReservoir {
     //     return uint256(ABDKMath64x64.toUInt(decayRatio)).mul(initCoFiRate).div(RATE_BASE); // TODO: if we want mul not overflow revert, should limit initCoFiRate
     // }
 
-    function currentCoFiRate() public view returns (uint256) {
+    function currentCoFiRate() public override view returns (uint256) {
         uint256 periodIdx = currentPeriod();
         if (periodIdx > 5) {
             periodIdx = 5;
@@ -87,18 +113,9 @@ contract CoFiXReservoir {
         return cofiRate;
     }
 
-    function addPool(address pool) public {
-        require(msg.sender == governance, "CReservoir: !governance");
-        require(cofiPools[pool] == false, "CReservoir: pool added");
-        cofiPools[pool] = true;
-        allPools.push(pool);
-    }
-
-    // function setPoolRate() public {
-    //     require(msg.sender == governance, "CReservoir: !governance");
-    // }
-
-    function getPoolRate(address pool) public view returns (uint256) {
-        return cofiPoolSpeeds[pool];
+    function currentPoolRate() external override view returns (uint256 poolRate) {
+        uint256 cofiRate = currentCoFiRate();
+        poolRate = cofiRate.div(allPools.length);
+        return poolRate;
     }
 }

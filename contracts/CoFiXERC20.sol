@@ -2,8 +2,8 @@
 
 pragma solidity ^0.6.6;
 
-import './interface/ICoFiXERC20.sol';
-import './lib/SafeMath.sol';
+import "./interface/ICoFiXERC20.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 // ERC20 token implementation, inherited by CoFiXPair contract, no owner or governance
 contract CoFiXERC20 is ICoFiXERC20 {

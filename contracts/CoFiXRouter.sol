@@ -2,13 +2,13 @@
 
 pragma solidity ^0.6.6;
 
-import './interface/ICoFiXFactory.sol';
-import './lib/TransferHelper.sol';
-import './interface/ICoFiXRouter.sol';
-import './lib/SafeMath.sol';
-import './interface/IERC20.sol';
-import './interface/IWETH.sol';
-import './interface/ICoFiXPair.sol';
+import "./interface/ICoFiXFactory.sol";
+import "./lib/TransferHelper.sol";
+import "./interface/ICoFiXRouter.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./interface/IWETH.sol";
+import "./interface/ICoFiXPair.sol";
 
 // Router contract to interact with each CoFiXPair, no owner or governance
 contract CoFiXRouter is ICoFiXRouter {

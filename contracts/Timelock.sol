@@ -18,7 +18,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 pragma solidity ^0.6.6;
 
-import './lib/SafeMath.sol';
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 // Timelock contract to act as the governance of CoFiX protocol
 // Admin role of this Timelock contract should be a multisig contract

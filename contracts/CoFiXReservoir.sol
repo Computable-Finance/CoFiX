@@ -2,9 +2,9 @@
 
 pragma solidity ^0.6.6;
 
-import "./lib/SafeMath.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./lib/ABDKMath64x64.sol";
-import "./interface/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interface/ICoFiXReservoir.sol";
 
 contract CoFiXReservoir is ICoFiXReservoir {

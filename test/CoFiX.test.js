@@ -11,7 +11,7 @@ const { BN, constants, expectEvent, expectRevert, time } = require('@openzeppeli
 // const CoFiXController = contract.fromArtifact("CoFiXController");
 
 const CoFiXRouter = artifacts.require("CoFiXRouter");
-// const ERC20 = artifacts.require("ERC20");
+// const ERC20 = artifacts.require("TestERC20");
 const CoFiXFactory = artifacts.require("CoFiXFactory");
 const CoFiXPair = artifacts.require("CoFiXPair");
 const WETH9 = artifacts.require("WETH9");

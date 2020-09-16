@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.6.6;
 
-import "./lib/SafeMath.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./lib/ABDKMath64x64.sol";
 import "./interface/INest_3_OfferPrice.sol";
 import "./interface/ICoFiXKTable.sol";

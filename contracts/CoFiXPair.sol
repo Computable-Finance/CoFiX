@@ -3,12 +3,12 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
-import './interface/ICoFiXPair.sol';
-import './CoFiXERC20.sol';
-import './interface/IERC20.sol';
-import './interface/ICoFiXFactory.sol';
-import './interface/ICoFiXController.sol';
-import './lib/TransferHelper.sol';
+import "./interface/ICoFiXPair.sol";
+import "./CoFiXERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./interface/ICoFiXFactory.sol";
+import "./interface/ICoFiXController.sol";
+import "./lib/TransferHelper.sol";
 import "./lib/ABDKMath64x64.sol";
 
 // Pair contract for each trading pair, storing assets and handling settlement

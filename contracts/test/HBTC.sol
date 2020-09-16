@@ -2,10 +2,10 @@
 
 pragma solidity ^0.6.6;
 
-import "./ERC20.sol";
+import "./TestERC20.sol";
 
-contract HBTC is ERC20 {
+contract HBTC is TestERC20 {
 
-    constructor() ERC20(10**7*10**18, "HBTC Token", "HBTC", 18) public {
+    constructor() TestERC20(10**7*10**18, "HBTC Token", "HBTC", 18) public {
     }
 }

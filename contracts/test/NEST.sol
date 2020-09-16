@@ -2,10 +2,10 @@
 
 pragma solidity ^0.6.6;
 
-import "./ERC20.sol";
+import "./TestERC20.sol";
 
-contract NEST is ERC20 {
+contract NEST is TestERC20 {
 
-    constructor() ERC20(10**10*10**18, "NEST Token", "NEST", 18) public {
+    constructor() TestERC20(10**10*10**18, "NEST Token", "NEST", 18) public {
     }
 }

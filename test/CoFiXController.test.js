@@ -4,7 +4,7 @@ const { BN, constants, expectEvent, expectRevert, time, balance } = require('@op
 const { calcK, convert_from_fixed_point, convert_into_fixed_point, calcRelativeDiff } = require('../lib/calc');
 const { printKInfoEvent } = require('../lib/print');
 
-const ERC20 = artifacts.require("ERC20");
+const ERC20 = artifacts.require("TestERC20");
 const CoFiXController = artifacts.require("CoFiXController");
 const NEST3PriceOracleMock = artifacts.require("mock/NEST3PriceOracleMock");
 const NEST3PriceOracleConstMock = artifacts.require("NEST3PriceOracleConstMock");

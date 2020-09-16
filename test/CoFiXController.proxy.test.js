@@ -3,7 +3,7 @@
 // const { BN, constants, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
 // const upgrades = require('@openzeppelin/truffle-upgrades');
 
-// const ERC20 = artifacts.require("ERC20");
+// const ERC20 = artifacts.require("TestERC20");
 // const CoFiXController = artifacts.require("CoFiXController");
 // const CoFiXControllerV2 = artifacts.require('CoFiXControllerV2Test');
 

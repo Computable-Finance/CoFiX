@@ -1,4 +1,4 @@
-const ERC20 = artifacts.require("ERC20");
+const ERC20 = artifacts.require("TestERC20");
 const { BN } = require('@openzeppelin/test-helpers');
 const { web3 } = require('@openzeppelin/test-environment');
 const Decimal = require('decimal.js');

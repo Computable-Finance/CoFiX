@@ -5,9 +5,9 @@ pragma solidity ^0.6.6;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./lib/ABDKMath64x64.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./interface/ICoFiXReservoir.sol";
+import "./interface/ICoFiXVaultForLP.sol";
 
-contract CoFiXReservoir is ICoFiXReservoir {
+contract CoFiXVaultForLP is ICoFiXVaultForLP {
 
     using SafeMath for uint256;
 

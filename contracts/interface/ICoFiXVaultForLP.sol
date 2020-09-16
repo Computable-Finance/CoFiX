@@ -2,7 +2,7 @@
 
 pragma solidity ^0.6.6;
 
-interface ICoFiXReservoir {
+interface ICoFiXVaultForLP {
 
     event NewPoolAdded(address pool, uint256 index);
 

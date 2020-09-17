@@ -11,9 +11,9 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP {
 
     using SafeMath for uint256;
 
-    address public cofiToken;
-
     uint256 public constant RATE_BASE = 1e18;
+
+    address public cofiToken;
 
     uint256 public genesisBlock; // TODO: make this constant to reduce gas cost
 

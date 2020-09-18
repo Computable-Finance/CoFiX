@@ -28,12 +28,13 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP {
 
     address[] public allPools;
 
-    mapping (address => bool) public cofiPools;
+    mapping (address => bool) public poolAllowed;
     // mapping (address => uint256) public cofiPoolSpeeds; // yield per block for each pool (CoFiXStakingRewards pool)
 
     event NewPoolAdded(address pool, uint256 index);
 
-    constructor() public {
+    constructor(address cofi) public {
+        cofiToken = cofi;
         governance = msg.sender;
         genesisBlock = block.number;
     }
@@ -62,8 +63,8 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP {
 
     function addPool(address pool) external override {
         require(msg.sender == governance, "CVaultForLP: !governance");
-        require(cofiPools[pool] == false, "CVaultForLP: pool added");
-        cofiPools[pool] = true;
+        require(poolAllowed[pool] == false, "CVaultForLP: pool added");
+        poolAllowed[pool] = true;
         allPools.push(pool);
         emit NewPoolAdded(pool, allPools.length);
     }
@@ -71,7 +72,7 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP {
     // this function should never fail when pool contract calling it
     function transferCoFi(uint256 amount) external override returns (uint256) {
         // TODO: not sure if we could let governance exec this, so we can support other distribute methods in the future
-        require(cofiPools[msg.sender] == true, "CVaultForLP: only pool allowed");
+        require(poolAllowed[msg.sender] == true, "CVaultForLP: only pool allowed");
         uint256 balance = IERC20(cofiToken).balanceOf(address(this));
         if (amount > balance) {
             amount = balance;

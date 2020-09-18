@@ -19,12 +19,16 @@ contract('CoFiToken', (accounts) => {
         CoFi = await CoFiToken.new({ from: deployer });
     });
 
-    it("test", async () => {
-    });
-
     it("should have correct total supply", async () => {
         const totalSupply = await CoFi.totalSupply();
         expect(totalSupply).to.bignumber.equal(TotalSupplyOfCoFi);
+    });
+
+    it("should have correct name and symbol", async () => {
+        const name = await CoFi.name();
+        const symbol = await CoFi.symbol();
+        expect(name).equal("CoFiToken");
+        expect(symbol).equal("CoFi");
     });
 
     it("should transfer correctly", async () => {
@@ -35,7 +39,6 @@ contract('CoFiToken', (accounts) => {
     });
 
     it("should revert if no enough balance", async () => {
-        // await CoFi.transfer(TotalSupplyOfCoFi, amount, {from: deployer});
         await expectRevert(CoFi.transfer(receiver, TotalSupplyOfCoFi, {from: deployer}), "ERC20: transfer amount exceeds balance");
     });
 

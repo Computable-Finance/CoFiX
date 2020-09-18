@@ -40,29 +40,29 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP {
 
     /* setters for protocol governance */
     function setGovernance(address _new) external override {
-        require(msg.sender == governance, "CReservoir: !governance");
+        require(msg.sender == governance, "CVaultForLP: !governance");
         governance = _new;
     }
 
     function setInitCoFiRate(uint256 _new) external override {
-        require(msg.sender == governance, "CReservoir: !governance");
+        require(msg.sender == governance, "CVaultForLP: !governance");
         initCoFiRate = _new;
     }
 
     function setDecayPeriod(uint256 _new) external override {
-        require(msg.sender == governance, "CReservoir: !governance");
-        require(_new != 0, "CReservoir: wrong period setting");
+        require(msg.sender == governance, "CVaultForLP: !governance");
+        require(_new != 0, "CVaultForLP: wrong period setting");
         decayPeriod = _new;
     }
 
     function setDecayRate(uint256 _new) external override {
-        require(msg.sender == governance, "CReservoir: !governance");
+        require(msg.sender == governance, "CVaultForLP: !governance");
         decayRate = _new;
     }
 
     function addPool(address pool) external override {
-        require(msg.sender == governance, "CReservoir: !governance");
-        require(cofiPools[pool] == false, "CReservoir: pool added");
+        require(msg.sender == governance, "CVaultForLP: !governance");
+        require(cofiPools[pool] == false, "CVaultForLP: pool added");
         cofiPools[pool] = true;
         allPools.push(pool);
         emit NewPoolAdded(pool, allPools.length);
@@ -71,7 +71,7 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP {
     // this function should never fail when pool contract calling it
     function transferCoFi(uint256 amount) external override returns (uint256) {
         // TODO: not sure if we could let governance exec this, so we can support other distribute methods in the future
-        require(cofiPools[msg.sender] == true, "CReservoir: only pool allowed");
+        require(cofiPools[msg.sender] == true, "CVaultForLP: only pool allowed");
         uint256 balance = IERC20(cofiToken).balanceOf(address(this));
         if (amount > balance) {
             amount = balance;

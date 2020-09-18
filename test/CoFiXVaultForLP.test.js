@@ -31,9 +31,6 @@ contract('CoFiXVaultForLP', (accounts) => {
         VaultForLP = await CoFiXVaultForLP.new(CoFi.address, { from: deployer });
     });
 
-    it("test", async () => {
-    });
-
     it("should revert if no governance add pool", async () => {
         await expectRevert(VaultForLP.addPool(pool1, {from: non_governance}), "CVaultForLP: !governance");
     });

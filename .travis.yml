@@ -3,7 +3,7 @@ node_js:
   - 12.18.0
 os:
   - linux
-  # - osx
+  - osx
 
 install:
   - npm ci

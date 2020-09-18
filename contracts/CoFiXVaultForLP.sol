@@ -22,7 +22,7 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP {
 
     uint256 public initCoFiRate = 10*1e18; // yield per block
     uint256 public decayPeriod = 2400000; // yield decays for every 2,400,000 blocks
-    uint256 public decayRate = 80; // (0.8*2**64).toString(16), 0.8 as 64.64-bit fixed point
+    uint256 public decayRate = 80;
 
     // int128 public decayRateFP = 0xCCCCCCCCCCCCD000; // (0.8*2**64).toString(16), 0.8 as 64.64-bit fixed point
 

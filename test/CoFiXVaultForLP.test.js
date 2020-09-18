@@ -21,6 +21,11 @@ contract('CoFiXVaultForLP', (accounts) => {
     const TotalSupplyOfCoFi = new BN("100000000000000000000000000"); // 1e8 * 1e18
     const HalfSupplyOfCoFi = TotalSupplyOfCoFi.div(new BN(2)); // or the init supply to CoFiXVaultForLP
 
+    const RATE_BASE = web3.utils.toWei('1', 'ether');
+
+    const DECAY_RATE = 80;
+    const INIT_COFI_RATE = web3.utils.toWei('10', 'ether');
+
     before(async () => {
         CoFi = await CoFiToken.new({ from: deployer });
         VaultForLP = await CoFiXVaultForLP.new(CoFi.address, { from: deployer });
@@ -89,4 +94,121 @@ contract('CoFiXVaultForLP', (accounts) => {
         expect(balanceOfPool1After).to.bignumber.equal(newBalance);
     });
     
+    it("should have correct stats", async () => {
+        const decayRate = await VaultForLP.decayRate();
+        expect(decayRate).to.bignumber.equal(DECAY_RATE.toString());
+        const currentPeriod = await VaultForLP.currentPeriod();
+        expect(currentPeriod).to.bignumber.equal("0");
+        const currentCoFiRate = await VaultForLP.currentCoFiRate();
+        expect(currentCoFiRate).to.bignumber.equal(INIT_COFI_RATE);
+        const rateBase = await VaultForLP.RATE_BASE();
+        expect(rateBase).to.bignumber.equal(RATE_BASE);
+        const cofiRate = currentCoFiRate.div(new BN(RATE_BASE));
+        if (verbose) {
+            console.log(`currentCoFiRate: ${cofiRate} CoFi per block`);
+        }
+        const currentPoolRate = await VaultForLP.currentPoolRate();
+        expect(currentPoolRate).to.bignumber.equal(INIT_COFI_RATE); // only one pool now
+        const poolRate = currentPoolRate.div(new BN(RATE_BASE));
+        if (verbose) {
+            console.log(`currentPoolRate: ${poolRate} CoFi per block`);
+        } 
+    });
+
+    it("should have correct stats if we add another pool", async () => {
+        // add pool2
+        await VaultForLP.addPool(pool2, {from: governance});
+        const allowed = await VaultForLP.poolAllowed(pool2);
+        expect(allowed).equal(true);
+
+        // should keeps
+        const currentPeriod = await VaultForLP.currentPeriod();
+        expect(currentPeriod).to.bignumber.equal("0");
+        const currentCoFiRate = await VaultForLP.currentCoFiRate();
+        expect(currentCoFiRate).to.bignumber.equal(INIT_COFI_RATE);
+        const rateBase = await VaultForLP.RATE_BASE();
+        expect(rateBase).to.bignumber.equal(RATE_BASE);
+        const cofiRate = currentCoFiRate.div(new BN(RATE_BASE));
+        if (verbose) {
+            console.log(`currentCoFiRate: ${cofiRate} CoFi per block`);
+        }
+        const currentPoolRate = await VaultForLP.currentPoolRate();
+        expect(currentPoolRate).to.bignumber.equal((new BN(INIT_COFI_RATE)).div(new BN(2))); // two pools now
+        const poolRate = currentPoolRate.div(new BN(RATE_BASE));
+        if (verbose) {
+            console.log(`currentPoolRate: ${poolRate} CoFi per block`);
+        }
+        // gas cost of currentPoolRate()
+        const gasCost = await VaultForLP.currentPoolRate.estimateGas();
+        if (verbose) {
+            console.log(`gas cost of currentPoolRate interface: ${gasCost}`); // should sub 21000
+        }
+    });
+
+    it("should have correct stats if we change decayPeriod", async () => {
+        const currentPeriod = await VaultForLP.currentPeriod();
+        expect(currentPeriod).to.bignumber.equal("0");
+
+        const decayPeriod = "5";
+        await VaultForLP.setDecayPeriod(decayPeriod);
+        const currentDecayPeriod = await VaultForLP.decayPeriod();
+        expect(currentDecayPeriod).to.bignumber.equal(decayPeriod);
+
+        const genesisBlock = await VaultForLP.genesisBlock();
+        const latestBlock = await time.latestBlock();
+        const newCurrentPeriod = await VaultForLP.currentPeriod();
+        const expectPeriod = Math.floor((latestBlock - genesisBlock) / decayPeriod);
+        expect(expectPeriod.toString()).to.bignumber.equal(newCurrentPeriod);
+        if (verbose) {
+            console.log(`genesisBlock: ${genesisBlock}`);
+            console.log(`latestBlock: ${latestBlock}`);
+            console.log(`expectPeriod: ${expectPeriod}, newCurrentPeriod: ${newCurrentPeriod}`);
+        }
+
+        // decay rate
+        const currentCoFiRate = await VaultForLP.currentCoFiRate();
+        let expectCofiRate = new BN(INIT_COFI_RATE);
+        const decayRate = new BN(DECAY_RATE.toString());
+        for (let i = 0; i < newCurrentPeriod; i++) {
+            expectCofiRate = expectCofiRate.mul(decayRate).div(new BN(100));
+        }
+        expect(expectCofiRate).to.bignumber.equal(currentCoFiRate);
+        if (verbose) {
+            console.log(`expectCofiRate: ${expectCofiRate}, currentCoFiRate: ${currentCoFiRate}`);
+        }      
+    });
+
+    it("should have correct stats if we change push period over five", async () => {
+        for (let i = 0; i < 5*4; i++) {
+            await time.advanceBlock();
+        }
+        const decayPeriod = "5";
+        const genesisBlock = await VaultForLP.genesisBlock();
+        const latestBlock = await time.latestBlock();
+        const newCurrentPeriod = await VaultForLP.currentPeriod();
+        const expectPeriod = Math.floor((latestBlock - genesisBlock) / decayPeriod);
+        expect(expectPeriod.toString()).to.bignumber.equal(newCurrentPeriod);
+        if (verbose) {
+            console.log(`genesisBlock: ${genesisBlock}`);
+            console.log(`latestBlock: ${latestBlock}`);
+            console.log(`expectPeriod: ${expectPeriod}, newCurrentPeriod: ${newCurrentPeriod}`);
+        }
+
+        // decay rate
+        const currentCoFiRate = await VaultForLP.currentCoFiRate();
+        let expectCofiRate = new BN(INIT_COFI_RATE);
+        const decayRate = new BN(DECAY_RATE.toString());
+        let periodIdx = newCurrentPeriod;
+        if (newCurrentPeriod > 5) {
+            periodIdx = 5;
+        }
+        for (let i = 0; i < periodIdx; i++) {
+            expectCofiRate = expectCofiRate.mul(decayRate).div(new BN(100));
+        }
+        expect(expectCofiRate).to.bignumber.equal(currentCoFiRate);
+        if (verbose) {
+            console.log(`expectCofiRate: ${expectCofiRate}, currentCoFiRate: ${currentCoFiRate}`);
+        }      
+    });
+
 });

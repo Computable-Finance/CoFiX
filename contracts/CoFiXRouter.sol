@@ -104,6 +104,7 @@ contract CoFiXRouter is ICoFiXRouter {
         // approve to staking pool
         ICoFiXPair(pair).approve(pool, liquidity);
         ICoFiXStakingRewards(pool).stakeForOther(to, liquidity);
+        ICoFiXPair(pair).approve(pool, 0); // ensure
         // refund oracle fee to msg.sender, if any
         if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
     }

@@ -5,6 +5,11 @@
         "internalType": "address",
         "name": "_WETH",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_vaultForLP",
+        "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
@@ -127,6 +132,32 @@
   },
   {
     "inputs": [],
+    "name": "vaultForLP",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "vaultForTrader",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "allPairsLength",
     "outputs": [
       {
@@ -197,6 +228,19 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_new",
+        "type": "address"
+      }
+    ],
+    "name": "setVaultForLP",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "getController",
     "outputs": [
@@ -212,6 +256,19 @@
   {
     "inputs": [],
     "name": "getFeeReceiver",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getVaultForLP",
     "outputs": [
       {
         "internalType": "address",

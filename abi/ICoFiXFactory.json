@@ -134,6 +134,19 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_new",
+        "type": "address"
+      }
+    ],
+    "name": "setVaultForLP",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "getController",
     "outputs": [
@@ -153,6 +166,19 @@
       {
         "internalType": "address",
         "name": "feeReceiver",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getVaultForLP",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "vaultForLP",
         "type": "address"
       }
     ],

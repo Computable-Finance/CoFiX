@@ -21,6 +21,6 @@ interface ICoFiXVaultForLP {
 
     /// @dev Get the award staking pool address of pair (XToken)
     /// @param  pair The address of XToken(pair) contract
-    /// @return The pool address
+    /// @return pool The pool address
     function stakingPoolForPair(address pair) external view returns (address pool);
 }

@@ -1,3 +1,6 @@
+# Steps to deploy contracts for test
+
+
 truffle migrate
 
 set init price
@@ -9,4 +12,3 @@ transfer cofi to vault
 addPoolForPair in vault
 
 test addLiquidityAndStake
-

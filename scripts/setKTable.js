@@ -18,7 +18,7 @@ module.exports = async function (callback) {
     try {
         var KTable;
 
-        console.log(`argv> oracle=${argv.ktable}, check=${argv.validate}`);
+        console.log(`argv> ktable=${argv.ktable}, check=${argv.validate}`);
 
         if (argv.ktable === "" || argv.ktable === undefined) {
             KTable = await CoFiXKTable.deployed();

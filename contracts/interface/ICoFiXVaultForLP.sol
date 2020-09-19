@@ -19,5 +19,8 @@ interface ICoFiXVaultForLP {
     function currentCoFiRate() external view returns (uint256);
     function currentPoolRate() external view returns (uint256 poolRate);
 
+    /// @dev Get the award staking pool address of pair (XToken)
+    /// @param  pair The address of XToken(pair) contract
+    /// @return The pool address
     function stakingPoolForPair(address pair) external view returns (address pool);
 }

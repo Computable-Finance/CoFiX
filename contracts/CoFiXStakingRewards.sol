@@ -14,8 +14,8 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
 
     /* ========== STATE VARIABLES ========== */
 
-    address public rewardsToken;
-    address public stakingToken;
+    address public override rewardsToken;
+    address public override stakingToken;
     address public cofixVaultForLP;
     // uint256 public rewardRate = 0;
     uint256 public lastUpdateBlock;
@@ -75,7 +75,7 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
         return (_rewardPerToken, _accrued);
     }
 
-    function rewardRate() public view returns (uint256) {
+    function rewardRate() public override view returns (uint256) {
         return ICoFiXVaultForLP(cofixVaultForLP).currentPoolRate();
     }
 

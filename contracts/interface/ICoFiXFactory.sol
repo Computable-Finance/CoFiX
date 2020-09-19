@@ -22,6 +22,8 @@ interface ICoFiXFactory {
     function setGovernance(address _new) external;
     function setController(address _new) external;
     function setFeeReceiver(address _new) external;
+    function setVaultForLP(address _new) external;
     function getController() external view returns (address controller);
     function getFeeReceiver() external view returns (address feeReceiver);
+    function getVaultForLP() external view returns (address vaultForLP);
 }

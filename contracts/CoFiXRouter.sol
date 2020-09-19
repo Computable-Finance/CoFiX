@@ -9,6 +9,8 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interface/IWETH.sol";
 import "./interface/ICoFiXPair.sol";
+import "./interface/ICoFiXVaultForLP.sol";
+import "./interface/ICoFiXStakingRewards.sol";
 
 // Router contract to interact with each CoFiXPair, no owner or governance
 contract CoFiXRouter is ICoFiXRouter {
@@ -67,6 +69,41 @@ contract CoFiXRouter is ICoFiXRouter {
         uint256 oracleFeeChange;
         (liquidity, oracleFeeChange) = ICoFiXPair(pair).mint{value: _oracleFee}(to);
         require(liquidity >= liquidityMin, "CRouter: less liquidity than expected");
+        // refund oracle fee to msg.sender, if any
+        if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
+    }
+
+    // msg.value = amountETH + oracle fee
+    function addLiquidityAndStake(
+        address token,
+        uint amountETH,
+        uint amountToken,
+        uint liquidityMin,
+        address to,
+        uint deadline
+    ) external override payable ensure(deadline) returns (uint liquidity)
+    {
+        // must create a pair before using this function
+        require(msg.value > amountETH, "CRouter: insufficient msg.value");
+        uint256 _oracleFee = msg.value.sub(amountETH);
+        address pair = pairFor(factory, token);
+        require(pair != address(0), "CRouter: invalid pair");
+        if (amountToken > 0 ) { // support for tokens which do not allow to transfer zero values
+            TransferHelper.safeTransferFrom(token, msg.sender, pair, amountToken);
+        }
+        if (amountETH > 0) {
+            IWETH(WETH).deposit{value: amountETH}();
+            assert(IWETH(WETH).transfer(pair, amountETH));
+        }
+        uint256 oracleFeeChange;
+        (liquidity, oracleFeeChange) = ICoFiXPair(pair).mint{value: _oracleFee}(address(this));
+        require(liquidity >= liquidityMin, "CRouter: less liquidity than expected");
+
+        // find the staking rewards pool contract for the liquidity token (pair)
+        address pool = ICoFiXVaultForLP(ICoFiXFactory(factory).getVaultForLP()).stakingPoolForPair(pair); // TODO: reduce call
+        // approve to staking pool
+        ICoFiXPair(pair).approve(pool, liquidity);
+        ICoFiXStakingRewards(pool).stakeForOther(to, liquidity);
         // refund oracle fee to msg.sender, if any
         if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
     }

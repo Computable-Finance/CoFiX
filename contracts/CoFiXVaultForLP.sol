@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./lib/ABDKMath64x64.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interface/ICoFiXVaultForLP.sol";
+import "./interface/ICoFiXStakingRewards.sol";
 
 contract CoFiXVaultForLP is ICoFiXVaultForLP {
 
@@ -30,6 +31,8 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP {
 
     mapping (address => bool) public poolAllowed;
     // mapping (address => uint256) public cofiPoolSpeeds; // yield per block for each pool (CoFiXStakingRewards pool)
+
+    mapping (address => address) public pairToStakingPool;
 
     event NewPoolAdded(address pool, uint256 index);
 
@@ -66,6 +69,18 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP {
         require(poolAllowed[pool] == false, "CVaultForLP: pool added");
         poolAllowed[pool] = true;
         allPools.push(pool);
+        emit NewPoolAdded(pool, allPools.length); // TODO: refactor addPool
+    }
+
+    function addPoolForPair(address pool) external override {
+        require(msg.sender == governance, "CVaultForLP: !governance");
+        require(poolAllowed[pool] == false, "CVaultForLP: pool added");
+        poolAllowed[pool] = true;
+        allPools.push(pool);
+        // set pair to reward pool map
+        address pair = ICoFiXStakingRewards(pool).stakingToken();
+        require(pairToStakingPool[pair] == address(0), "CVaultForLP: pair added");
+        pairToStakingPool[pair] = pool; // staking token is CoFiXPair (XToken)
         emit NewPoolAdded(pool, allPools.length);
     }
 
@@ -115,8 +130,17 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP {
     }
 
     function currentPoolRate() external override view returns (uint256 poolRate) {
+        uint256 len = allPools.length;
+        if (len == 0) {
+            return 0;
+        }
         uint256 cofiRate = currentCoFiRate();
         poolRate = cofiRate.div(allPools.length);
         return poolRate;
     }
+
+    function stakingPoolForPair(address pair) external override view returns (address pool) {
+        return pairToStakingPool[pair];
+    }
+
 }

@@ -8,6 +8,10 @@ var CoFiXKTable = artifacts.require("CoFiXKTable");
 const CoFiXFactory = artifacts.require("CoFiXFactory");
 const CoFiXController = artifacts.require("CoFiXController");
 const CoFiXRouter = artifacts.require("CoFiXRouter");
+
+const CoFiXVaultForLP = artifacts.require("CoFiXVaultForLP");
+const CoFiToken = artifacts.require("CoFiToken");
+
 const { deployProxy } = require('@openzeppelin/truffle-upgrades');
 
 
@@ -34,9 +38,15 @@ module.exports = async function (deployer, network) {
         await deployer.deploy(NestPriceOracle, NEST.address);
     }
 
+    // CoFi Token
+
+    await deployer.deploy(CoFiToken);
+
+    // VaultForLP
+    await deployer.deploy(CoFiXVaultForLP, CoFiToken.address);
 
     // CoFiXFactory
-    await deployer.deploy(CoFiXFactory, WETH9.address);
+    await deployer.deploy(CoFiXFactory, CoFiXVaultForLP.address, WETH9.address);
 
     await deployer.deploy(CoFiXKTable);
 
@@ -55,9 +65,11 @@ module.exports = async function (deployer, network) {
     console.log(`| HBTC | ${HBTC.address} |`);
     console.log(`| NEST | ${NEST.address} |`);
     console.log(`| WETH | ${WETH9.address} |`);
+    console.log(`| CoFiToken | ${CoFiToken.address} |`);
     console.log(`| NestPriceOracle | ${NestPriceOracle.address} |`);
     console.log(`| CoFiXController | ${CoFiXController.address} |`);
     console.log(`| CoFiXFactory | ${CoFiXFactory.address} |`);
     console.log(`| CoFiXKTable | ${CoFiXKTable.address} |`);
     console.log(`| CoFiXRouter | ${CoFiXRouter.address} |`);
+    console.log(`| CoFiXVaultForLP | ${CoFiXVaultForLP.address} |`);
 };

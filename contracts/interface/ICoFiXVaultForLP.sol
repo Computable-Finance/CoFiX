@@ -12,10 +12,12 @@ interface ICoFiXVaultForLP {
     function setDecayRate(uint256 _new) external;
 
     function addPool(address pool) external;
+    function addPoolForPair(address pool) external;
     function transferCoFi(uint256 amount) external returns (uint256);
 
     function currentPeriod() external view returns (uint256);
     function currentCoFiRate() external view returns (uint256);
     function currentPoolRate() external view returns (uint256 poolRate);
 
+    function stakingPoolForPair(address pair) external view returns (address pool);
 }

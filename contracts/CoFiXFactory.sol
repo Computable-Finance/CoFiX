@@ -21,12 +21,16 @@ contract CoFiXFactory is ICoFiXFactory {
     address public controller;
     address public feeReceiver;
 
+    address public vaultForLP;
+    address public vaultForTrader;
+
     event PairCreated(address indexed token, address pair, uint);
 
-    constructor(address _WETH) public {
+    constructor(address _WETH, address _vaultForLP) public {
         governance = msg.sender;
         feeReceiver = msg.sender; // set feeReceiver to a feeReceiver contract later
         WETH = _WETH;
+        vaultForLP = _vaultForLP;
     }
 
     function allPairsLength() external override view returns (uint256) {
@@ -70,12 +74,21 @@ contract CoFiXFactory is ICoFiXFactory {
         feeReceiver = _new;
     }
 
+    function setVaultForLP(address _new) external override {
+        require(msg.sender == governance, "CFactory: !governance");
+        vaultForLP = _new;
+    }
+
     function getController() external view override returns (address) {
         return controller;
     }
 
     function getFeeReceiver() external view override returns (address) {
         return feeReceiver;
+    }
+
+    function getVaultForLP() external view override returns (address) {
+        return vaultForLP;
     }
 
     function append(string memory a, string memory b) internal pure returns (string memory _concatenatedString) {

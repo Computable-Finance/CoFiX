@@ -108,7 +108,7 @@ contract('CoFiXController', (accounts) => {
       _msgValue = web3.utils.toWei('0.01', 'ether');
       // tmpCFactory = await CoFiXFactory.deployed();
       let WETH = await WETH9.new();
-      tmpCFactory = await CoFiXFactory.new(WETH.address, { from: deployer });
+      tmpCFactory = await CoFiXFactory.new(WETH.address, constants.ZERO_ADDRESS, { from: deployer });
       constOracle = await NEST3PriceOracleConstMock.new(NEST.address, { from: deployer });
       tmpController = await CoFiXController.new(constOracle.address, NEST.address, tmpCFactory.address, KTable.address, { from: deployer });
       // tmpController.initialize(constOracle.address, { from: deployer });
@@ -219,7 +219,7 @@ contract('CoFiXController', (accounts) => {
     let tmpCtrl;
     before(async function () {
       let WETH = await WETH9.new();
-      let tmpCFactory = await CoFiXFactory.new(WETH.address, { from: deployer });
+      let tmpCFactory = await CoFiXFactory.new(WETH.address, constants.ZERO_ADDRESS, { from: deployer });
       let constOracle = await NEST3PriceOracleConstMock.new(NEST.address, { from: deployer });
       tmpCtrl = await CoFiXController.new(constOracle.address, NEST.address, tmpCFactory.address, KTable.address, { from: deployer });
     });

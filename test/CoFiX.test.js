@@ -21,6 +21,11 @@ const CoFiXKTable = artifacts.require("CoFiXKTable");
 const TestUSDT = artifacts.require("test/USDT");
 const TestHBTC = artifacts.require("test/HBTC");
 const TestNEST = artifacts.require("test/NEST");
+
+const CoFiToken = artifacts.require("CoFiToken");
+const CoFiXVaultForLP = artifacts.require("CoFiXVaultForLP");
+const CoFiXStakingRewards = artifacts.require("CoFiXStakingRewards.sol");
+
 const { printKInfoEvent } = require('../lib/print');
 const Decimal = require('decimal.js');
 const { calcK, convert_from_fixed_point, convert_into_fixed_point, calcRelativeDiff } = require('../lib/calc');
@@ -64,8 +69,10 @@ contract('CoFiX', (accounts) => {
 
         NEST = await TestNEST.new({ from: deployer });
         WETH = await WETH9.new();
+        CoFi = await CoFiToken.new({ from: deployer });
+        VaultForLP = await CoFiXVaultForLP.new(CoFi.address, { from: deployer });
         PriceOracle = await NEST3PriceOracleMock.new(NEST.address, { from: deployer });
-        CFactory = await CoFiXFactory.new(WETH.address, { from: deployer });
+        CFactory = await CoFiXFactory.new(WETH.address, VaultForLP.address, { from: deployer });
         KTable = await CoFiXKTable.new({ from: deployer });
         CoFiXCtrl = await CoFiXController.new(PriceOracle.address, NEST.address, CFactory.address, KTable.address);
         await CFactory.setController(CoFiXCtrl.address);
@@ -454,7 +461,53 @@ contract('CoFiX', (accounts) => {
             console.log("user balance USDT:", usdtUserBalance.toString());
             console.log("user balance HBTC:", hbtcUserBalance.toString());
         });
+
+
+        it("should addPoolForPair correctly", async () => {
+            let usdtPairAddr = await CFactory.getPair(USDT.address);
+            let USDTPair = await CoFiXPair.at(usdtPairAddr);
+            const StakingRewards = await CoFiXStakingRewards.new(CoFi.address, USDTPair.address, VaultForLP.address, { from: deployer });
+
+            await VaultForLP.addPoolForPair(StakingRewards.address, {from: deployer});
+            const allowed = await VaultForLP.poolAllowed(StakingRewards.address);
+            expect(allowed).equal(true);
+            const stakingPool = await VaultForLP.stakingPoolForPair(USDTPair.address);
+            expect(stakingPool).equal(StakingRewards.address);
+        });
+
+        it("should addLiquidityAndStake correctly", async () => {
+            let usdtPairAddr = await CFactory.getPair(USDT.address);
+            let USDTPair = await CoFiXPair.at(usdtPairAddr);
+            const stakingPool = await VaultForLP.stakingPoolForPair(USDTPair.address);
+            const StakingRewards = await CoFiXStakingRewards.at(stakingPool);
+
+            let _amountETH = web3.utils.toWei('1', 'ether');
+            let _msgValue = web3.utils.toWei('1.1', 'ether');
+            let _amountToken = "1000000000";
+            let result = await CRouter.addLiquidityAndStake(USDT.address, _amountETH, _amountToken, 0, LP, "99999999999", { from: LP, value: _msgValue });
+
+            console.log("------------addLiquidityAndStake for USDT/ETH------------");
+            let liquidityUSDTPair = await USDTPair.balanceOf(LP);
+            let usdtInUSDTPool = await USDT.balanceOf(usdtPairAddr);
+            let wethInUSDTPool = await WETH.balanceOf(usdtPairAddr);
+            let ethUserBalance = await web3.utils.fromWei(await web3.eth.getBalance(LP), 'ether')
+            let usdtUserBalance = await USDT.balanceOf(LP);
+            let hbtcUserBalance = await HBTC.balanceOf(LP);
+            console.log("receipt.gasUsed:", result.receipt.gasUsed);
+            console.log("pool balance USDT:", usdtInUSDTPool.toString());
+            console.log("pool balance WETH:", wethInUSDTPool.toString());
+            console.log("got liquidity ETH/USDT:", liquidityUSDTPair.toString());
+            console.log("user balance ETH:", ethUserBalance.toString());
+            console.log("user balance USDT:", usdtUserBalance.toString());
+            console.log("user balance HBTC:", hbtcUserBalance.toString());
+
+            const balanceInStake = await StakingRewards.balanceOf(LP);
+            const totalSupply = await StakingRewards.totalSupply();
+            console.log("staking> balanceInStake:", balanceInStake.toString());
+            console.log("staking> pool totalSupply:", totalSupply.toString());
+        });
     });
+
 
     describe('Read from contract', function () {
         it("test", async () => {

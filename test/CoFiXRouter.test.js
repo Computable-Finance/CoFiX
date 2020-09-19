@@ -32,7 +32,7 @@ contract('CoFiXRouter', (accounts) => {
         NEST = await TestNEST.new({ from: deployer });
         WETH = await WETH9.new();
         ConstOracle = await NEST3PriceOracleConstMock.new({ from: deployer });
-        CFactory = await CoFiXFactory.new(WETH.address, { from: deployer });
+        CFactory = await CoFiXFactory.new(WETH.address, constants.ZERO_ADDRESS, { from: deployer });
         KTable = await CoFiXKTable.new({ from: deployer });
         CoFiXCtrl = await CoFiXController.new(ConstOracle.address, NEST.address, CFactory.address, KTable.address);
         await CFactory.setController(CoFiXCtrl.address);

@@ -198,4 +198,17 @@ contract('CoFiXStakingRewards', (accounts) => {
             console.log(`after exit, XToken balance Of LP_2: ${balance}`);
         }
     });
+
+    // addPoolForPair, keep this test at the end so we don't need to change the tests before
+    it("should revert if add two pool with the same pair(XToken)", async () => {
+        const StakingRewards2 = await CoFiXStakingRewards.new(CoFi.address, XToken.address, VaultForLP.address, { from: deployer });
+        await VaultForLP.addPoolForPair(StakingRewards2.address, {from: governance});
+        const stakingPool = await VaultForLP.stakingPoolForPair(XToken.address);
+        expect(stakingPool).equal(StakingRewards2.address);
+    });
+
+    it("should revert if add two pool with the same pair(XToken)", async () => {
+        const StakingRewards3 = await CoFiXStakingRewards.new(CoFi.address, XToken.address, VaultForLP.address, { from: deployer });
+        await expectRevert(VaultForLP.addPoolForPair(StakingRewards3.address, {from: governance}), "CVaultForLP: pair added");
+    });
 });

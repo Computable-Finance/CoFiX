@@ -35,6 +35,10 @@ contract('CoFiXVaultForLP', (accounts) => {
         await expectRevert(VaultForLP.addPool(pool1, {from: non_governance}), "CVaultForLP: !governance");
     });
 
+    it("should revert if no governance addPoolForPair", async () => {
+        await expectRevert(VaultForLP.addPoolForPair(pool1, {from: non_governance}), "CVaultForLP: !governance");
+    });
+
     it("should addPool correctly", async () => {
         await VaultForLP.addPool(pool1, {from: governance});
         const allowed = await VaultForLP.poolAllowed(pool1);
@@ -43,6 +47,10 @@ contract('CoFiXVaultForLP', (accounts) => {
 
     it("should revert if we add the same pool for twice", async () => {
         await expectRevert(VaultForLP.addPool(pool1, {from: governance}), "CVaultForLP: pool added");
+    });
+
+    it("should revert if we add the same pool for twice by addPoolForPair", async () => {
+        await expectRevert(VaultForLP.addPoolForPair(pool1, {from: governance}), "CVaultForLP: pool added");
     });
 
     it("should revert if not pool allowed call transferCoFi", async () => {

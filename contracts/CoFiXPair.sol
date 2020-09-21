@@ -360,13 +360,13 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
 
     // get Net Asset Value Per Share
     // only for read, could cost more gas if use it directly in contract
-    function getNAVPerShareForBurn(OraclePrice memory _op) public view returns (uint256 navps) {
+    function getNAVPerShareForBurn(OraclePrice memory _op) external view returns (uint256 navps) {
         return calcNAVPerShareForBurn(reserve0, reserve1, _op);
     }
 
     // get estimated liquidity amount (it represents the amount of pool tokens will be minted if someone provide liquidity to the pool)
     // only for read, could cost more gas if use it directly in contract
-    function getLiquidity(uint256 amount0, uint256 amount1, OraclePrice memory _op) public view returns (uint256 liquidity) {
+    function getLiquidity(uint256 amount0, uint256 amount1, OraclePrice memory _op) external view returns (uint256 liquidity) {
         uint256 navps = getNAVPerShareForMint(_op);
         return calcLiquidity(amount0, amount1, navps, _op);
     }

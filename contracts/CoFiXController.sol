@@ -188,7 +188,7 @@ contract CoFiXController {
         }
     }
 
-    function getKInfo(address token) public view returns (uint32 k, uint32 updatedAt, uint32 theta) {
+    function getKInfo(address token) external view returns (uint32 k, uint32 updatedAt, uint32 theta) {
         k = KInfoMap[token][0];
         updatedAt = KInfoMap[token][1];
         theta = KInfoMap[token][2];

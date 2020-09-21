@@ -17,7 +17,6 @@ contract CoFiXController {
 
     uint256 constant public AONE = 1 ether;
     uint256 constant public K_BASE = 1E8;
-    uint256 constant public THETA_BASE = 1E8;
     uint256 constant internal TIMESTAMP_MODULUS = 2**32;
     int128 constant internal SIGMA_STEP = 0x346DC5D638865; // (0.00005*2**64).toString(16), 0.00005 as 64.64-bit fixed point
     int128 constant internal ZERO_POINT_FIVE = 0x8000000000000000; // (0.5*2**64).toString(16)
@@ -112,6 +111,7 @@ contract CoFiXController {
         callerAllowed[caller] = true;
     }  
 
+    // We can make use of `data` bytes in the future
     function queryOracle(address token, bytes memory /*data*/) external payable returns (uint256 _k, uint256, uint256, uint256, uint256) {
         require(callerAllowed[msg.sender], "CoFiXCtrl: caller not allowed");
 
@@ -198,7 +198,14 @@ contract CoFiXController {
     }
 
     // calc Variance, a.k.a. sigma squared
-    function calcVariance(address token) internal returns (int128 _variance, uint256 _T, uint256 _ethAmount, uint256 _erc20Amount, uint256 _blockNum) {
+    function calcVariance(address token) internal returns (
+        int128 _variance,
+        uint256 _T,
+        uint256 _ethAmount,
+        uint256 _erc20Amount,
+        uint256 _blockNum
+    ) // keep these variables to make return values more clear
+    {
 
         // query raw price list from nest oracle (newest to oldest)
         uint256[] memory _rawPriceList = INest_3_OfferPrice(oracle).updateAndCheckPriceList{value: msg.value}(token, 50);

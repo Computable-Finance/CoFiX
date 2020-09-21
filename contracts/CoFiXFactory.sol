@@ -100,11 +100,11 @@ contract CoFiXFactory is ICoFiXFactory {
         return vaultForLP;
     }
 
-    function append(string memory a, string memory b) internal pure returns (string memory _concatenatedString) {
+    function append(string memory a, string memory b) internal pure returns (string memory) {
         return string(abi.encodePacked(a, b));
     }
 
-    function uint2str(uint _i) internal pure returns (string memory _uintAsString) {
+    function uint2str(uint _i) internal pure returns (string memory) {
         if (_i == 0) {
             return "0";
         }

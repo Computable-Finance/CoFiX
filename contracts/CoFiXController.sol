@@ -53,30 +53,27 @@ contract CoFiXController is ICoFiXController {
     /* setters for protocol governance */
     function setGovernance(address _new) external onlyGovernance {
         governance = _new;
+        emit NewGovernance(_new);
     }
 
     function setOracle(address _priceOracle) external onlyGovernance {
         oracle = _priceOracle;
-    }
-
-    function setNestToken(address _nest) external onlyGovernance {
-        nestToken = _nest;
-    }
-
-    function setFactory(address _factory) external onlyGovernance {
-        factory = _factory;
+        emit NewOracle(_priceOracle);
     }
 
     function setKTable(address _kTable) external onlyGovernance {
         kTable = _kTable;
+        emit NewKTable(_kTable);
     }    
 
     function setTimespan(uint256 _timeSpan) external onlyGovernance {
         timespan = _timeSpan;
+        emit NewTimespan(_timeSpan);
     }
 
     function setKRefreshInterval(uint256 _interval) external onlyGovernance {
         kRefreshInterval = _interval;
+        emit NewKRefreshInterval(_interval);
     }
 
     function setOracleDestructionAmount(uint256 _amount) external onlyGovernance {
@@ -85,14 +82,17 @@ contract CoFiXController is ICoFiXController {
 
     function setKLimit(int128 maxK0) external onlyGovernance {
         MAX_K0 = maxK0;
+        emit NewKLimit(maxK0);
     }
 
     function setGamma(int128 _gamma) external onlyGovernance {
         GAMMA = _gamma;
+        emit NewGamma(_gamma);
     }
     
     function setTheta(address token, uint32 theta) external onlyGovernance {
         KInfoMap[token][2] = theta;
+        emit NewTheta(token, theta);
     }
 
     // Activate on NEST Oracle, should not be called twice for the same nest oracle

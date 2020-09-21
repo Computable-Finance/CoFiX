@@ -233,23 +233,23 @@ contract('CoFiXController', (accounts) => {
       await expectRevert(tmpCtrl.setOracle(newOracle, { from: non_governance }), "CoFiXCtrl: !governance");
     });
 
-    // setNestToken(address _nest)
-    it("should setNestToken correctly", async () => {
-      const nest = constants.ZERO_ADDRESS;
-      await tmpCtrl.setNestToken(nest, { from: the_governance });
-      const newNest = await tmpCtrl.nestToken();
-      expect(newNest).to.bignumber.equal(nest);
-      await expectRevert(tmpCtrl.setNestToken(nest, { from: non_governance }), "CoFiXCtrl: !governance");
-    });
+    // // setNestToken(address _nest)
+    // it("should setNestToken correctly", async () => {
+    //   const nest = constants.ZERO_ADDRESS;
+    //   await tmpCtrl.setNestToken(nest, { from: the_governance });
+    //   const newNest = await tmpCtrl.nestToken();
+    //   expect(newNest).to.bignumber.equal(nest);
+    //   await expectRevert(tmpCtrl.setNestToken(nest, { from: non_governance }), "CoFiXCtrl: !governance");
+    // });
 
-    // setFactory(address _factory)
-    it("should setFactory correctly", async () => {
-      const factory = constants.ZERO_ADDRESS;
-      await tmpCtrl.setFactory(factory, { from: the_governance });
-      const newFactory = await tmpCtrl.factory();
-      expect(newFactory).to.bignumber.equal(factory);
-      await expectRevert(tmpCtrl.setFactory(factory, { from: non_governance }), "CoFiXCtrl: !governance");
-    });
+    // // setFactory(address _factory)
+    // it("should setFactory correctly", async () => {
+    //   const factory = constants.ZERO_ADDRESS;
+    //   await tmpCtrl.setFactory(factory, { from: the_governance });
+    //   const newFactory = await tmpCtrl.factory();
+    //   expect(newFactory).to.bignumber.equal(factory);
+    //   await expectRevert(tmpCtrl.setFactory(factory, { from: non_governance }), "CoFiXCtrl: !governance");
+    // });
 
     // setKTable(address _kTable)
     it("should setKTable correctly", async () => {

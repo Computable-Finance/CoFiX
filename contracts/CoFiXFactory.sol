@@ -23,10 +23,6 @@ contract CoFiXFactory is ICoFiXFactory {
     address public vaultForLP;
     address public vaultForTrader;
 
-    event PairCreated(address indexed token, address pair, uint);
-    event SetGovernance(address indexed _new);
-    event SetController(address indexed _new);
-
     modifier onlyGovernance() {
         require(msg.sender == governance, "CFactory: !governance");
         _;
@@ -67,25 +63,31 @@ contract CoFiXFactory is ICoFiXFactory {
     }
 
     function setGovernance(address _new) external override onlyGovernance {
-        require(_new != address(0), "CFactory: governance cannot be zero address");
-        require(_new != governance, "CFactory: same address of the old governance");
+        require(_new != address(0), "CFactory: zero addr");
+        require(_new != governance, "CFactory: same addr");
         governance = _new;
-        emit SetGovernance(_new);
+        emit NewGovernance(_new);
     }
     
     function setController(address _new) external override onlyGovernance {
-        require(_new != address(0), "CFactory: controller cannot be zero address");
-        require(_new != controller, "CFactory: same address of the old controller");
+        require(_new != address(0), "CFactory: zero addr");
+        require(_new != controller, "CFactory: same addr");
         controller = _new;
-        emit SetController(_new);
+        emit NewController(_new);
     }
 
     function setFeeReceiver(address _new) external override onlyGovernance {
+        require(_new != address(0), "CFactory: zero addr");
+        require(_new != feeReceiver, "CFactory: same addr");
         feeReceiver = _new;
+        emit NewGovernance(_new);
     }
 
     function setVaultForLP(address _new) external override onlyGovernance {
+        require(_new != address(0), "CFactory: zero addr");
+        require(_new != vaultForLP, "CFactory: same addr");
         vaultForLP = _new;
+        emit NewVaultForLP(_new);
     }
 
     function getController() external view override returns (address) {

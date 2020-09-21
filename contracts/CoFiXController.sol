@@ -6,15 +6,14 @@ import "./lib/ABDKMath64x64.sol";
 import "./interface/INest_3_OfferPrice.sol";
 import "./interface/ICoFiXKTable.sol";
 import "./lib/TransferHelper.sol";
+import "./interface/ICoFiXController.sol";
 
 // Controller contract to call NEST Oracle for prices, managed by governance
 // Governance role of this contract should be the `Timelock` contract, which is further managed by a multisig contract
-contract CoFiXController {
+contract CoFiXController is ICoFiXController {
 
     using SafeMath for uint256;
     
-    event NewK(address token, int128 K, int128 sigma, uint256 T, uint256 ethAmount, uint256 erc20Amount, uint256 blockNum, uint256 tIdx, uint256 sigmaIdx, int128 K0);
-
     uint256 constant public AONE = 1 ether;
     uint256 constant public K_BASE = 1E8;
     uint256 constant internal TIMESTAMP_MODULUS = 2**32;
@@ -106,13 +105,13 @@ contract CoFiXController {
         TransferHelper.safeApprove(nestToken, oracle, 0); // ensure safety
     }
 
-    function addCaller(address caller) external {
+    function addCaller(address caller) external override {
         require(msg.sender == factory || msg.sender == governance, "CoFiXCtrl: only factory"); // omit governance in reason
         callerAllowed[caller] = true;
     }  
 
     // We can make use of `data` bytes in the future
-    function queryOracle(address token, bytes memory /*data*/) external payable returns (uint256 _k, uint256, uint256, uint256, uint256) {
+    function queryOracle(address token, bytes memory /*data*/) external override payable returns (uint256 _k, uint256, uint256, uint256, uint256) {
         require(callerAllowed[msg.sender], "CoFiXCtrl: caller not allowed");
 
         uint256 _now = block.timestamp % TIMESTAMP_MODULUS; // 2106

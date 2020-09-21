@@ -2,14 +2,13 @@
 pragma experimental ABIEncoderV2;
 pragma solidity 0.6.12;
 
-import './interface/ICoFiXFactory.sol';
-import './interface/ICoFiXController.sol';
-import './CoFiXPair.sol';
+import "./interface/ICoFiXFactory.sol";
+import "./interface/ICoFiXController.sol";
+import "./CoFiXPair.sol";
 
 // Factory of CoFiX to create new CoFiXPair contract when new pair is created, managed by governance
 // Governance role of this contract should be the `Timelock` contract, which is further managed by a multisig contract
 contract CoFiXFactory is ICoFiXFactory {
-    using SafeMath for uint;
 
     string constant internal pairNamePrefix = "XToken ";
     string constant internal pairSymbolPrefix = "XT-";

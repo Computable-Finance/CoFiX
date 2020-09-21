@@ -25,6 +25,12 @@ module.exports = async function (deployer, network) {
         NEST = await NEST.at("0x04abEdA201850aC0124161F037Efd70c74ddC74C");
         WETH9 = await WETH9.at("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2");
         NestPriceOracle = await NestPriceOracle.at("0x7722891Ee45aD38AE05bDA8349bA4CF23cFd270F");
+    } else if (network == "ropsten" || network == "ropsten-fork") {
+        USDT = await USDT.at("0x200506568C2980B4943B5EaA8713A5740eb2c98A");
+        HBTC = await HBTC.at("0xA674f71ce49CE7F298aea2F23D918d114965eb40");
+        NEST = await NEST.at("0xD287Bc43eCD3D892204aA3792165fe8728636E29");
+        WETH9 = await WETH9.at("0x59b8881812Ac484Ab78b8fc7c10b2543e079a6C3");
+        NestPriceOracle = await NestPriceOracle.at("0x70B9b6F0e1E4073403cF7143b45a862fe73af3B9");
     } else {
         // USDT Test Token
         await deployer.deploy(USDT);
@@ -46,7 +52,7 @@ module.exports = async function (deployer, network) {
     await deployer.deploy(CoFiXVaultForLP, CoFiToken.address);
 
     // CoFiXFactory
-    await deployer.deploy(CoFiXFactory, CoFiXVaultForLP.address, WETH9.address);
+    await deployer.deploy(CoFiXFactory, WETH9.address, CoFiXVaultForLP.address);
 
     await deployer.deploy(CoFiXKTable);
 

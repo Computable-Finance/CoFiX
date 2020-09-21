@@ -12,6 +12,7 @@
     "coverage-report": "truffle run coverage && cat coverage/lcov.info | coveralls",
     "solium": "node_modules/.bin/solium -d contracts/ --fix-dry-run",
     "solhint": "solhint contracts/**/*.sol",
+    "build-contracts": "sol-merger --export-plugin SPDXLicenseRemovePlugin \"./contracts/*.sol\" ./build",
     "genabi": "rm -rf build ABI && truffle compile --all && truffle-abi -d build/contracts/ -o abi"
   },
   "dependencies": {
@@ -38,6 +39,7 @@
     "eth-gas-reporter": "^0.2.17",
     "husky": "^4.2.5",
     "mocha": "^8.0.1",
+    "sol-merger": "^3.1.0",
     "solidity-coverage": "^0.7.10",
     "truffle": "^5.1.41"
   }

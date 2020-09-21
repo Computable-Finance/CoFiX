@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-pragma solidity ^0.6.6;
+pragma solidity 0.6.12;
 // import "../interface/INest_3_OfferPrice.sol";
 
 contract NEST3PriceOracleAutoUpdateConstMock {

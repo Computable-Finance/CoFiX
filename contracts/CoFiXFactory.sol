@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma experimental ABIEncoderV2;
-pragma solidity ^0.6.6;
+pragma solidity 0.6.12;
 
 import './interface/ICoFiXFactory.sol';
 import './interface/ICoFiXController.sol';

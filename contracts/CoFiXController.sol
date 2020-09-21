@@ -13,7 +13,7 @@ contract CoFiXController {
 
     using SafeMath for uint256;
     
-    event newK(address token, int128 K, int128 sigma, uint256 T, uint256 ethAmount, uint256 erc20Amount, uint256 blockNum, uint256 tIdx, uint256 sigmaIdx, int128 K0);
+    event NewK(address token, int128 K, int128 sigma, uint256 T, uint256 ethAmount, uint256 erc20Amount, uint256 blockNum, uint256 tIdx, uint256 sigmaIdx, int128 K0);
 
     uint256 constant public AONE = 1 ether;
     uint256 constant public K_BASE = 1E8;
@@ -163,7 +163,7 @@ contract CoFiXController {
             // K = gamma * K0
             K0AndK[1] = ABDKMath64x64.mul(GAMMA, K0AndK[0]);
 
-            emit newK(token, K0AndK[1], _sigma, _op[0], _op[1], _op[2], _op[3], _op[4], _op[5], K0AndK[0]);
+            emit NewK(token, K0AndK[1], _sigma, _op[0], _op[1], _op[2], _op[3], _op[4], _op[5], K0AndK[0]);
         }
 
         require(K0AndK[0] <= MAX_K0, "CoFiXCtrl: K0");

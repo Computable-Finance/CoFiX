@@ -120,7 +120,7 @@ contract CoFiXController {
     }  
 
     function queryOracle(address token, bytes memory /*data*/) external payable returns (uint256 _k, uint256, uint256, uint256, uint256) {
-        require(callerAllowed[msg.sender] == true, "CoFiXCtrl: caller not allowed");
+        require(callerAllowed[msg.sender], "CoFiXCtrl: caller not allowed");
 
         uint256 _now = block.timestamp % TIMESTAMP_MODULUS; // 2106
 

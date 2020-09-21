@@ -1,6 +1,8 @@
 <h1 align=center><a href="https://cofix.io"><code>CoFiX</code></a></h1>
 
 <p align=center> <i>A computable financial transaction model</i> </p>
+<p align=center> <i>The Future of On-Chain Market Making is Here 🤑 📈📉💰</i> </p>
+
 
 <p align="center">
   <a href="https://github.com/Computable-Finance/CoFiX/actions?query=workflow%3ACoFiX">

@@ -106,7 +106,7 @@ contract CoFiXController is ICoFiXController {
     }
 
     function addCaller(address caller) external override {
-        require(msg.sender == factory || msg.sender == governance, "CoFiXCtrl: only factory"); // omit governance in reason
+        require(msg.sender == factory || msg.sender == governance, "CoFiXCtrl: only factory or gov");
         callerAllowed[caller] = true;
     }  
 

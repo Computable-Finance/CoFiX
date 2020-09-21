@@ -28,6 +28,11 @@ contract CoFiXFactory is ICoFiXFactory {
     event SetGovernance(address indexed _new);
     event SetController(address indexed _new);
 
+    modifier onlyGovernance() {
+        require(msg.sender == governance, "CFactory: !governance");
+        _;
+    }
+
     constructor(address _WETH, address _vaultForLP) public {
         governance = msg.sender;
         feeReceiver = msg.sender; // set feeReceiver to a feeReceiver contract later
@@ -61,29 +66,25 @@ contract CoFiXFactory is ICoFiXFactory {
         emit PairCreated(token, pair, pairLen);
     }
 
-    function setGovernance(address _new) external override {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setGovernance(address _new) external override onlyGovernance {
         require(_new != address(0), "CFactory: governance cannot be zero address");
         require(_new != governance, "CFactory: same address of the old governance");
         governance = _new;
         emit SetGovernance(_new);
     }
     
-    function setController(address _new) external override {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setController(address _new) external override onlyGovernance {
         require(_new != address(0), "CFactory: controller cannot be zero address");
         require(_new != controller, "CFactory: same address of the old controller");
         controller = _new;
         emit SetController(_new);
     }
 
-    function setFeeReceiver(address _new) external override {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setFeeReceiver(address _new) external override onlyGovernance {
         feeReceiver = _new;
     }
 
-    function setVaultForLP(address _new) external override {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setVaultForLP(address _new) external override onlyGovernance {
         vaultForLP = _new;
     }
 

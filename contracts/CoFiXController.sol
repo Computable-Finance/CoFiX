@@ -37,6 +37,11 @@ contract CoFiXController {
     int128 public MAX_K0 = 0xCCCCCCCCCCCCD00; // (0.05*2**64).toString(16)
     int128 public GAMMA = 0x8000000000000000; // (0.5*2**64).toString(16)
 
+    modifier onlyGovernance() {
+        require(msg.sender == governance, "CoFiXCtrl: !governance");
+        _;
+    }
+
     constructor(address _priceOracle, address _nest, address _factory, address _kTable) public {
         governance = msg.sender;
         oracle = _priceOracle;
@@ -48,64 +53,52 @@ contract CoFiXController {
     receive() external payable {}
 
     /* setters for protocol governance */
-    function setGovernance(address _new) external {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setGovernance(address _new) external onlyGovernance {
         governance = _new;
     }
 
-    function setOracle(address _priceOracle) external {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setOracle(address _priceOracle) external onlyGovernance {
         oracle = _priceOracle;
     }
 
-    function setNestToken(address _nest) external {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setNestToken(address _nest) external onlyGovernance {
         nestToken = _nest;
     }
 
-    function setFactory(address _factory) external {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setFactory(address _factory) external onlyGovernance {
         factory = _factory;
     }
 
-    function setKTable(address _kTable) external {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setKTable(address _kTable) external onlyGovernance {
         kTable = _kTable;
     }    
 
-    function setTimespan(uint256 _timeSpan) external {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setTimespan(uint256 _timeSpan) external onlyGovernance {
         timespan = _timeSpan;
     }
 
-    function setKRefreshInterval(uint256 _interval) external {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setKRefreshInterval(uint256 _interval) external onlyGovernance {
         kRefreshInterval = _interval;
     }
 
-    function setOracleDestructionAmount(uint256 _amount) external {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setOracleDestructionAmount(uint256 _amount) external onlyGovernance {
         DESTRUCTION_AMOUNT = _amount;
     }
 
-    function setKLimit(int128 maxK0) external {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setKLimit(int128 maxK0) external onlyGovernance {
         MAX_K0 = maxK0;
     }
 
-    function setGamma(int128 _gamma) external {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setGamma(int128 _gamma) external onlyGovernance {
         GAMMA = _gamma;
     }
     
-    function setTheta(address token, uint32 theta) external {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setTheta(address token, uint32 theta) external onlyGovernance {
         KInfoMap[token][2] = theta;
     }
 
     // Activate on NEST Oracle, should not be called twice for the same nest oracle
-    function activate() external {
-        require(msg.sender == governance, "CFactory: !governance");
+    function activate() external onlyGovernance {
         // address token, address from, address to, uint value
         TransferHelper.safeTransferFrom(nestToken, msg.sender, address(this), DESTRUCTION_AMOUNT);
         // address token, address to, uint value

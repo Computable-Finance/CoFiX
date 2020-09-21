@@ -52,6 +52,7 @@ contract CoFiXFactory is ICoFiXFactory {
         assembly {
             pair := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
+        require(pair != address(0), "CFactory: Failed on deploy");
 
         getPair[token] = pair;
         allPairs.push(pair);

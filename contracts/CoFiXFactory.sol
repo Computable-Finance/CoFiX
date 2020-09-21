@@ -25,6 +25,8 @@ contract CoFiXFactory is ICoFiXFactory {
     address public vaultForTrader;
 
     event PairCreated(address indexed token, address pair, uint);
+    event SetGovernance(address indexed _new);
+    event SetController(address indexed _new);
 
     constructor(address _WETH, address _vaultForLP) public {
         governance = msg.sender;
@@ -61,12 +63,18 @@ contract CoFiXFactory is ICoFiXFactory {
 
     function setGovernance(address _new) external override {
         require(msg.sender == governance, "CFactory: !governance");
+        require(_new != address(0), "CFactory: governance cannot be zero address");
+        require(_new != governance, "CFactory: same address of the old governance");
         governance = _new;
+        emit SetGovernance(_new);
     }
     
     function setController(address _new) external override {
         require(msg.sender == governance, "CFactory: !governance");
+        require(_new != address(0), "CFactory: controller cannot be zero address");
+        require(_new != controller, "CFactory: same address of the old controller");
         controller = _new;
+        emit SetController(_new);
     }
 
     function setFeeReceiver(address _new) external override {

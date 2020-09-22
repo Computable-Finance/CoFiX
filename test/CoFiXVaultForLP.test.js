@@ -55,14 +55,14 @@ contract('CoFiXVaultForLP', (accounts) => {
 
     it("should revert if not pool allowed call transferCoFi", async () => {
         const amount = web3.utils.toWei('1000', 'ether');
-        await expectRevert(VaultForLP.transferCoFi(amount, {from: governance}), "CVaultForLP: only pool allowed"); 
+        await expectRevert(VaultForLP.safeCoFiTransfer(amount, {from: governance}), "CVaultForLP: only pool allowed"); 
     });
 
     it("should transferCoFi correctly even VaultForLP has no CoFi balance", async () => {
         const balance = await CoFi.balanceOf(VaultForLP.address);
         expect(balance).to.bignumber.equal("0");
         const amount = web3.utils.toWei('1000', 'ether');
-        await VaultForLP.transferCoFi(amount, {from: pool1}); 
+        await VaultForLP.safeCoFiTransfer(amount, {from: pool1}); 
     });
 
     it("should transfer half totalSupply of CoFi to VaultForLP correctly", async () => {
@@ -74,7 +74,7 @@ contract('CoFiXVaultForLP', (accounts) => {
 
     it("should transferCoFi correctly when VaultForLP has enough CoFi balance", async () => {
         const amount = web3.utils.toWei('1000', 'ether');
-        await VaultForLP.transferCoFi(amount, {from: pool1});
+        await VaultForLP.safeCoFiTransfer(amount, {from: pool1});
         const balanceOfVault = await CoFi.balanceOf(VaultForLP.address);
         const balanceOfPool1 = await CoFi.balanceOf(pool1);
         expect(balanceOfVault).to.bignumber.equal(HalfSupplyOfCoFi.sub(new BN(amount)));
@@ -83,7 +83,7 @@ contract('CoFiXVaultForLP', (accounts) => {
 
     it("should transferCoFi correctly even when amount equals to zero", async () => {
         const amount = web3.utils.toWei('0', 'ether');
-        const { tx } = await VaultForLP.transferCoFi(amount, {from: pool1});
+        const { tx } = await VaultForLP.safeCoFiTransfer(amount, {from: pool1});
         await expectEvent.inTransaction(tx, CoFi, 'Transfer', { from: VaultForLP.address, to: pool1, value: "0" });
     });
 
@@ -91,7 +91,7 @@ contract('CoFiXVaultForLP', (accounts) => {
         const balanceOfVaultBefore = await CoFi.balanceOf(VaultForLP.address);
         const amount = balanceOfVaultBefore.add(new BN("1000000000000"));
         const balanceOfPool1Before = await CoFi.balanceOf(pool1);
-        await VaultForLP.transferCoFi(amount, {from: pool1});
+        await VaultForLP.safeCoFiTransfer(amount, {from: pool1});
         const balanceOfPool1After = await CoFi.balanceOf(pool1);
         const balanceOfVaultAfter = await CoFi.balanceOf(VaultForLP.address);
         expect(balanceOfVaultAfter).to.bignumber.equal("0");

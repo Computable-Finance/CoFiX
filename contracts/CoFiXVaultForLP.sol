@@ -89,7 +89,7 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP {
     }
 
     // this function should never fail when pool contract calling it
-    function transferCoFi(uint256 amount) external override returns (uint256) {
+    function safeCoFiTransfer(uint256 amount) external override returns (uint256) {
         require(poolAllowed[msg.sender] == true, "CVaultForLP: only pool allowed");
         uint256 balance = IERC20(cofiToken).balanceOf(address(this));
         if (amount > balance) {

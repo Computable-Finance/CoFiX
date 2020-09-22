@@ -122,8 +122,8 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
         if (reward > 0) {
             rewards[msg.sender] = 0;
             // TransferHelper.safeTransfer(rewardsToken, msg.sender, reward);
-            _safeCoFiTransfer(msg.sender, reward);
-            emit RewardPaid(msg.sender, reward);
+            uint256 transferred = _safeCoFiTransfer(msg.sender, reward);
+            emit RewardPaid(msg.sender, transferred);
         }
     }
 
@@ -142,13 +142,13 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
     }
 
     // Safe CoFi transfer function, just in case if rounding error or ending of mining causes pool to not have enough CoFis.
-    function _safeCoFiTransfer(address _to, uint256 _amount) internal {
+    function _safeCoFiTransfer(address _to, uint256 _amount) internal returns (uint256) {
         uint256 cofiBal = IERC20(rewardsToken).balanceOf(address(this));
         if (_amount > cofiBal) {
-            TransferHelper.safeTransfer(rewardsToken, _to, cofiBal);
-        } else {
-            TransferHelper.safeTransfer(rewardsToken, _to, _amount);
+            _amount = cofiBal;
         }
+        TransferHelper.safeTransfer(rewardsToken, _to, _amount); // allow zero amount
+        return _amount;
     }
 
     /* ========== MODIFIERS ========== */
@@ -160,7 +160,7 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
         rewardPerTokenStored = newRewardPerToken;
         if (newAccrued > 0) {
             address vaultForLP = cofixVaultForLP;
-            uint256 received = ICoFiXVaultForLP(vaultForLP).transferCoFi(newAccrued); // // TODO: verify must never fail here
+            uint256 received = ICoFiXVaultForLP(vaultForLP).safeCoFiTransfer(newAccrued); // // TODO: verify must never fail here
             if (received > 0) {
                 uint256 govVaultShare = received.mul(10).div(100);
                 // 10% of accrued to governance vault

@@ -41,7 +41,7 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader {
         uint256 preMinedAt; // block number
     }
 
-    mapping (address => bool) public pairAllowed;
+    mapping (address => bool) public routerAllowed;
 
     mapping (uint256 => CoFiMiningInfo) public minedBlockRecords;
 
@@ -52,21 +52,18 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader {
         genesisBlock = block.number;
     }
 
-    event PairAllowed(address pair);
-    event PairDisallowed(address pair);
-
-    function allowPair(address pair) external override {
+    function allowRouter(address router) external override {
         require(msg.sender == governance, "CVaultForTrader: !governance");
-        require(pairAllowed[pair] == false, "CVaultForTrader: pair allowed");
-        pairAllowed[pair] = true;
-        emit PairAllowed(pair);
+        require(routerAllowed[router] == false, "CVaultForTrader: router allowed");
+        routerAllowed[router] = true;
+        emit RouterAllowed(router);
     }
 
-    function disallowPair(address pair) external override {
+    function disallowRouter(address router) external override {
         require(msg.sender == governance, "CVaultForTrader: !governance");
-        require(pairAllowed[pair] == true, "CVaultForTrader: pair disallowed");
-        pairAllowed[pair] = false;
-        emit PairDisallowed(pair);
+        require(routerAllowed[router] == true, "CVaultForTrader: router disallowed");
+        routerAllowed[router] = false;
+        emit RouterDisallowed(router);
     }
 
     function _addDistributeRecord() internal {
@@ -203,7 +200,7 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader {
     }
 
     function distributeTradingReward(uint256 thetaFee, uint256 x, uint256 y, address mineTo) public override {
-        require(pairAllowed[msg.sender] == true, "CVaultForTrader: not allowed pair");
+        require(routerAllowed[msg.sender] == true, "CVaultForTrader: not allowed router");
         uint256 balance = IERC20(cofiToken).balanceOf(address(this));
         if (balance == 0) {
             return; // no need to calc minng amount

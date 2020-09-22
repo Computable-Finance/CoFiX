@@ -4,12 +4,12 @@ pragma solidity 0.6.12;
 
 interface ICoFiXVaultForTrader {
 
-    event PairAllowed(address pair);
-    event PairDisallowed(address pair);
+    event RouterAllowed(address router);
+    event RouterDisallowed(address router);
 
-    function allowPair(address pair) external;
+    function allowRouter(address router) external;
 
-    function disallowPair(address pair) external;
+    function disallowRouter(address router) external;
 
     function currentPeriod() external view returns (uint256);
 

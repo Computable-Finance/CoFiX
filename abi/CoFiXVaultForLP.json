@@ -128,6 +128,19 @@
   },
   {
     "inputs": [],
+    "name": "governanceVault",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "initCoFiRate",
     "outputs": [
       {
@@ -186,6 +199,19 @@
       }
     ],
     "name": "setGovernance",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_new",
+        "type": "address"
+      }
+    ],
+    "name": "setGovernanceVault",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -263,7 +289,7 @@
         "type": "uint256"
       }
     ],
-    "name": "transferCoFi",
+    "name": "safeCoFiTransfer",
     "outputs": [
       {
         "internalType": "uint256",
@@ -326,6 +352,19 @@
       {
         "internalType": "address",
         "name": "pool",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getGovernanceVault",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "vault",
         "type": "address"
       }
     ],

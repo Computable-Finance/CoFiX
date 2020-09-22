@@ -30,6 +30,32 @@
     "inputs": [
       {
         "indexed": false,
+        "internalType": "int128",
+        "name": "_gamma",
+        "type": "int128"
+      }
+    ],
+    "name": "NewGamma",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "_new",
+        "type": "address"
+      }
+    ],
+    "name": "NewGovernance",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
         "internalType": "address",
         "name": "token",
         "type": "address"
@@ -90,6 +116,90 @@
       }
     ],
     "name": "NewK",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "int128",
+        "name": "maxK0",
+        "type": "int128"
+      }
+    ],
+    "name": "NewKLimit",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_interval",
+        "type": "uint256"
+      }
+    ],
+    "name": "NewKRefreshInterval",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "_kTable",
+        "type": "address"
+      }
+    ],
+    "name": "NewKTable",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "_priceOracle",
+        "type": "address"
+      }
+    ],
+    "name": "NewOracle",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "theta",
+        "type": "uint32"
+      }
+    ],
+    "name": "NewTheta",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_timeSpan",
+        "type": "uint256"
+      }
+    ],
+    "name": "NewTimespan",
     "type": "event"
   },
   {
@@ -293,32 +403,6 @@
       }
     ],
     "name": "setOracle",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_nest",
-        "type": "address"
-      }
-    ],
-    "name": "setNestToken",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_factory",
-        "type": "address"
-      }
-    ],
-    "name": "setFactory",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

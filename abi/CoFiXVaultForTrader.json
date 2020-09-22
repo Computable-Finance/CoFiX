@@ -10,11 +10,11 @@
       {
         "indexed": false,
         "internalType": "address",
-        "name": "pair",
+        "name": "router",
         "type": "address"
       }
     ],
-    "name": "PairAllowed",
+    "name": "RouterAllowed",
     "type": "event"
   },
   {
@@ -23,11 +23,11 @@
       {
         "indexed": false,
         "internalType": "address",
-        "name": "pair",
+        "name": "router",
         "type": "address"
       }
     ],
-    "name": "PairDisallowed",
+    "name": "RouterDisallowed",
     "type": "event"
   },
   {
@@ -231,7 +231,7 @@
         "type": "address"
       }
     ],
-    "name": "pairAllowed",
+    "name": "routerAllowed",
     "outputs": [
       {
         "internalType": "bool",
@@ -298,11 +298,11 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "pair",
+        "name": "router",
         "type": "address"
       }
     ],
-    "name": "allowPair",
+    "name": "allowRouter",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -311,11 +311,11 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "pair",
+        "name": "router",
         "type": "address"
       }
     ],
-    "name": "disallowPair",
+    "name": "disallowRouter",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

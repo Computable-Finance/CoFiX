@@ -535,24 +535,6 @@
     "type": "receive"
   },
   {
-    "inputs": [],
-    "name": "getReserves",
-    "outputs": [
-      {
-        "internalType": "uint112",
-        "name": "_reserve0",
-        "type": "uint112"
-      },
-      {
-        "internalType": "uint112",
-        "name": "_reserve1",
-        "type": "uint112"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "address",
@@ -578,6 +560,24 @@
     "name": "initialize",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getReserves",
+    "outputs": [
+      {
+        "internalType": "uint112",
+        "name": "_reserve0",
+        "type": "uint112"
+      },
+      {
+        "internalType": "uint112",
+        "name": "_reserve1",
+        "type": "uint112"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {

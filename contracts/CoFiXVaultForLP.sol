@@ -20,17 +20,15 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP {
 
     // managed by governance
     address public governance;
+    address public governanceVault;
 
     uint256 public initCoFiRate = 10*1e18; // yield per block
     uint256 public decayPeriod = 2400000; // yield decays for every 2,400,000 blocks
     uint256 public decayRate = 80;
 
-    // int128 public decayRateFP = 0xCCCCCCCCCCCCD000; // (0.8*2**64).toString(16), 0.8 as 64.64-bit fixed point
-
     address[] public allPools;
 
     mapping (address => bool) public poolAllowed;
-    // mapping (address => uint256) public cofiPoolSpeeds; // yield per block for each pool (CoFiXStakingRewards pool)
 
     mapping (address => address) public pairToStakingPool;
 
@@ -39,6 +37,7 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP {
     constructor(address cofi) public {
         cofiToken = cofi;
         governance = msg.sender;
+        governanceVault = msg.sender; // governance vault could be governance itself or a specific contract
         genesisBlock = block.number;
     }
 
@@ -46,6 +45,11 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP {
     function setGovernance(address _new) external override {
         require(msg.sender == governance, "CVaultForLP: !governance");
         governance = _new;
+    }
+
+    function setGovernanceVault(address _new) external override {
+        require(msg.sender == governance, "CVaultForLP: !governance");
+        governanceVault = _new;
     }
 
     function setInitCoFiRate(uint256 _new) external override {
@@ -86,7 +90,6 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP {
 
     // this function should never fail when pool contract calling it
     function transferCoFi(uint256 amount) external override returns (uint256) {
-        // TODO: not sure if we could let governance exec this, so we can support other distribute methods in the future
         require(poolAllowed[msg.sender] == true, "CVaultForLP: only pool allowed");
         uint256 balance = IERC20(cofiToken).balanceOf(address(this));
         if (amount > balance) {
@@ -98,23 +101,7 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP {
 
     function currentPeriod() public override view returns (uint256) {
         return (block.number).sub(genesisBlock).div(decayPeriod);
-        // TODO: prevent index too large
     }
-
-    // function currentDecay() public view returns (int128) {
-    //     uint256 periodIdx = currentPeriod();
-    //     return ABDKMath64x64.pow(decayRateFP, periodIdx); // TODO: prevent index too large
-    // }
-
-    // no need to calc by pow and float point
-    // function currentCoFiRateByPow() public view returns (uint256) {
-    //     // initCoFiRate * ((decayRate)^((block.number-genesisBlock)/decayPeriod))
-    //     int128 decayRatio = ABDKMath64x64.mul(
-    //         currentDecay(), // 0~1
-    //         ABDKMath64x64.fromUInt(RATE_BASE)
-    //     ); // TODO: verify decayRatio var is small 
-    //     return uint256(ABDKMath64x64.toUInt(decayRatio)).mul(initCoFiRate).div(RATE_BASE); // TODO: if we want mul not overflow revert, should limit initCoFiRate
-    // }
 
     function currentCoFiRate() public override view returns (uint256) {
         uint256 periodIdx = currentPeriod();
@@ -143,4 +130,7 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP {
         return pairToStakingPool[pair];
     }
 
+    function getGovernanceVault() external override view returns (address vault) {
+        return governanceVault;
+    }
 }

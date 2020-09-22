@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-pragma solidity 0.6.12;
+pragma solidity ^0.6.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./lib/TransferHelper.sol";
@@ -8,7 +8,9 @@ import "@openzeppelin/contracts/math/Math.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./interface/ICoFiXStakingRewards.sol";
 import "./interface/ICoFiXVaultForLP.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+// Stake XToken to earn CoFi Token
 contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
     using SafeMath for uint256;
 
@@ -60,17 +62,19 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
         }
         return
             rewardPerTokenStored.add(
-                accrued().mul(1e18).div(_totalSupply) // TODO: 90%
+                accrued().mul(1e18).mul(90).div(_totalSupply).div(100) // 90% to liquidity provider, 10% to governance vault
             );
     }
 
     function _rewardPerTokenAndAccrued() internal view returns (uint256, uint256) {
         if (_totalSupply == 0) {
-            return (rewardPerTokenStored, 0); // TODO: think about totalSupply = 0 situation
+            // use the old rewardPerTokenStored, and accrued should be zero here
+            // if not the new accrued amount will never be distributed to anyone
+            return (rewardPerTokenStored, 0);
         }
         uint256 _accrued = accrued();
         uint256 _rewardPerToken = rewardPerTokenStored.add(
-                _accrued.mul(1e18).div(_totalSupply) // TODO: 90%
+                _accrued.mul(1e18).mul(90).div(_totalSupply).div(100) // 90% to liquidity provider, 10% to governance vault
             );
         return (_rewardPerToken, _accrued);
     }
@@ -117,7 +121,8 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
         uint256 reward = rewards[msg.sender];
         if (reward > 0) {
             rewards[msg.sender] = 0;
-            TransferHelper.safeTransfer(rewardsToken, msg.sender, reward);
+            // TransferHelper.safeTransfer(rewardsToken, msg.sender, reward);
+            _safeCoFiTransfer(msg.sender, reward);
             emit RewardPaid(msg.sender, reward);
         }
     }
@@ -136,6 +141,16 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
         emit RewardAdded(msg.sender, amount);
     }
 
+    // Safe CoFi transfer function, just in case if rounding error or ending of mining causes pool to not have enough CoFis.
+    function _safeCoFiTransfer(address _to, uint256 _amount) internal {
+        uint256 cofiBal = IERC20(rewardsToken).balanceOf(address(this));
+        if (_amount > cofiBal) {
+            TransferHelper.safeTransfer(rewardsToken, _to, cofiBal);
+        } else {
+            TransferHelper.safeTransfer(rewardsToken, _to, _amount);
+        }
+    }
+
     /* ========== MODIFIERS ========== */
 
     modifier updateReward(address account) {
@@ -144,11 +159,13 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
         (uint256 newRewardPerToken, uint256 newAccrued) = _rewardPerTokenAndAccrued();
         rewardPerTokenStored = newRewardPerToken;
         if (newAccrued > 0) {
-            // TODO: transfer from CoFiXVaultForLP
-            // TODO: must never fail
-            uint256 received = ICoFiXVaultForLP(cofixVaultForLP).transferCoFi(newAccrued);
+            address vaultForLP = cofixVaultForLP;
+            uint256 received = ICoFiXVaultForLP(vaultForLP).transferCoFi(newAccrued); // // TODO: verify must never fail here
             if (received > 0) {
-                // TODO: transfer 10% out
+                uint256 govVaultShare = received.mul(10).div(100);
+                // 10% of accrued to governance vault
+                // TransferHelper.safeTransfer(rewardsToken, ICoFiXVaultForLP(vaultForLP).getGovernanceVault(), govVaultShare);
+                _safeCoFiTransfer(ICoFiXVaultForLP(vaultForLP).getGovernanceVault(), govVaultShare);
             }
         } 
         lastUpdateBlock = lastBlockRewardApplicable();

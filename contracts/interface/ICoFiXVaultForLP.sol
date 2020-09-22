@@ -7,6 +7,7 @@ interface ICoFiXVaultForLP {
     event NewPoolAdded(address pool, uint256 index);
 
     function setGovernance(address _new) external;
+    function setGovernanceVault(address _new) external;
     function setInitCoFiRate(uint256 _new) external;
     function setDecayPeriod(uint256 _new) external;
     function setDecayRate(uint256 _new) external;
@@ -23,4 +24,6 @@ interface ICoFiXVaultForLP {
     /// @param  pair The address of XToken(pair) contract
     /// @return pool The pool address
     function stakingPoolForPair(address pair) external view returns (address pool);
+
+    function getGovernanceVault() external view returns (address vault);
 }

@@ -38,6 +38,8 @@ contract CoFiStakingRewards is ICoFiStakingRewards, ReentrancyGuard {
         stakingToken = _stakingToken;
     }
 
+    receive() external payable {}
+
     /* ========== VIEWS ========== */
 
     function totalSupply() external override view returns (uint256) {
@@ -110,6 +112,10 @@ contract CoFiStakingRewards is ICoFiStakingRewards, ReentrancyGuard {
         }
     }
 
+    function addETHReward() external payable override { // no need to update reward here
+        IWETH(rewardsToken).deposit{value: msg.value}(); // support for sending ETH for rewards
+    }
+
     function exit() external override {
         withdraw(_balances[msg.sender]);
         getReward();
@@ -133,8 +139,13 @@ contract CoFiStakingRewards is ICoFiStakingRewards, ReentrancyGuard {
     /* ========== MODIFIERS ========== */
 
     modifier updateReward(address account) {
-        rewardPerTokenStored = rewardPerToken();
-        lastUpdateRewardsTokenBalance = IWETH(rewardsToken).balanceOf(address(this));
+        uint256 _rewardPerToken = rewardPerToken();
+        rewardPerTokenStored = _rewardPerToken;
+        // means it's the first update
+        // add this check to ensure the WETH transferred in before the first user stake in, could be distributed in the next update
+        if (_rewardPerToken != 0) { // TODO: verify this
+            lastUpdateRewardsTokenBalance = IWETH(rewardsToken).balanceOf(address(this));
+        }
         if (account != address(0)) {
             rewards[account] = earned(account);
             userRewardPerTokenPaid[account] = rewardPerTokenStored;

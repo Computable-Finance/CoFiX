@@ -89,7 +89,7 @@
         "type": "int128"
       }
     ],
-    "name": "newK",
+    "name": "NewK",
     "type": "event"
   },
   {
@@ -152,19 +152,6 @@
         "internalType": "int128",
         "name": "",
         "type": "int128"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "THETA_BASE",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
       }
     ],
     "stateMutability": "view",

@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma experimental ABIEncoderV2;
-pragma solidity ^0.6.6;
+pragma solidity 0.6.12;
 
 import "./interface/ICoFiXPair.sol";
-import "./CoFiXERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interface/ICoFiXFactory.sol";
 import "./interface/ICoFiXController.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./CoFiXERC20.sol";
 import "./lib/TransferHelper.sol";
-import "./lib/ABDKMath64x64.sol";
 
 // Pair contract for each trading pair, storing assets and handling settlement
 // No owner or governance
@@ -18,7 +17,8 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
     enum CoFiX_OP { MINT, BURN, SWAP_WITH_EXACT, SWAP_FOR_EXACT } // operations in CoFiX
 
     uint public override constant MINIMUM_LIQUIDITY = 10**3;
-    bytes4 private constant SELECTOR = bytes4(keccak256(bytes('transfer(address,uint256)')));
+    bytes4 private constant SELECTOR = bytes4(keccak256(bytes("transfer(address,uint256)")));
+
     uint256 constant public K_BASE = 1E8; // K
     uint256 constant public NAVPS_BASE = 1E18; // NAVPS (Net Asset Value Per Share), need accuracy
     uint256 constant public THETA_BASE = 1E8; // theta
@@ -34,22 +34,6 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
     uint112 private reserve1;           // uses single storage slot, accessible via getReserves
 
     uint private unlocked = 1;
-    modifier lock() {
-        require(unlocked == 1, 'CPair: LOCKED');
-        unlocked = 0;
-        _;
-        unlocked = 1;
-    }
-
-    function getReserves() public override view returns (uint112 _reserve0, uint112 _reserve1) {
-        _reserve0 = reserve0;
-        _reserve1 = reserve1;
-    }
-
-    function _safeTransfer(address token, address to, uint value) private {
-        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(SELECTOR, to, value));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), 'CPair: TRANSFER_FAILED');
-    }
 
     event Mint(address indexed sender, uint amount0, uint amount1);
     event Burn(address indexed sender, address outToken, uint outAmount, address indexed to);
@@ -61,7 +45,13 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         address indexed to
     );
     event Sync(uint112 reserve0, uint112 reserve1);
-    
+
+    modifier lock() {
+        require(unlocked == 1, "CPair: LOCKED");
+        unlocked = 0;
+        _;
+        unlocked = 1;
+    }
 
     constructor() public {
         factory = msg.sender;
@@ -71,16 +61,26 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
 
     // called once by the factory at time of deployment
     function initialize(address _token0, address _token1, string memory _name, string memory _symbol) external override {
-        require(msg.sender == factory, 'CPair: FORBIDDEN'); // sufficient check
+        require(msg.sender == factory, "CPair: FORBIDDEN"); // sufficient check
         token0 = _token0;
         token1 = _token1;
         name = _name;
         symbol = _symbol;
     }
 
+    function getReserves() public override view returns (uint112 _reserve0, uint112 _reserve1) {
+        _reserve0 = reserve0;
+        _reserve1 = reserve1;
+    }
+
+    function _safeTransfer(address token, address to, uint value) private {
+        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(SELECTOR, to, value));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), "CPair: TRANSFER_FAILED");
+    }
+
     // update reserves
     function _update(uint balance0, uint balance1) private {
-        require(balance0 <= uint112(-1) && balance1 <= uint112(-1), 'CPair: OVERFLOW');
+        require(balance0 <= uint112(-1) && balance1 <= uint112(-1), "CPair: OVERFLOW");
         reserve0 = uint112(balance0);
         reserve1 = uint112(balance1);
         emit Sync(reserve0, reserve1);
@@ -101,13 +101,13 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             bytes memory data = abi.encodePacked(msg.sender, CoFiX_OP.MINT, to);
             // query price
             OraclePrice memory _op;
-            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = queryOracle(_token1, data);
+            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = _queryOracle(_token1, data);
             uint256 navps = calcNAVPerShareForMint(_reserve0, _reserve1, _op);
             liquidity = calcLiquidity(amount0, amount1, navps, _op);
         }
         oracleFeeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
 
-        require(liquidity > 0, 'CPair: INSUFFICIENT_LIQUIDITY_MINTED');
+        require(liquidity > 0, "CPair: INSUFFICIENT_LIQUIDITY_MINTED");
         _mint(to, liquidity);
 
         _update(balance0, balance1);
@@ -130,7 +130,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             bytes memory data = abi.encodePacked(msg.sender, CoFiX_OP.BURN, outToken, to);
             // query price
             OraclePrice memory _op;
-            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = queryOracle(_token1, data);
+            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = _queryOracle(_token1, data);
             if (outToken == _token0) {
                 (amountOut, fee) = calcOutToken0ForBurn(liquidity, _op); // navps calculated
             } else if (outToken == _token1) {
@@ -168,7 +168,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             bytes memory data = abi.encodePacked(msg.sender, CoFiX_OP.SWAP_WITH_EXACT, outToken, to);
             // query price
             OraclePrice memory _op;
-            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = queryOracle(_token1, data);
+            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = _queryOracle(_token1, data);
             (uint112 _reserve0, uint112 _reserve1) = getReserves(); // gas savings
             if (outToken == _token1) {
                 amountIn = balance0.sub(_reserve0);
@@ -214,7 +214,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             uint256 _ethBalanceBefore = address(this).balance;
             bytes memory data = abi.encodePacked(msg.sender, CoFiX_OP.SWAP_FOR_EXACT, outToken, amountOutExact, to);
             // query price
-            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = queryOracle(_token1, data);
+            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = _queryOracle(_token1, data);
             oracleFeeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
         }
 
@@ -360,13 +360,13 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
 
     // get Net Asset Value Per Share
     // only for read, could cost more gas if use it directly in contract
-    function getNAVPerShareForBurn(OraclePrice memory _op) public view returns (uint256 navps) {
+    function getNAVPerShareForBurn(OraclePrice memory _op) external view returns (uint256 navps) {
         return calcNAVPerShareForBurn(reserve0, reserve1, _op);
     }
 
     // get estimated liquidity amount (it represents the amount of pool tokens will be minted if someone provide liquidity to the pool)
     // only for read, could cost more gas if use it directly in contract
-    function getLiquidity(uint256 amount0, uint256 amount1, OraclePrice memory _op) public view returns (uint256 liquidity) {
+    function getLiquidity(uint256 amount0, uint256 amount1, OraclePrice memory _op) external view returns (uint256 liquidity) {
         uint256 navps = getNAVPerShareForMint(_op);
         return calcLiquidity(amount0, amount1, navps, _op);
     }
@@ -464,7 +464,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         return (amountInNeeded, fee);
     }
 
-    function queryOracle(address token, bytes memory data) internal returns (uint256, uint256, uint256, uint256, uint256) {
+    function _queryOracle(address token, bytes memory data) internal returns (uint256, uint256, uint256, uint256, uint256) {
         return ICoFiXController(ICoFiXFactory(factory).getController()).queryOracle{value: msg.value}(token, data);
     }
 

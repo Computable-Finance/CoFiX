@@ -1,23 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.6.6;
+pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./lib/ABDKMath64x64.sol";
 import "./interface/INest_3_OfferPrice.sol";
 import "./interface/ICoFiXKTable.sol";
 import "./lib/TransferHelper.sol";
+import "./interface/ICoFiXController.sol";
 
 // Controller contract to call NEST Oracle for prices, managed by governance
 // Governance role of this contract should be the `Timelock` contract, which is further managed by a multisig contract
-contract CoFiXController {
+contract CoFiXController is ICoFiXController {
 
     using SafeMath for uint256;
     
-    event newK(address token, int128 K, int128 sigma, uint256 T, uint256 ethAmount, uint256 erc20Amount, uint256 blockNum, uint256 tIdx, uint256 sigmaIdx, int128 K0);
-
     uint256 constant public AONE = 1 ether;
     uint256 constant public K_BASE = 1E8;
-    uint256 constant public THETA_BASE = 1E8;
     uint256 constant internal TIMESTAMP_MODULUS = 2**32;
     int128 constant internal SIGMA_STEP = 0x346DC5D638865; // (0.00005*2**64).toString(16), 0.00005 as 64.64-bit fixed point
     int128 constant internal ZERO_POINT_FIVE = 0x8000000000000000; // (0.5*2**64).toString(16)
@@ -37,6 +35,11 @@ contract CoFiXController {
     int128 public MAX_K0 = 0xCCCCCCCCCCCCD00; // (0.05*2**64).toString(16)
     int128 public GAMMA = 0x8000000000000000; // (0.5*2**64).toString(16)
 
+    modifier onlyGovernance() {
+        require(msg.sender == governance, "CoFiXCtrl: !governance");
+        _;
+    }
+
     constructor(address _priceOracle, address _nest, address _factory, address _kTable) public {
         governance = msg.sender;
         oracle = _priceOracle;
@@ -48,64 +51,52 @@ contract CoFiXController {
     receive() external payable {}
 
     /* setters for protocol governance */
-    function setGovernance(address _new) external {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setGovernance(address _new) external onlyGovernance {
         governance = _new;
+        emit NewGovernance(_new);
     }
 
-    function setOracle(address _priceOracle) external {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setOracle(address _priceOracle) external onlyGovernance {
         oracle = _priceOracle;
+        emit NewOracle(_priceOracle);
     }
 
-    function setNestToken(address _nest) external {
-        require(msg.sender == governance, "CFactory: !governance");
-        nestToken = _nest;
-    }
-
-    function setFactory(address _factory) external {
-        require(msg.sender == governance, "CFactory: !governance");
-        factory = _factory;
-    }
-
-    function setKTable(address _kTable) external {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setKTable(address _kTable) external onlyGovernance {
         kTable = _kTable;
+        emit NewKTable(_kTable);
     }    
 
-    function setTimespan(uint256 _timeSpan) external {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setTimespan(uint256 _timeSpan) external onlyGovernance {
         timespan = _timeSpan;
+        emit NewTimespan(_timeSpan);
     }
 
-    function setKRefreshInterval(uint256 _interval) external {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setKRefreshInterval(uint256 _interval) external onlyGovernance {
         kRefreshInterval = _interval;
+        emit NewKRefreshInterval(_interval);
     }
 
-    function setOracleDestructionAmount(uint256 _amount) external {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setOracleDestructionAmount(uint256 _amount) external onlyGovernance {
         DESTRUCTION_AMOUNT = _amount;
     }
 
-    function setKLimit(int128 maxK0) external {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setKLimit(int128 maxK0) external onlyGovernance {
         MAX_K0 = maxK0;
+        emit NewKLimit(maxK0);
     }
 
-    function setGamma(int128 _gamma) external {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setGamma(int128 _gamma) external onlyGovernance {
         GAMMA = _gamma;
+        emit NewGamma(_gamma);
     }
     
-    function setTheta(address token, uint32 theta) external {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setTheta(address token, uint32 theta) external onlyGovernance {
         KInfoMap[token][2] = theta;
+        emit NewTheta(token, theta);
     }
 
     // Activate on NEST Oracle, should not be called twice for the same nest oracle
-    function activate() external {
-        require(msg.sender == governance, "CFactory: !governance");
+    function activate() external onlyGovernance {
         // address token, address from, address to, uint value
         TransferHelper.safeTransferFrom(nestToken, msg.sender, address(this), DESTRUCTION_AMOUNT);
         // address token, address to, uint value
@@ -114,13 +105,14 @@ contract CoFiXController {
         TransferHelper.safeApprove(nestToken, oracle, 0); // ensure safety
     }
 
-    function addCaller(address caller) external {
-        require(msg.sender == factory || msg.sender == governance, "CoFiXCtrl: only factory"); // omit governance in reason
+    function addCaller(address caller) external override {
+        require(msg.sender == factory || msg.sender == governance, "CoFiXCtrl: only factory or gov");
         callerAllowed[caller] = true;
     }  
 
-    function queryOracle(address token, bytes memory /*data*/) external payable returns (uint256 _k, uint256, uint256, uint256, uint256) {
-        require(callerAllowed[msg.sender] == true, "CoFiXCtrl: caller not allowed");
+    // We can make use of `data` bytes in the future
+    function queryOracle(address token, bytes memory /*data*/) external override payable returns (uint256 _k, uint256, uint256, uint256, uint256) {
+        require(callerAllowed[msg.sender], "CoFiXCtrl: caller not allowed");
 
         uint256 _now = block.timestamp % TIMESTAMP_MODULUS; // 2106
 
@@ -170,7 +162,7 @@ contract CoFiXController {
             // K = gamma * K0
             K0AndK[1] = ABDKMath64x64.mul(GAMMA, K0AndK[0]);
 
-            emit newK(token, K0AndK[1], _sigma, _op[0], _op[1], _op[2], _op[3], _op[4], _op[5], K0AndK[0]);
+            emit NewK(token, K0AndK[1], _sigma, _op[0], _op[1], _op[2], _op[3], _op[4], _op[5], K0AndK[0]);
         }
 
         require(K0AndK[0] <= MAX_K0, "CoFiXCtrl: K0");
@@ -188,7 +180,7 @@ contract CoFiXController {
         }
     }
 
-    function getKInfo(address token) public view returns (uint32 k, uint32 updatedAt, uint32 theta) {
+    function getKInfo(address token) external view returns (uint32 k, uint32 updatedAt, uint32 theta) {
         k = KInfoMap[token][0];
         updatedAt = KInfoMap[token][1];
         theta = KInfoMap[token][2];
@@ -205,7 +197,14 @@ contract CoFiXController {
     }
 
     // calc Variance, a.k.a. sigma squared
-    function calcVariance(address token) internal returns (int128 _variance, uint256 _T, uint256 _ethAmount, uint256 _erc20Amount, uint256 _blockNum) {
+    function calcVariance(address token) internal returns (
+        int128 _variance,
+        uint256 _T,
+        uint256 _ethAmount,
+        uint256 _erc20Amount,
+        uint256 _blockNum
+    ) // keep these variables to make return values more clear
+    {
 
         // query raw price list from nest oracle (newest to oldest)
         uint256[] memory _rawPriceList = INest_3_OfferPrice(oracle).updateAndCheckPriceList{value: msg.value}(token, 50);

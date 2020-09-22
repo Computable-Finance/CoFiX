@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-pragma solidity ^0.6.6;
+pragma solidity 0.6.12;
 
 interface INest_3_OfferPrice {
     function transfer(address to, uint value) external returns (bool);

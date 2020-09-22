@@ -63,7 +63,7 @@
         "type": "int128"
       }
     ],
-    "name": "newK",
+    "name": "NewK",
     "type": "event"
   },
   {

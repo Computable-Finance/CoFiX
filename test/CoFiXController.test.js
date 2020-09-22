@@ -181,7 +181,7 @@ contract('CoFiXController', (accounts) => {
     });
 
     it("should revert if oldGovernance call setGovernance", async () => {
-      await expectRevert(CoFiXCtrl.setGovernance(oldGovernance, { from: oldGovernance }), "CFactory: !governance");
+      await expectRevert(CoFiXCtrl.setGovernance(oldGovernance, { from: oldGovernance }), "CoFiXCtrl: !governance");
     });
 
     it("should setGovernance correctly by newGovernance", async () => {
@@ -230,26 +230,26 @@ contract('CoFiXController', (accounts) => {
       await tmpCtrl.setOracle(newOracle, { from: the_governance });
       const oracle = await tmpCtrl.oracle();
       expect(oracle).to.bignumber.equal(newOracle);
-      await expectRevert(tmpCtrl.setOracle(newOracle, { from: non_governance }), "CFactory: !governance");
+      await expectRevert(tmpCtrl.setOracle(newOracle, { from: non_governance }), "CoFiXCtrl: !governance");
     });
 
-    // setNestToken(address _nest)
-    it("should setNestToken correctly", async () => {
-      const nest = constants.ZERO_ADDRESS;
-      await tmpCtrl.setNestToken(nest, { from: the_governance });
-      const newNest = await tmpCtrl.nestToken();
-      expect(newNest).to.bignumber.equal(nest);
-      await expectRevert(tmpCtrl.setNestToken(nest, { from: non_governance }), "CFactory: !governance");
-    });
+    // // setNestToken(address _nest)
+    // it("should setNestToken correctly", async () => {
+    //   const nest = constants.ZERO_ADDRESS;
+    //   await tmpCtrl.setNestToken(nest, { from: the_governance });
+    //   const newNest = await tmpCtrl.nestToken();
+    //   expect(newNest).to.bignumber.equal(nest);
+    //   await expectRevert(tmpCtrl.setNestToken(nest, { from: non_governance }), "CoFiXCtrl: !governance");
+    // });
 
-    // setFactory(address _factory)
-    it("should setFactory correctly", async () => {
-      const factory = constants.ZERO_ADDRESS;
-      await tmpCtrl.setFactory(factory, { from: the_governance });
-      const newFactory = await tmpCtrl.factory();
-      expect(newFactory).to.bignumber.equal(factory);
-      await expectRevert(tmpCtrl.setFactory(factory, { from: non_governance }), "CFactory: !governance");
-    });
+    // // setFactory(address _factory)
+    // it("should setFactory correctly", async () => {
+    //   const factory = constants.ZERO_ADDRESS;
+    //   await tmpCtrl.setFactory(factory, { from: the_governance });
+    //   const newFactory = await tmpCtrl.factory();
+    //   expect(newFactory).to.bignumber.equal(factory);
+    //   await expectRevert(tmpCtrl.setFactory(factory, { from: non_governance }), "CoFiXCtrl: !governance");
+    // });
 
     // setKTable(address _kTable)
     it("should setKTable correctly", async () => {
@@ -257,7 +257,7 @@ contract('CoFiXController', (accounts) => {
       await tmpCtrl.setKTable(kTable, { from: the_governance });
       const newkTable = await tmpCtrl.kTable();
       expect(newkTable).to.bignumber.equal(kTable);
-      await expectRevert(tmpCtrl.setKTable(kTable, { from: non_governance }), "CFactory: !governance");
+      await expectRevert(tmpCtrl.setKTable(kTable, { from: non_governance }), "CoFiXCtrl: !governance");
     });
 
     // setTimespan(uint256 _timeSpan)
@@ -266,7 +266,7 @@ contract('CoFiXController', (accounts) => {
       await tmpCtrl.setTimespan(10, { from: the_governance });
       const timeSpan = await tmpCtrl.timespan();
       expect(timeSpan).to.bignumber.equal(newTimespan);
-      await expectRevert(tmpCtrl.setTimespan(10, { from: non_governance }), "CFactory: !governance");
+      await expectRevert(tmpCtrl.setTimespan(10, { from: non_governance }), "CoFiXCtrl: !governance");
     });
 
     // setKRefreshInterval(uint256 _interval)
@@ -275,7 +275,7 @@ contract('CoFiXController', (accounts) => {
       await tmpCtrl.setKRefreshInterval(interval, { from: the_governance });
       const newInterval = await tmpCtrl.kRefreshInterval();
       expect(newInterval).to.bignumber.equal(interval);
-      await expectRevert(tmpCtrl.setKRefreshInterval(interval, { from: non_governance }), "CFactory: !governance");
+      await expectRevert(tmpCtrl.setKRefreshInterval(interval, { from: non_governance }), "CoFiXCtrl: !governance");
     });
 
     // setOracleDestructionAmount(uint256 _amount)
@@ -284,7 +284,7 @@ contract('CoFiXController', (accounts) => {
       await tmpCtrl.setOracleDestructionAmount(amount, { from: the_governance });
       const newAmount = await tmpCtrl.DESTRUCTION_AMOUNT();
       expect(newAmount).to.bignumber.equal(amount);
-      await expectRevert(tmpCtrl.setOracleDestructionAmount(amount, { from: non_governance }), "CFactory: !governance");
+      await expectRevert(tmpCtrl.setOracleDestructionAmount(amount, { from: non_governance }), "CoFiXCtrl: !governance");
     });
 
     // setKLimit(int128 maxK0)
@@ -293,7 +293,7 @@ contract('CoFiXController', (accounts) => {
       await tmpCtrl.setKLimit(maxK0, { from: the_governance });
       const newMaxK0 = await tmpCtrl.MAX_K0();
       expect(newMaxK0).to.bignumber.equal(maxK0);
-      await expectRevert(tmpCtrl.setKLimit(maxK0, { from: non_governance }), "CFactory: !governance");
+      await expectRevert(tmpCtrl.setKLimit(maxK0, { from: non_governance }), "CoFiXCtrl: !governance");
     });
 
     // setGamma(int128 _gamma)
@@ -302,7 +302,7 @@ contract('CoFiXController', (accounts) => {
       await tmpCtrl.setGamma(gamma, { from: the_governance });
       const newGamma = await tmpCtrl.DESTRUCTION_AMOUNT();
       expect(newGamma).to.bignumber.equal(gamma);
-      await expectRevert(tmpCtrl.setGamma(gamma, { from: non_governance }), "CFactory: !governance");
+      await expectRevert(tmpCtrl.setGamma(gamma, { from: non_governance }), "CoFiXCtrl: !governance");
     });
 
     // setTheta(address token, uint32 theta)
@@ -312,7 +312,7 @@ contract('CoFiXController', (accounts) => {
       await tmpCtrl.setTheta(token, theta, { from: the_governance });
       const kInfo = await tmpCtrl.getKInfo(token);
       expect(kInfo.theta).to.bignumber.equal(theta);
-      await expectRevert(tmpCtrl.setTheta(token, theta, { from: non_governance }), "CFactory: !governance");
+      await expectRevert(tmpCtrl.setTheta(token, theta, { from: non_governance }), "CoFiXCtrl: !governance");
     });
 
   });

@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-pragma solidity ^0.6.6;
+pragma solidity 0.6.12;
 
 interface ICoFiXFactory {
     // All pairs: {ETH <-> ERC20 Token}
     event PairCreated(address indexed token, address pair, uint256);
+    event NewGovernance(address _new);
+    event NewController(address _new);
+    event NewFeeReceiver(address _new);
+    event NewVaultForLP(address _new);
 
     /// @dev Create a new token pair for trading
     /// @param  token the address of token to trade

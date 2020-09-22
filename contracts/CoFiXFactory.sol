@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma experimental ABIEncoderV2;
-pragma solidity ^0.6.6;
+pragma solidity 0.6.12;
 
-import './interface/ICoFiXFactory.sol';
-import './interface/ICoFiXController.sol';
-import './CoFiXPair.sol';
+import "./interface/ICoFiXFactory.sol";
+import "./interface/ICoFiXController.sol";
+import "./CoFiXPair.sol";
 
 // Factory of CoFiX to create new CoFiXPair contract when new pair is created, managed by governance
 // Governance role of this contract should be the `Timelock` contract, which is further managed by a multisig contract
 contract CoFiXFactory is ICoFiXFactory {
-    using SafeMath for uint;
 
     string constant internal pairNamePrefix = "XToken ";
     string constant internal pairSymbolPrefix = "XT-";
@@ -24,7 +23,10 @@ contract CoFiXFactory is ICoFiXFactory {
     address public vaultForLP;
     address public vaultForTrader;
 
-    event PairCreated(address indexed token, address pair, uint);
+    modifier onlyGovernance() {
+        require(msg.sender == governance, "CFactory: !governance");
+        _;
+    }
 
     constructor(address _WETH, address _vaultForLP) public {
         governance = msg.sender;
@@ -45,6 +47,7 @@ contract CoFiXFactory is ICoFiXFactory {
         assembly {
             pair := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
+        require(pair != address(0), "CFactory: Failed on deploy");
 
         getPair[token] = pair;
         allPairs.push(pair);
@@ -59,24 +62,32 @@ contract CoFiXFactory is ICoFiXFactory {
         emit PairCreated(token, pair, pairLen);
     }
 
-    function setGovernance(address _new) external override {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setGovernance(address _new) external override onlyGovernance {
+        require(_new != address(0), "CFactory: zero addr");
+        require(_new != governance, "CFactory: same addr");
         governance = _new;
+        emit NewGovernance(_new);
     }
     
-    function setController(address _new) external override {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setController(address _new) external override onlyGovernance {
+        require(_new != address(0), "CFactory: zero addr");
+        require(_new != controller, "CFactory: same addr");
         controller = _new;
+        emit NewController(_new);
     }
 
-    function setFeeReceiver(address _new) external override {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setFeeReceiver(address _new) external override onlyGovernance {
+        require(_new != address(0), "CFactory: zero addr");
+        require(_new != feeReceiver, "CFactory: same addr");
         feeReceiver = _new;
+        emit NewGovernance(_new);
     }
 
-    function setVaultForLP(address _new) external override {
-        require(msg.sender == governance, "CFactory: !governance");
+    function setVaultForLP(address _new) external override onlyGovernance {
+        require(_new != address(0), "CFactory: zero addr");
+        require(_new != vaultForLP, "CFactory: same addr");
         vaultForLP = _new;
+        emit NewVaultForLP(_new);
     }
 
     function getController() external view override returns (address) {
@@ -91,11 +102,11 @@ contract CoFiXFactory is ICoFiXFactory {
         return vaultForLP;
     }
 
-    function append(string memory a, string memory b) internal pure returns (string memory _concatenatedString) {
+    function append(string memory a, string memory b) internal pure returns (string memory) {
         return string(abi.encodePacked(a, b));
     }
 
-    function uint2str(uint _i) internal pure returns (string memory _uintAsString) {
+    function uint2str(uint _i) internal pure returns (string memory) {
         if (_i == 0) {
             return "0";
         }

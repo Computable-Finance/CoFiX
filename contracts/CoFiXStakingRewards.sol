@@ -62,7 +62,7 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
         }
         return
             rewardPerTokenStored.add(
-                accrued().mul(1e18).mul(90).div(_totalSupply).div(100) // 90% to liquidity provider, 10% to governance vault
+                accrued().mul(1e18).div(_totalSupply)
             );
     }
 
@@ -74,7 +74,7 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
         }
         uint256 _accrued = accrued();
         uint256 _rewardPerToken = rewardPerTokenStored.add(
-                _accrued.mul(1e18).mul(90).div(_totalSupply).div(100) // 90% to liquidity provider, 10% to governance vault
+                _accrued.mul(1e18).div(_totalSupply)
             );
         return (_rewardPerToken, _accrued);
     }
@@ -159,14 +159,9 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
         (uint256 newRewardPerToken, uint256 newAccrued) = _rewardPerTokenAndAccrued();
         rewardPerTokenStored = newRewardPerToken;
         if (newAccrued > 0) {
-            address vaultForLP = cofixVaultForLP;
-            uint256 received = ICoFiXVaultForLP(vaultForLP).safeCoFiTransfer(newAccrued); // // TODO: verify must never fail here
-            if (received > 0) {
-                uint256 govVaultShare = received.mul(10).div(100);
-                // 10% of accrued to governance vault
-                // TransferHelper.safeTransfer(rewardsToken, ICoFiXVaultForLP(vaultForLP).getGovernanceVault(), govVaultShare);
-                _safeCoFiTransfer(ICoFiXVaultForLP(vaultForLP).getGovernanceVault(), govVaultShare);
-            }
+            // distributeReward could fail if CoFiXVaultForLP is not minter of CoFi anymore
+            // Should set reward rate to zero first, and then do a settlement of pool reward by call getReward
+            ICoFiXVaultForLP(cofixVaultForLP).distributeReward(address(this), newAccrued);
         } 
         lastUpdateBlock = lastBlockRewardApplicable();
         if (account != address(0)) {

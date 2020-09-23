@@ -16,16 +16,10 @@ contract('CoFiXStakingRewards', (accounts) => {
 
     const governance = deployer;
 
-
     const LP_1 = accounts[1];
     const LP_2 = accounts[2];
 
-    const TotalSupplyOfCoFi = new BN("100000000000000000000000000"); // 1e8 * 1e18
-    const HalfSupplyOfCoFi = TotalSupplyOfCoFi.div(new BN(2)); // or the init supply to CoFiXVaultForLP
-
     const INIT_COFI_RATE = web3.utils.toWei('10', 'ether');
-
-    const LIQUIDITY_PROVIDER_SHARE = 90;
 
     before(async () => {
         CoFi = await CoFiToken.new({ from: deployer });
@@ -34,14 +28,11 @@ contract('CoFiXStakingRewards', (accounts) => {
         StakingRewards = await CoFiXStakingRewards.new(CoFi.address, XToken.address, VaultForLP.address, { from: deployer });
     });
 
-    it("test", async () => {
-    });
-
-    it("should transfer enough CoFi to VaultForLp for staking rewards correctly", async () => {
-        const amount = HalfSupplyOfCoFi;
-        await CoFi.transfer(VaultForLP.address, amount, {from: deployer});
-        const balance = await CoFi.balanceOf(VaultForLP.address);
-        expect(balance).to.bignumber.equal(amount);
+    it("should add VaultForLP as minter of CoFi correctly", async () => {
+        const receipt = await CoFi.addMinter(VaultForLP.address, {from: governance});
+        expectEvent(receipt, "MinterAdded", {_minter: VaultForLP.address});
+        const allowed = await CoFi.minters(VaultForLP.address);
+        expect(allowed).equal(true);
     });
 
     it("should addPool correctly", async () => {
@@ -107,10 +98,9 @@ contract('CoFiXStakingRewards', (accounts) => {
             console.log(`rewardPerToken: ${rewardPerToken}`);
         }
         let expectReward = new BN(INIT_COFI_RATE).mul(new BN(1));
-        let expectRewardForLP = expectReward.mul(new BN(LIQUIDITY_PROVIDER_SHARE)).div(new BN(100));
         expect(accrued).to.bignumber.equal(expectReward);
-        expect(earned).to.bignumber.equal(expectRewardForLP);
-        expect(rewardPerToken).to.bignumber.equal(expectRewardForLP);
+        expect(earned).to.bignumber.equal(expectReward);
+        expect(rewardPerToken).to.bignumber.equal(expectReward);
     });
 
     it("should exit (withdraw & getReward) correctly", async () => {
@@ -120,35 +110,26 @@ contract('CoFiXStakingRewards', (accounts) => {
         let balance = await XToken.balanceOf(LP_1);
         expect(balance).to.bignumber.equal("0");
         let poolBalance = await CoFi.balanceOf(StakingRewards.address);
-        let govVaultBalanceBefore = await CoFi.balanceOf(deployer);
         if (verbose) {
             console.log(`before exit, CoFi reward Of LP_1: ${reward}`);
-            console.log(`before exit, CoFi balance Of govVault: ${govVaultBalanceBefore}`);
             console.log(`before exit, XToken balance Of LP_1: ${balance}`);
             console.log(`before exit, CoFi balance Of pool: ${poolBalance}`);
         }
         // withdraw and getReward
         await StakingRewards.exit({from: LP_1});
         let expectedReward = new BN(INIT_COFI_RATE).mul(new BN(2)); // means reward in two blocks
-        let expectedRewardForLP = expectedReward.mul(new BN(LIQUIDITY_PROVIDER_SHARE)).div(new BN(100)); // 90% to liquidity provider
         // stats after exit
         reward = await CoFi.balanceOf(LP_1);
-        expect(expectedRewardForLP).to.bignumber.equal(reward);
+        expect(expectedReward).to.bignumber.equal(reward);
         balance = await XToken.balanceOf(LP_1);
         expectedBalance = web3.utils.toWei('1', 'ether');
         expect(expectedBalance).to.bignumber.equal(balance);
 
         poolBalance = await CoFi.balanceOf(StakingRewards.address);
-        let govVaultBalanceAfter = await CoFi.balanceOf(deployer);
-        expect(poolBalance).to.bignumber.equal("0"); // 90% to LP_1, 10% to govVault (deployer)
-
-        let expectGovVaultReward = (new BN(expectedReward)).sub(new BN(expectedRewardForLP));
-        let govVaultRewardReceived = (new BN(govVaultBalanceAfter)).sub(new BN(govVaultBalanceBefore));
-        expect(expectGovVaultReward).to.bignumber.equal(govVaultRewardReceived);
+        expect(poolBalance).to.bignumber.equal("0");
 
         if (verbose) {
             console.log(`after exit, CoFi reward Of LP_1: ${reward}`);
-            console.log(`after exit, CoFi balance Of govVault: ${govVaultBalanceAfter}`);
             console.log(`after exit, XToken balance Of LP_1: ${balance}`);
             console.log(`after exit, CoFi balance Of pool: ${poolBalance}`);
         }
@@ -190,10 +171,9 @@ contract('CoFiXStakingRewards', (accounts) => {
             console.log(`userRewardPerTokenPaidForLP2: ${userRewardPerTokenPaidForLP2}`);
         }
         let reward = new BN(INIT_COFI_RATE).mul(new BN(1));
-        let rewardForLP = reward.mul(new BN(LIQUIDITY_PROVIDER_SHARE)).div(new BN(100));
         expect(accrued).to.bignumber.equal(reward);
-        expect(earned).to.bignumber.equal(rewardForLP);
-        const expectedRewardPerToken = (new BN(userRewardPerTokenPaidForLP2)).add(new BN(rewardForLP));
+        expect(earned).to.bignumber.equal(reward);
+        const expectedRewardPerToken = (new BN(userRewardPerTokenPaidForLP2)).add(new BN(reward));
         expect(rewardPerToken).to.bignumber.equal(expectedRewardPerToken);
     });
 
@@ -210,7 +190,6 @@ contract('CoFiXStakingRewards', (accounts) => {
         // withdraw and getReward
         await StakingRewards.exit({from: LP_2});
         let expectedReward = new BN(INIT_COFI_RATE).mul(new BN(2)); // means reward in two blocks
-        expectedReward = expectedReward.mul(new BN(LIQUIDITY_PROVIDER_SHARE)).div(new BN(100));
         // stats after exit
         reward = await CoFi.balanceOf(LP_2);
         expect(expectedReward).to.bignumber.equal(reward);

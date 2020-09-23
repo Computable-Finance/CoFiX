@@ -16,6 +16,7 @@ contract('CoFiStakingRewards', (accounts) => {
 
     const governance = deployer;
 
+    const MINTER = governance;
 
     const CoFi_User1 = accounts[1];
     const CoFi_User2 = accounts[2];
@@ -27,9 +28,6 @@ contract('CoFiStakingRewards', (accounts) => {
         StakingRewards = await CoFiStakingRewards.new(WETH.address, CoFi.address, { from: deployer });
     });
 
-    it("test", async () => {
-    });
-
     it("should have correct settings", async () => {
         const rewardToken = await StakingRewards.rewardsToken();
         const stakingToken = await StakingRewards.stakingToken();
@@ -37,9 +35,25 @@ contract('CoFiStakingRewards', (accounts) => {
         expect(stakingToken).to.equal(CoFi.address);
     });
 
+    it("should add MINTER as minter of CoFi correctly", async () => {
+        const receipt = await CoFi.addMinter(MINTER, {from: governance});
+        expectEvent(receipt, "MinterAdded", {_minter: MINTER});
+        const allowed = await CoFi.minters(MINTER);
+        expect(allowed).equal(true);
+    });
+
+    it("should mint some CoFi to MINTER correctly", async () => {
+        const amount = web3.utils.toWei('10000', 'ether');
+        await CoFi.mint(MINTER, amount, {from: MINTER});
+        const balance = await CoFi.balanceOf(MINTER);
+        expect(balance).to.bignumber.equal(amount);
+        const totalSupply = await CoFi.totalSupply();
+        expect(totalSupply).to.bignumber.equal(amount);
+    });
+
     it("should transfer some CoFi to CoFi_User1 correctly", async () => {
         const amount = web3.utils.toWei('10000', 'ether');
-        await CoFi.transfer(CoFi_User1, amount);
+        await CoFi.transfer(CoFi_User1, amount, {from: MINTER});
         const balance = await CoFi.balanceOf(CoFi_User1);
         expect(balance).to.bignumber.equal(amount);
     });

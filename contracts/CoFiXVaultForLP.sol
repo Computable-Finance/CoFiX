@@ -102,7 +102,8 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP {
     
     function distributeReward(address to, uint256 amount) external override {
         require(poolAllowed[msg.sender] == true, "CVaultForLP: only pool allowed"); // caution: be careful when adding new pool
-        ICoFiToken(cofiToken).mint(to, amount);
+        // TODO: think about add a mint role check, to ensure this call never fail?
+        ICoFiToken(cofiToken).mint(to, amount); // allows zero
     }
 
     function currentPeriod() public override view returns (uint256) {

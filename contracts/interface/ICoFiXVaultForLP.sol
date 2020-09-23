@@ -14,7 +14,7 @@ interface ICoFiXVaultForLP {
 
     function addPool(address pool) external;
     function addPoolForPair(address pool) external;
-    function safeCoFiTransfer(uint256 amount) external returns (uint256);
+    function distributeReward(address to, uint256 amount) external;
 
     function currentPeriod() external view returns (uint256);
     function currentCoFiRate() external view returns (uint256);

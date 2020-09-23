@@ -7,6 +7,7 @@ import "./lib/ABDKMath64x64.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interface/ICoFiXVaultForLP.sol";
 import "./interface/ICoFiXStakingRewards.sol";
+import "./interface/ICoFiToken.sol";
 
 contract CoFiXVaultForLP is ICoFiXVaultForLP {
 
@@ -88,16 +89,21 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP {
         emit NewPoolAdded(pool, allPools.length);
     }
 
-    // this function should never fail when pool contract calling it
-    function safeCoFiTransfer(uint256 amount) external override returns (uint256) {
-        require(poolAllowed[msg.sender] == true, "CVaultForLP: only pool allowed");
-        uint256 balance = IERC20(cofiToken).balanceOf(address(this));
-        if (amount > balance) {
-            amount = balance;
-        }
-        IERC20(cofiToken).transfer(msg.sender, amount); // allow zero amount
-        return amount;
-    }    
+    // // this function should never fail when pool contract calling it
+    // function safeCoFiTransfer(uint256 amount) external override returns (uint256) {
+    //     require(poolAllowed[msg.sender] == true, "CVaultForLP: only pool allowed");
+    //     uint256 balance = IERC20(cofiToken).balanceOf(address(this));
+    //     if (amount > balance) {
+    //         amount = balance;
+    //     }
+    //     IERC20(cofiToken).transfer(msg.sender, amount); // allow zero amount
+    //     return amount;
+    // }
+    
+    function distributeReward(address to, uint256 amount) external override {
+        require(poolAllowed[msg.sender] == true, "CVaultForLP: only pool allowed"); // caution: be careful when adding new pool
+        ICoFiToken(cofiToken).mint(to, amount);
+    }
 
     function currentPeriod() public override view returns (uint256) {
         return (block.number).sub(genesisBlock).div(decayPeriod);

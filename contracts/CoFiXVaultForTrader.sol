@@ -22,7 +22,7 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader {
     // managed by governance
     address public governance;
 
-    uint256 public initCoFiRate = 10*1e18; // yield per block
+    uint256 public initCoFiRate = 10*1e18; // yield per unit
     uint256 public cofiDecayPeriod = 7200; // yield decays for every 2,400,000 blocks
     int128 public cofiDecayRate = 0xFFBE76C8B4395800; // (0.999*2**64).toString(16), 0.999 as 64.64-bit fixed point
 
@@ -47,9 +47,16 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader {
 
     uint256 public lastMinedBlock; // last block mined cofi token
 
-    constructor() public {
+    constructor(address cofi) public {
+        cofiToken = cofi;
         governance = msg.sender;
         genesisBlock = block.number;
+    }
+
+    /* setters for protocol governance */
+    function setGovernance(address _new) external override {
+        require(msg.sender == governance, "CVaultForTrader: !governance");
+        governance = _new;
     }
 
     function allowRouter(address router) external override {
@@ -149,7 +156,12 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader {
 
     function calcLambda(uint256 x, uint256 y) public override pure returns (uint256) {
         // (0.1 0.33 3 10) => (10 33 300 1000)
-        uint256 ratio = x.mul(100).div(y);
+        uint256 ratio;
+        if (y == 0) {
+            ratio = 1000;
+        } else {
+            ratio = x.mul(LAMBDA_BASE).div(y);
+        }
         if (ratio >= 1000) { // x/y >= 10, lambda = 0.5
             return 50;
         } else if (ratio >= 300) { // 3 <= x/y < 10, lambda = 0.75
@@ -195,7 +207,8 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader {
             return O_T.mul(lambda).div(LAMBDA_BASE);
         } else {
             // O_T * ms * (2Q - ms) * lambda / (Q * Q)
-            return O_T.mul(ms).mul(Q.mul(2).sub(ms)).mul(lambda).div(Q).div(Q);
+            uint256 numerator = O_T.mul(ms).mul(Q.mul(2).sub(ms)).mul(lambda);
+            return numerator.div(Q).div(Q).div(LAMBDA_BASE);
         }
     }
 

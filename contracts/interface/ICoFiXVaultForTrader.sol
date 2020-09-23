@@ -7,6 +7,8 @@ interface ICoFiXVaultForTrader {
     event RouterAllowed(address router);
     event RouterDisallowed(address router);
 
+    function setGovernance(address gov) external;
+
     function allowRouter(address router) external;
 
     function disallowRouter(address router) external;

@@ -1,25 +1,22 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.6.12;
 
-
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
+// CoFiToken with Governance. It offers possibilities to adopt off-chain gasless governance infra.
+contract CoFiToken is ERC20("CoFiToken", "CoFi") {
 
-// SushiToken with Governance.
-contract SushiToken is ERC20("SushiToken", "SUSHI"), Ownable {
-    /// @notice Creates `_amount` token to `_to`. Must only be called by the owner (MasterChef).
-    function mint(address _to, uint256 _amount) public onlyOwner {
-        _mint(_to, _amount);
-        _moveDelegates(address(0), _delegates[_to], _amount);
-    }
+    address public governance;
+    mapping (address => bool) public minters;
 
-    // Copied and modified from YAM code:
+    // Copied and modified from SUSHI code:
+    // https://github.com/sushiswap/sushiswap/blob/master/contracts/SushiToken.sol
+    // Which is copied and modified from YAM code and COMPOUND:
     // https://github.com/yam-finance/yam-protocol/blob/master/contracts/token/YAMGovernanceStorage.sol
     // https://github.com/yam-finance/yam-protocol/blob/master/contracts/token/YAMGovernance.sol
-    // Which is copied and modified from COMPOUND:
     // https://github.com/compound-finance/compound-protocol/blob/master/contracts/Governance/Comp.sol
 
-    /// @notice A record of each accounts delegate
+    /// @dev A record of each accounts delegate
     mapping (address => address) internal _delegates;
 
     /// @notice A checkpoint for marking number of votes from a given block
@@ -48,6 +45,66 @@ contract SushiToken is ERC20("SushiToken", "SUSHI"), Ownable {
 
     /// @notice An event thats emitted when a delegate account's vote balance changes
     event DelegateVotesChanged(address indexed delegate, uint previousBalance, uint newBalance);
+
+    /// @dev An event thats emitted when a new governance account is set
+    /// @param  _new The new governance address
+    event NewGovernance(address _new);
+
+    /// @dev An event thats emitted when a new minter account is added
+    /// @param  _minter The new minter address added
+    event MinterAdded(address _minter);
+
+    /// @dev An event thats emitted when a minter account is removed
+    /// @param  _minter The minter address removed
+    event MinterRemoved(address _minter);
+
+    modifier onlyGovernance() {
+        require(msg.sender == governance, "CoFi: !governance");
+        _;
+    }
+
+    constructor() public {
+        governance = msg.sender;
+    }
+
+    function setGovernance(address _new) external onlyGovernance {
+        require(_new != address(0), "CoFi: zero addr");
+        require(_new != governance, "CoFi: same addr");
+        governance = _new;
+        emit NewGovernance(_new);
+    }
+
+    function addMinter(address _minter) external onlyGovernance {
+        minters[_minter] = true;
+        emit MinterAdded(_minter);
+    }
+
+    function removeMinter(address _minter) external onlyGovernance {
+        minters[_minter] = false;
+        emit MinterRemoved(_minter);
+    }
+
+    /// @notice mint is used to distribute CoFi token to users, minters are CoFi mining pools
+    function mint(address _to, uint256 _amount) external {
+        require(minters[msg.sender], "CoFi: !minter");
+        _mint(_to, _amount);
+        _moveDelegates(address(0), _delegates[_to], _amount);
+    }
+
+    /// @notice override original transfer to fix SUSHI's vote issue
+    /// check https://blog.peckshield.com/2020/09/08/sushi/
+    function transfer(address _recipient, uint256 _amount) public override returns (bool) {
+        super.transfer(_recipient, _amount);
+        _moveDelegates(_delegates[msg.sender], _delegates[_recipient], _amount);
+        return true;
+    }
+
+    /// @notice override original transferFrom to fix SUSHI's vote issue
+    function transferFrom(address _sender, address _recipient, uint256 _amount) public override returns (bool) {
+        super.transferFrom(_sender, _recipient, _amount);
+        _moveDelegates(_delegates[_sender], _delegates[_recipient], _amount);
+        return true;
+    }
 
     /**
      * @notice Delegate votes from `msg.sender` to `delegatee`
@@ -115,9 +172,9 @@ contract SushiToken is ERC20("SushiToken", "SUSHI"), Ownable {
         );
 
         address signatory = ecrecover(digest, v, r, s);
-        require(signatory != address(0), "SUSHI::delegateBySig: invalid signature");
-        require(nonce == nonces[signatory]++, "SUSHI::delegateBySig: invalid nonce");
-        require(now <= expiry, "SUSHI::delegateBySig: signature expired");
+        require(signatory != address(0), "CoFi::delegateBySig: invalid signature");
+        require(nonce == nonces[signatory]++, "CoFi::delegateBySig: invalid nonce");
+        require(now <= expiry, "CoFi::delegateBySig: signature expired");
         return _delegate(signatory, delegatee);
     }
 
@@ -147,7 +204,7 @@ contract SushiToken is ERC20("SushiToken", "SUSHI"), Ownable {
         view
         returns (uint256)
     {
-        require(blockNumber < block.number, "SUSHI::getPriorVotes: not yet determined");
+        require(blockNumber < block.number, "CoFi::getPriorVotes: not yet determined");
 
         uint32 nCheckpoints = numCheckpoints[account];
         if (nCheckpoints == 0) {
@@ -220,7 +277,7 @@ contract SushiToken is ERC20("SushiToken", "SUSHI"), Ownable {
     )
         internal
     {
-        uint32 blockNumber = safe32(block.number, "SUSHI::_writeCheckpoint: block number exceeds 32 bits");
+        uint32 blockNumber = safe32(block.number, "CoFi::_writeCheckpoint: block number exceeds 32 bits");
 
         if (nCheckpoints > 0 && checkpoints[delegatee][nCheckpoints - 1].fromBlock == blockNumber) {
             checkpoints[delegatee][nCheckpoints - 1].votes = newVotes;

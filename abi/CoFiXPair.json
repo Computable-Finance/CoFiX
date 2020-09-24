@@ -662,6 +662,11 @@
         "internalType": "uint256",
         "name": "oracleFeeChange",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256[3]",
+        "name": "tradeInfo",
+        "type": "uint256[3]"
       }
     ],
     "stateMutability": "payable",
@@ -701,6 +706,11 @@
         "internalType": "uint256",
         "name": "oracleFeeChange",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256[3]",
+        "name": "tradeInfo",
+        "type": "uint256[3]"
       }
     ],
     "stateMutability": "payable",

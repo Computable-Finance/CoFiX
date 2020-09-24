@@ -1,6 +1,17 @@
 [
   {
-    "inputs": [],
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "cofi",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_factory",
+        "type": "address"
+      }
+    ],
     "stateMutability": "nonpayable",
     "type": "constructor"
   },
@@ -29,19 +40,6 @@
     ],
     "name": "RouterDisallowed",
     "type": "event"
-  },
-  {
-    "inputs": [],
-    "name": "INIT_SUPPLY",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
   },
   {
     "inputs": [],
@@ -84,7 +82,46 @@
   },
   {
     "inputs": [],
-    "name": "S_BASE",
+    "name": "SHARE_BASE",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "SHARE_FOR_CNODE",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "SHARE_FOR_LP",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "SHARE_FOR_TRADER",
     "outputs": [
       {
         "internalType": "uint256",
@@ -136,6 +173,19 @@
   },
   {
     "inputs": [],
+    "name": "factory",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "genesisBlock",
     "outputs": [
       {
@@ -175,7 +225,7 @@
   },
   {
     "inputs": [],
-    "name": "initS",
+    "name": "lastDensity",
     "outputs": [
       {
         "internalType": "uint256",
@@ -200,23 +250,31 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs": [],
+    "name": "pendingRewardsForCNode",
+    "outputs": [
       {
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
       }
     ],
-    "name": "minedBlockRecords",
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "pendingRewardsForLP",
     "outputs": [
       {
         "internalType": "uint256",
-        "name": "minedSnapshot",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "preMinedAt",
+        "name": "",
         "type": "uint256"
       }
     ],
@@ -244,33 +302,7 @@
   },
   {
     "inputs": [],
-    "name": "sDecayOffset",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "sDecayRate",
-    "outputs": [
-      {
-        "internalType": "int128",
-        "name": "",
-        "type": "int128"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "singleLimitM",
+    "name": "singleLimitK",
     "outputs": [
       {
         "internalType": "uint256",
@@ -292,6 +324,19 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_new",
+        "type": "address"
+      }
+    ],
+    "name": "setGovernance",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -363,11 +408,11 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "thetaFee",
+        "name": "cofiRate",
         "type": "uint256"
       }
     ],
-    "name": "stdMiningAmount",
+    "name": "currentThreshold",
     "outputs": [
       {
         "internalType": "uint256",
@@ -379,8 +424,38 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "recentYield",
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "thetaFee",
+        "type": "uint256"
+      }
+    ],
+    "name": "stdMiningRateAndAmount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "cofiRate",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "stdAmount",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_stdAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "calcDensity",
     "outputs": [
       {
         "internalType": "uint256",
@@ -416,45 +491,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "currentCoFiLeft",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "currentCoFiMined",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "currentS",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -472,11 +508,16 @@
         "type": "uint256"
       }
     ],
-    "name": "actualMiningAmount",
+    "name": "actualMiningAmountAndDensity",
     "outputs": [
       {
         "internalType": "uint256",
-        "name": "",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "density",
         "type": "uint256"
       }
     ],
@@ -485,6 +526,11 @@
   },
   {
     "inputs": [
+      {
+        "internalType": "address",
+        "name": "pair",
+        "type": "address"
+      },
       {
         "internalType": "uint256",
         "name": "thetaFee",
@@ -502,13 +548,65 @@
       },
       {
         "internalType": "address",
-        "name": "mineTo",
+        "name": "rewardTo",
         "type": "address"
       }
     ],
-    "name": "distributeTradingReward",
+    "name": "distributeReward",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "clearPendingRewardOfCNode",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "pair",
+        "type": "address"
+      }
+    ],
+    "name": "clearPendingRewardOfLP",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getPendingRewardOfCNode",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "pair",
+        "type": "address"
+      }
+    ],
+    "name": "getPendingRewardOfLP",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   }
 ]

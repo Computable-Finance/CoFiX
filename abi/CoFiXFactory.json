@@ -5,11 +5,6 @@
         "internalType": "address",
         "name": "_WETH",
         "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_vaultForLP",
-        "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
@@ -64,7 +59,33 @@
         "type": "address"
       }
     ],
+    "name": "NewVaultForCNode",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "_new",
+        "type": "address"
+      }
+    ],
     "name": "NewVaultForLP",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "_new",
+        "type": "address"
+      }
+    ],
+    "name": "NewVaultForTrader",
     "type": "event"
   },
   {
@@ -172,6 +193,19 @@
   {
     "inputs": [],
     "name": "governance",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "vaultForCNode",
     "outputs": [
       {
         "internalType": "address",
@@ -293,6 +327,32 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_new",
+        "type": "address"
+      }
+    ],
+    "name": "setVaultForTrader",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_new",
+        "type": "address"
+      }
+    ],
+    "name": "setVaultForCNode",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "getController",
     "outputs": [
@@ -321,6 +381,32 @@
   {
     "inputs": [],
     "name": "getVaultForLP",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getVaultForTrader",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getVaultForCNode",
     "outputs": [
       {
         "internalType": "address",

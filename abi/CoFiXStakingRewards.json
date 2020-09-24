@@ -13,12 +13,31 @@
       },
       {
         "internalType": "address",
-        "name": "_cofixVaultForLP",
+        "name": "_cofixVault",
         "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "EmergencyWithdraw",
+    "type": "event"
   },
   {
     "anonymous": false,
@@ -123,7 +142,7 @@
   },
   {
     "inputs": [],
-    "name": "cofixVaultForLP",
+    "name": "cofixVault",
     "outputs": [
       {
         "internalType": "address",
@@ -373,7 +392,21 @@
   },
   {
     "inputs": [],
+    "name": "emergencyWithdraw",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "getReward",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getRewardAndStake",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

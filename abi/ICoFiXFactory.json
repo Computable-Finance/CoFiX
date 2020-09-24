@@ -48,7 +48,33 @@
         "type": "address"
       }
     ],
+    "name": "NewVaultForCNode",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "_new",
+        "type": "address"
+      }
+    ],
     "name": "NewVaultForLP",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "_new",
+        "type": "address"
+      }
+    ],
+    "name": "NewVaultForTrader",
     "type": "event"
   },
   {
@@ -199,6 +225,32 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_new",
+        "type": "address"
+      }
+    ],
+    "name": "setVaultForTrader",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_new",
+        "type": "address"
+      }
+    ],
+    "name": "setVaultForCNode",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "getController",
     "outputs": [
@@ -231,6 +283,32 @@
       {
         "internalType": "address",
         "name": "vaultForLP",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getVaultForTrader",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "vaultForTrader",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getVaultForCNode",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "vaultForCNode",
         "type": "address"
       }
     ],

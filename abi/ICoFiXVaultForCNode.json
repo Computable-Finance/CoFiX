@@ -5,17 +5,11 @@
       {
         "indexed": false,
         "internalType": "address",
-        "name": "pool",
+        "name": "_new",
         "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "index",
-        "type": "uint256"
       }
     ],
-    "name": "NewPoolAdded",
+    "name": "NewCNodePool",
     "type": "event"
   },
   {
@@ -74,24 +68,11 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "pool",
+        "name": "_new",
         "type": "address"
       }
     ],
-    "name": "addPool",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "pool",
-        "type": "address"
-      }
-    ],
-    "name": "addPoolForPair",
+    "name": "setCNodePool",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -115,14 +96,8 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "pair",
-        "type": "address"
-      }
-    ],
-    "name": "getPendingRewardOfLP",
+    "inputs": [],
+    "name": "getPendingRewardOfCNode",
     "outputs": [
       {
         "internalType": "uint256",
@@ -154,38 +129,6 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "currentPoolRate",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "poolRate",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "pair",
-        "type": "address"
-      }
-    ],
-    "name": "stakingPoolForPair",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "pool",
-        "type": "address"
       }
     ],
     "stateMutability": "view",

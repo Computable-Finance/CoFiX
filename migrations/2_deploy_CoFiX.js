@@ -9,6 +9,8 @@ const CoFiXFactory = artifacts.require("CoFiXFactory");
 const CoFiXController = artifacts.require("CoFiXController");
 const CoFiXRouter = artifacts.require("CoFiXRouter");
 const CoFiXVaultForLP = artifacts.require("CoFiXVaultForLP");
+const CoFiXVaultForTrader = artifacts.require("CoFiXVaultForTrader");
+const CoFiXVaultForCNode = artifacts.require("CoFiXVaultForCNode");
 const CoFiStakingRewards = artifacts.require("CoFiStakingRewards");
 const CoFiToken = artifacts.require("CoFiToken");
 const CNodeToken = artifacts.require("CNodeToken");
@@ -65,11 +67,19 @@ module.exports = async function (deployer, network) {
     // VaultForLP
     await deployer.deploy(CoFiXVaultForLP, CoFiToken.address, CoFiXFactory.address);
 
+    // VaultForTrader
+    await deployer.deploy(CoFiXVaultForTrader, CoFiToken.address, CoFiXFactory.address);
+
+    // VaultForCNode
+    await deployer.deploy(CoFiXVaultForCNode, CoFiToken.address, CoFiXFactory.address);
+
     // set controller in factory
     let factory = await CoFiXFactory.deployed();
     await factory.setController(CoFiXController.address);
     await factory.setFeeReceiver(CoFiStakingRewards.address);
     await factory.setVaultForLP(CoFiXVaultForLP.address);
+    await factory.setVaultForTrader(CoFiXVaultForTrader.address);
+    await factory.setVaultForCNode(CoFiXVaultForCNode.address);
 
     // CoFiXRouter
     await deployer.deploy(CoFiXRouter, CoFiXFactory.address, WETH9.address);
@@ -87,4 +97,6 @@ module.exports = async function (deployer, network) {
     console.log(`| CoFiXKTable | ${CoFiXKTable.address} |`);
     console.log(`| CoFiXRouter | ${CoFiXRouter.address} |`);
     console.log(`| CoFiXVaultForLP | ${CoFiXVaultForLP.address} |`);
+    console.log(`| CoFiXVaultForTrader | ${CoFiXVaultForTrader.address} |`);
+    console.log(`| CoFiXVaultForCNode | ${CoFiXVaultForCNode.address} |`);
 };

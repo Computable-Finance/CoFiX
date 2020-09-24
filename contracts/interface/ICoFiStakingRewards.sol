@@ -49,6 +49,9 @@ interface ICoFiStakingRewards {
     /// @dev Withdraw from the reward pool (staking pool), get the original tokens back
     /// @param  amount The target amount
     function withdraw(uint256 amount) external;
+    
+    /// @dev Withdraw without caring about rewards. EMERGENCY ONLY.
+    function emergencyWithdraw() external;
 
     /// @dev Claim the reward the user earned
     function getReward() external;
@@ -63,5 +66,7 @@ interface ICoFiStakingRewards {
     event Staked(address indexed user, uint256 amount);
     event StakedForOther(address indexed user, address indexed other, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
+    event EmergencyWithdraw(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
+    
 }

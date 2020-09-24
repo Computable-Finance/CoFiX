@@ -99,6 +99,17 @@ contract CoFiStakingRewards is ICoFiStakingRewards, ReentrancyGuard {
         emit Withdrawn(msg.sender, amount);
     }
 
+    // Withdraw without caring about rewards. EMERGENCY ONLY.
+    function emergencyWithdraw() public override nonReentrant {
+        uint256 amount = _balances[msg.sender];
+        require(amount > 0, "Cannot withdraw 0");
+        _totalSupply = _totalSupply.sub(amount);
+        _balances[msg.sender] = 0;
+        rewards[msg.sender] = 0;
+        TransferHelper.safeTransfer(stakingToken, msg.sender, amount);
+        emit EmergencyWithdraw(msg.sender, amount);
+    }
+
     function getReward() public override nonReentrant updateReward(msg.sender) {
         uint256 reward = rewards[msg.sender];
         if (reward > 0) {
@@ -159,5 +170,6 @@ contract CoFiStakingRewards is ICoFiStakingRewards, ReentrancyGuard {
     event Staked(address indexed user, uint256 amount);
     event StakedForOther(address indexed user, address indexed other, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
+    event EmergencyWithdraw(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
 }

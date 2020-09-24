@@ -58,8 +58,13 @@ interface ICoFiXStakingRewards {
     /// @param  amount The target amount
     function withdraw(uint256 amount) external;
 
+    /// @dev Withdraw without caring about rewards. EMERGENCY ONLY.
+    function emergencyWithdraw() external;
+
     /// @dev Claim the reward the user earned
     function getReward() external;
+
+    function getRewardAndStake() external;
 
     /// @dev User exit the reward pool, it's actually withdraw and getReward
     function exit() external;
@@ -72,5 +77,6 @@ interface ICoFiXStakingRewards {
     event Staked(address indexed user, uint256 amount);
     event StakedForOther(address indexed user, address indexed other, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
+    event EmergencyWithdraw(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
 }

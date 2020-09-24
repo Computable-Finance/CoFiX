@@ -12,7 +12,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./interface/ICoFiXFactory.sol";
 import "./interface/ICoFiXVaultForTrader.sol";
 
-
+// Reward Pool Controller for Liquidity Provider
 contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
 
     using SafeMath for uint256;
@@ -151,6 +151,10 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
 
     function stakingPoolForPair(address pair) external override view returns (address pool) {
         return pairToStakingPool[pair];
+    }
+
+    function getCoFiStakingPool() external override view returns (address pool) {
+        return ICoFiXFactory(factory).getFeeReceiver();
     }
 
 }

@@ -35,7 +35,7 @@ interface ICoFiXVaultForTrader {
 
     function clearPendingRewardOfLP(address pair) external;
 
-    function getPendingRewardsOfCNode() external view returns (uint256);
+    function getPendingRewardOfCNode() external view returns (uint256);
 
     function getPendingRewardOfLP(address pair) external view returns (uint256);
 }

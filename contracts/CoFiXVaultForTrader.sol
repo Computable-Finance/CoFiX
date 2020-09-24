@@ -10,7 +10,8 @@ import "./interface/ICoFiToken.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./interface/ICoFiXFactory.sol";
 
-
+// Reward Pool Controller for Trader
+// Trade to earn CoFi Token
 contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
     using SafeMath for uint256;
 
@@ -190,7 +191,7 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
         // ICoFiToken(cofiToken).mint(to, pending); // no need to mint from here, we can mint directly in valult
     }
 
-    function getPendingRewardsOfCNode() external override view returns (uint256) {
+    function getPendingRewardOfCNode() external override view returns (uint256) {
         return pendingRewardsForCNode;
     }
 

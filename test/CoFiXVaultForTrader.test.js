@@ -174,9 +174,11 @@ contract('CoFiXVaultForTrader', (accounts) => {
             await VaultForTrader.distributeReward(thetaFee, x, y, mineTo, { from: ROUTER_1 });
             const cofiBalanceOfRouter1 = await CoFi.balanceOf(ROUTER_1);
             const cofiBalanceOfVault = await CoFi.balanceOf(VaultForTrader.address);
+            const densityDecayRatio = stdAmount/actual.amount;
             if (verbose) {
-                console.log(`index: ${i}, cofiRate: ${cofiRate}, stdAmount: ${stdAmount}, density: ${density}, actualAmount: ${actual.amount}, cofiBalanceOfRouter1: ${cofiBalanceOfRouter1}, cofiBalanceOfVault: ${cofiBalanceOfVault}, density decay ratio: ${stdAmount/actual.amount}`);
+                console.log(`index: ${i}, cofiRate: ${cofiRate}, stdAmount: ${stdAmount}, density: ${density}, actualAmount: ${actual.amount}, cofiBalanceOfRouter1: ${cofiBalanceOfRouter1}, cofiBalanceOfVault: ${cofiBalanceOfVault}, density decay ratio: ${densityDecayRatio}`);
             }
+            expect(densityDecayRatio.toString()).to.bignumber.equal("1");
         }
     });
 
@@ -193,9 +195,11 @@ contract('CoFiXVaultForTrader', (accounts) => {
             await VaultForTrader.distributeReward(thetaFee, x, y, mineTo, { from: ROUTER_1 });
             const cofiBalanceOfRouter1 = await CoFi.balanceOf(ROUTER_1);
             const cofiBalanceOfVault = await CoFi.balanceOf(VaultForTrader.address);
+            const densityDecayRatio = stdAmount/actual.amount;
             if (verbose) {
-                console.log(`index: ${i}, cofiRate: ${cofiRate}, stdAmount: ${stdAmount}, density: ${density}, actualAmount: ${actual.amount}, cofiBalanceOfRouter1: ${cofiBalanceOfRouter1}, cofiBalanceOfVault: ${cofiBalanceOfVault}, density decay ratio: ${stdAmount/actual.amount}`);
+                console.log(`index: ${i}, cofiRate: ${cofiRate}, stdAmount: ${stdAmount}, density: ${density}, actualAmount: ${actual.amount}, cofiBalanceOfRouter1: ${cofiBalanceOfRouter1}, cofiBalanceOfVault: ${cofiBalanceOfVault}, density decay ratio: ${densityDecayRatio}`);
             }
+            expect(densityDecayRatio.toString()).to.bignumber.equal("1");
         }
     });
 
@@ -212,9 +216,11 @@ contract('CoFiXVaultForTrader', (accounts) => {
             await VaultForTrader.distributeReward(thetaFee, x, y, mineTo, { from: ROUTER_1 });
             const cofiBalanceOfRouter1 = await CoFi.balanceOf(ROUTER_1);
             const cofiBalanceOfVault = await CoFi.balanceOf(VaultForTrader.address);
+            const densityDecayRatio = stdAmount/actual.amount;
             if (verbose) {
-                console.log(`index: ${i}, cofiRate: ${cofiRate}, stdAmount: ${stdAmount}, density: ${density}, actualAmount: ${actual.amount}, cofiBalanceOfRouter1: ${cofiBalanceOfRouter1}, cofiBalanceOfVault: ${cofiBalanceOfVault}, density decay ratio: ${stdAmount/actual.amount}`);
+                console.log(`index: ${i}, cofiRate: ${cofiRate}, stdAmount: ${stdAmount}, density: ${density}, actualAmount: ${actual.amount}, cofiBalanceOfRouter1: ${cofiBalanceOfRouter1}, cofiBalanceOfVault: ${cofiBalanceOfVault}, density decay ratio: ${densityDecayRatio}`);
             }
+            expect(densityDecayRatio.toString()).to.bignumber.above("1");
         }
     });
 

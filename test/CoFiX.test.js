@@ -130,8 +130,8 @@ contract('CoFiX', (accounts) => {
             // console.log("estimateGas:", gas.toString())
             let result = await CoFiXCtrl.queryOracle(USDT.address, deployer, { from: deployer, value: _msgValue });
             console.log("USDT>receipt.gasUsed:", result.receipt.gasUsed); // 494562
-            let evtArgs0 = result.receipt.logs[0].args;
-            printKInfoEvent(evtArgs0);
+            // let evtArgs0 = result.receipt.logs[0].args;
+            // printKInfoEvent(evtArgs0);
             // console.log("USDT>evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString());
             // K = -0.016826326, when sigma equals to zero
 
@@ -541,18 +541,20 @@ contract('CoFiX', (accounts) => {
             console.log("net asset value per share for mint:", navps_value_for_mint);
 
             const expected = "1";
-            let error = calcRelativeDiff(expected, navps_value_for_mint.toString());
-            console.log(`navps_value_for_mint> expected: ${expected}, actual: ${navps_value_for_mint.toString()}, error: ${error}`);
-            assert.isAtMost(error.toNumber(), errorDelta);
+            let errorMint = calcRelativeDiff(expected, navps_value_for_mint.toString());
+            console.log(`navps_value_for_mint> expected: ${expected}, actual: ${navps_value_for_mint.toString()}, error: ${errorMint}`);
+            assert.isAtMost(errorMint.toNumber(), 10 ** -1);
 
             let navpsForBurn = await USDTPair.getNAVPerShareForBurn(oraclePrice);
             let navps_value_for_burn = (Decimal(navpsForBurn.toString())).div(Decimal(navps_base.toString()));
             // let navps_value_for_burn = navpsForBurn.toNumber() / navps_base.toNumber();
             console.log("net asset value per share for burn:", navps_value_for_burn);
 
-            error = calcRelativeDiff(expected, navps_value_for_burn.toString());
-            console.log(`navps_value_for_burn> expected: ${expected}, actual: ${navps_value_for_burn.toString()}, error: ${error}`);
-            assert.isAtMost(error.toNumber(), errorDelta);
+            let errorBurn = calcRelativeDiff(expected, navps_value_for_burn.toString());
+            console.log(`navps_value_for_burn> expected: ${expected}, actual: ${navps_value_for_burn.toString()}, error: ${errorBurn}`);
+            assert.isAtMost(errorBurn.toNumber(), 10 ** -1);
+
+            expect(errorMint.toString()).to.bignumber.above(errorBurn.toString());
 
             // get total liquidity (totalSupply of pair/pool token)
             let totalLiquidity = await USDTPair.totalSupply();

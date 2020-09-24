@@ -155,7 +155,7 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
         return (numerator.div(density).div(density).div(LAMBDA_BASE), density);
     }
 
-    function distributeReward(address pair, uint256 thetaFee, uint256 x, uint256 y, address mineTo) external override nonReentrant {
+    function distributeReward(address pair, uint256 thetaFee, uint256 x, uint256 y, address rewardTo) external override nonReentrant {
         require(routerAllowed[msg.sender] == true, "CVaultForTrader: not allowed router");  // caution: be careful when adding new router
 
         (uint256 amount, uint256 density) = actualMiningAmountAndDensity(thetaFee, x, y);
@@ -169,7 +169,7 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
         uint256 amountForLP = amount.mul(SHARE_FOR_LP).div(SHARE_BASE);
         uint256 amountForCNode = amount.mul(SHARE_FOR_CNODE).div(SHARE_BASE);
 
-        ICoFiToken(cofiToken).mint(mineTo, amountForTrader); // allows zero, send to receiver directly, reduce gas cost
+        ICoFiToken(cofiToken).mint(rewardTo, amountForTrader); // allows zero, send to receiver directly, reduce gas cost
         pendingRewardsForLP[pair] = pendingRewardsForLP[pair].add(amountForLP); // possible key: token or pair, we use pair here
         pendingRewardsForCNode = pendingRewardsForCNode.add(amountForCNode);
     }

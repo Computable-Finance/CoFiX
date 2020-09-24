@@ -29,7 +29,7 @@ interface ICoFiXVaultForTrader {
 
     function actualMiningAmountAndDensity(uint256 thetaFee, uint256 x, uint256 y) external view returns (uint256 amount, uint256 density);
 
-    function distributeReward(address pair, uint256 thetaFee, uint256 x, uint256 y, address mineTo) external;
+    function distributeReward(address pair, uint256 thetaFee, uint256 x, uint256 y, address rewardTo) external;
 
     function clearPendingRewardOfCNode() external;
 

@@ -292,7 +292,7 @@ contract('CoFiX', (accounts) => {
             // - uint deadline
             let _amountIn = "100000000";
             _msgValue = web3.utils.toWei('1.1', 'ether');
-            result = await CRouter.swapExactTokensForETH(USDT.address, _amountIn, 0, trader, "99999999999", { from: trader, value: _msgValue });
+            result = await CRouter.swapExactTokensForETH(USDT.address, _amountIn, 0, trader, trader, "99999999999", { from: trader, value: _msgValue });
             console.log("------------swapExactTokensForETH------------");
             usdtInUSDTPool = await USDT.balanceOf(usdtPairAddr);
             wethInUSDTPool = await WETH.balanceOf(usdtPairAddr);
@@ -322,7 +322,7 @@ contract('CoFiX', (accounts) => {
             // - uint deadline
             _amountIn = web3.utils.toWei('0.2', 'ether');
             _msgValue = web3.utils.toWei('0.3', 'ether');
-            result = await CRouter.swapExactETHForTokens(USDT.address, _amountIn, 0, trader, "99999999999", { from: trader, value: _msgValue });
+            result = await CRouter.swapExactETHForTokens(USDT.address, _amountIn, 0, trader, trader, "99999999999", { from: trader, value: _msgValue });
             console.log("------------swapExactETHForTokens------------");
             usdtInUSDTPool = await USDT.balanceOf(usdtPairAddr);
             wethInUSDTPool = await WETH.balanceOf(usdtPairAddr);
@@ -362,7 +362,7 @@ contract('CoFiX', (accounts) => {
             // get price now from NEST3PriceOracleMock Contract
             let p = await PriceOracle.checkPriceNow(USDT.address);
             console.log("price now> ethAmount:", p.ethAmount.toString(), ", erc20Amount:", p.erc20Amount.toString(), p.erc20Amount.mul(new BN(web3.utils.toWei('1', 'ether'))).div(p.ethAmount).div(new BN('1000000')).toString(), "USDT/ETH");
-            result = await CRouter.swapExactTokensForTokens(USDT.address, HBTC.address, _amountIn, 0, trader, "99999999999", { from: trader, value: _msgValue });
+            result = await CRouter.swapExactTokensForTokens(USDT.address, HBTC.address, _amountIn, 0, trader, trader, "99999999999", { from: trader, value: _msgValue });
             console.log("------------swapExactTokensForTokens------------");
             usdtInUSDTPool = await USDT.balanceOf(usdtPairAddr);
             wethInUSDTPool = await WETH.balanceOf(usdtPairAddr);

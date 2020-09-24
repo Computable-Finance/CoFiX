@@ -85,6 +85,7 @@ interface ICoFiXRouter {
         uint amountIn,
         uint amountOutMin,
         address to,
+        address rewardTo,
         uint deadline
     ) external payable returns (uint _amountIn, uint _amountOut);
 
@@ -101,6 +102,7 @@ interface ICoFiXRouter {
         uint amountIn,
         uint amountOutMin,
         address to,
+        address rewardTo,
         uint deadline
     ) external payable returns (uint _amountIn, uint _amountOut);
 
@@ -119,6 +121,7 @@ interface ICoFiXRouter {
         uint amountIn,
         uint amountOutMin,
         address to,
+        address rewardTo,
         uint deadline
     ) external payable returns (uint _amountIn, uint _amountOut);
 
@@ -135,6 +138,7 @@ interface ICoFiXRouter {
         uint amountInMax,
         uint amountOutExact,
         address to,
+        address rewardTo,
         uint deadline
     ) external payable returns (uint _amountIn, uint _amountOut);
 
@@ -151,6 +155,7 @@ interface ICoFiXRouter {
         uint amountInMax,
         uint amountOutExact,
         address to,
+        address rewardTo,
         uint deadline
     ) external payable returns (uint _amountIn, uint _amountOut);
 }

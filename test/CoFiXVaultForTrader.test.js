@@ -136,8 +136,8 @@ contract('CoFiXVaultForTrader', (accounts) => {
         const thetaFee = web3.utils.toWei('0.01', 'ether');
         const x = web3.utils.toWei('10000', 'ether');
         const y = web3.utils.toWei('10000', 'ether');
-        const mineTo = ROUTER_1;
-        await expectRevert(VaultForTrader.distributeReward(PAIR, thetaFee, x, y, mineTo, { from: ROUTER_1 }), "CoFi: !minter");
+        const rewardTo = ROUTER_1;
+        await expectRevert(VaultForTrader.distributeReward(PAIR, thetaFee, x, y, rewardTo, { from: ROUTER_1 }), "CoFi: !minter");
     });
 
     it("should add VaultForTrader as minter of CoFi correctly", async () => {
@@ -151,16 +151,16 @@ contract('CoFiXVaultForTrader', (accounts) => {
         const thetaFee = web3.utils.toWei('0.01', 'ether');
         const x = web3.utils.toWei('10000', 'ether');
         const y = web3.utils.toWei('10000', 'ether');
-        const mineTo = ROUTER_2;
-        await expectRevert(VaultForTrader.distributeReward(PAIR, thetaFee, x, y, mineTo, { from: ROUTER_2 }), "CVaultForTrader: not allowed router");
+        const rewardTo = ROUTER_2;
+        await expectRevert(VaultForTrader.distributeReward(PAIR, thetaFee, x, y, rewardTo, { from: ROUTER_2 }), "CVaultForTrader: not allowed router");
     });
 
     it("should distributeReward correctly by ROUTER_1", async () => {
         const thetaFee = web3.utils.toWei('0.01', 'ether');
         const x = web3.utils.toWei('10000', 'ether');
         const y = web3.utils.toWei('10000', 'ether');
-        const mineTo = ROUTER_1;
-        await VaultForTrader.distributeReward(PAIR, thetaFee, x, y, mineTo, { from: ROUTER_1 });
+        const rewardTo = ROUTER_1;
+        await VaultForTrader.distributeReward(PAIR, thetaFee, x, y, rewardTo, { from: ROUTER_1 });
         const cofiBalanceOfRouter1 = await CoFi.balanceOf(ROUTER_1);
         if (verbose) {
             console.log(`cofiBalanceOfRouter1: ${cofiBalanceOfRouter1}`);
@@ -173,13 +173,13 @@ contract('CoFiXVaultForTrader', (accounts) => {
         const thetaFee = web3.utils.toWei('0.01', 'ether');
         const x = web3.utils.toWei('10000', 'ether');
         const y = web3.utils.toWei('10000', 'ether');
-        const mineTo = ROUTER_1;
+        const rewardTo = ROUTER_1;
         
         for (let i = 0; i < 5; i++) { // for gas cost statistics
             const {cofiRate, stdAmount} = await VaultForTrader.stdMiningRateAndAmount(thetaFee);
             const density = await VaultForTrader.calcDensity(stdAmount);
             const actual = await VaultForTrader.actualMiningAmountAndDensity(thetaFee, x, y);
-            await VaultForTrader.distributeReward(PAIR, thetaFee, x, y, mineTo, { from: ROUTER_1 });
+            await VaultForTrader.distributeReward(PAIR, thetaFee, x, y, rewardTo, { from: ROUTER_1 });
             const cofiBalanceOfRouter1 = await CoFi.balanceOf(ROUTER_1);
             const cofiBalanceOfVault = await CoFi.balanceOf(VaultForTrader.address);
             const densityDecayRatio = stdAmount/actual.amount;
@@ -194,13 +194,13 @@ contract('CoFiXVaultForTrader', (accounts) => {
         const thetaFee = web3.utils.toWei('100', 'ether');
         const x = web3.utils.toWei('10000', 'ether');
         const y = web3.utils.toWei('10000', 'ether');
-        const mineTo = ROUTER_1;
+        const rewardTo = ROUTER_1;
         
         for (let i = 0; i < 5; i++) { // for gas cost statistics
             const {cofiRate, stdAmount} = await VaultForTrader.stdMiningRateAndAmount(thetaFee);
             const density = await VaultForTrader.calcDensity(stdAmount);
             const actual = await VaultForTrader.actualMiningAmountAndDensity(thetaFee, x, y);
-            await VaultForTrader.distributeReward(PAIR, thetaFee, x, y, mineTo, { from: ROUTER_1 });
+            await VaultForTrader.distributeReward(PAIR, thetaFee, x, y, rewardTo, { from: ROUTER_1 });
             const cofiBalanceOfRouter1 = await CoFi.balanceOf(ROUTER_1);
             const cofiBalanceOfVault = await CoFi.balanceOf(VaultForTrader.address);
             const densityDecayRatio = stdAmount/actual.amount;
@@ -215,13 +215,13 @@ contract('CoFiXVaultForTrader', (accounts) => {
         const thetaFee = web3.utils.toWei('101', 'ether');
         const x = web3.utils.toWei('10000', 'ether');
         const y = web3.utils.toWei('10000', 'ether');
-        const mineTo = ROUTER_1;
+        const rewardTo = ROUTER_1;
         
         for (let i = 0; i < 5; i++) { // for gas cost statistics
             const {cofiRate, stdAmount} = await VaultForTrader.stdMiningRateAndAmount(thetaFee);
             const density = await VaultForTrader.calcDensity(stdAmount);
             const actual = await VaultForTrader.actualMiningAmountAndDensity(thetaFee, x, y);
-            await VaultForTrader.distributeReward(PAIR, thetaFee, x, y, mineTo, { from: ROUTER_1 });
+            await VaultForTrader.distributeReward(PAIR, thetaFee, x, y, rewardTo, { from: ROUTER_1 });
             const cofiBalanceOfRouter1 = await CoFi.balanceOf(ROUTER_1);
             const cofiBalanceOfVault = await CoFi.balanceOf(VaultForTrader.address);
             const densityDecayRatio = stdAmount/actual.amount;

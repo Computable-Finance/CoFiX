@@ -11,6 +11,8 @@ import "./interface/IWETH.sol";
 import "./interface/ICoFiXPair.sol";
 import "./interface/ICoFiXVaultForLP.sol";
 import "./interface/ICoFiXStakingRewards.sol";
+import "./interface/ICoFiXVaultForTrader.sol";
+
 
 // Router contract to interact with each CoFiXPair, no owner or governance
 contract CoFiXRouter is ICoFiXRouter {
@@ -155,6 +157,7 @@ contract CoFiXRouter is ICoFiXRouter {
         uint amountIn,
         uint amountOutMin,
         address to,
+        address rewardTo,
         uint deadline
     ) external override payable ensure(deadline) returns (uint _amountIn, uint _amountOut)
     {
@@ -163,9 +166,17 @@ contract CoFiXRouter is ICoFiXRouter {
         address pair = pairFor(factory, token);
         assert(IWETH(WETH).transfer(pair, amountIn));
         uint oracleFeeChange; 
-        (_amountIn, _amountOut, oracleFeeChange) = ICoFiXPair(pair).swapWithExact{
+        uint256[3] memory tradeInfo;
+        (_amountIn, _amountOut, oracleFeeChange, tradeInfo) = ICoFiXPair(pair).swapWithExact{
             value: msg.value.sub(amountIn)}(token, to);
         require(_amountOut >= amountOutMin, "CRouter: got less than expected");
+
+        // distribute trading rewards - CoFi!
+        address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
+        if (vaultForTrader != address(0) && tradeInfo[0] > 0) {
+            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pair, tradeInfo[0], tradeInfo[1], tradeInfo[2], rewardTo);
+        }
+
         // refund oracle fee to msg.sender, if any
         if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
     }
@@ -177,20 +188,37 @@ contract CoFiXRouter is ICoFiXRouter {
         uint amountIn,
         uint amountOutMin,
         address to,
+        address rewardTo,
         uint deadline
     ) external override payable ensure(deadline) returns (uint _amountIn, uint _amountOut) {
-        // swapExactTokensForETH
+
         require(msg.value > 0, "CRouter: insufficient msg.value");
-        address pairIn = pairFor(factory, tokenIn);
-        TransferHelper.safeTransferFrom(tokenIn, msg.sender, pairIn, amountIn);
-        uint oracleFeeChange; 
-        (_amountIn, _amountOut, oracleFeeChange) = ICoFiXPair(pairIn).swapWithExact{value: msg.value}(WETH, address(this));
+        address[2] memory pairs; // [pairIn, pairOut]
+
+        // swapExactTokensForETH
+        pairs[0] = pairFor(factory, tokenIn);
+        TransferHelper.safeTransferFrom(tokenIn, msg.sender, pairs[0], amountIn);
+        uint oracleFeeChange;
+        uint256[3] memory tradeInfo;
+        (_amountIn, _amountOut, oracleFeeChange, tradeInfo) = ICoFiXPair(pairs[0]).swapWithExact{value: msg.value}(WETH, address(this));
+
+        // distribute trading rewards - CoFi!
+        address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
+        if (vaultForTrader != address(0) && tradeInfo[0] > 0) {
+            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pairs[0], tradeInfo[0], tradeInfo[1], tradeInfo[2], rewardTo);
+        }
 
         // swapExactETHForTokens
-        address pairOut = pairFor(factory, tokenOut);
-        assert(IWETH(WETH).transfer(pairOut, _amountOut)); // swap with all amountOut in last swap
-        (, _amountOut, oracleFeeChange) = ICoFiXPair(pairOut).swapWithExact{value: oracleFeeChange}(tokenOut, to);
+        pairs[1] = pairFor(factory, tokenOut);
+        assert(IWETH(WETH).transfer(pairs[1], _amountOut)); // swap with all amountOut in last swap
+        (, _amountOut, oracleFeeChange, tradeInfo) = ICoFiXPair(pairs[1]).swapWithExact{value: oracleFeeChange}(tokenOut, to);
         require(_amountOut >= amountOutMin, "CRouter: got less than expected");
+
+        // distribute trading rewards - CoFi!
+        if (vaultForTrader != address(0) && tradeInfo[0] > 0) {
+            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pairs[1], tradeInfo[0], tradeInfo[1], tradeInfo[2], rewardTo);
+        }
+
         // refund oracle fee to msg.sender, if any
         if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
     }
@@ -201,6 +229,7 @@ contract CoFiXRouter is ICoFiXRouter {
         uint amountIn,
         uint amountOutMin,
         address to,
+        address rewardTo,
         uint deadline
     ) external override payable ensure(deadline) returns (uint _amountIn, uint _amountOut)
     {
@@ -208,10 +237,18 @@ contract CoFiXRouter is ICoFiXRouter {
         address pair = pairFor(factory, token);
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountIn);
         uint oracleFeeChange; 
-        (_amountIn, _amountOut, oracleFeeChange) = ICoFiXPair(pair).swapWithExact{value: msg.value}(WETH, address(this));
+        uint256[3] memory tradeInfo;
+        (_amountIn, _amountOut, oracleFeeChange, tradeInfo) = ICoFiXPair(pair).swapWithExact{value: msg.value}(WETH, address(this));
         require(_amountOut >= amountOutMin, "CRouter: got less than expected");
         IWETH(WETH).withdraw(_amountOut);
         TransferHelper.safeTransferETH(to, _amountOut);
+
+        // distribute trading rewards - CoFi!
+        address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
+        if (vaultForTrader != address(0) && tradeInfo[0] > 0) {
+            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pair, tradeInfo[0], tradeInfo[1], tradeInfo[2], rewardTo);
+        }
+
         // refund oracle fee to msg.sender, if any
         if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
     }
@@ -222,6 +259,7 @@ contract CoFiXRouter is ICoFiXRouter {
         uint amountInMax,
         uint amountOutExact,
         address to,
+        address rewardTo,
         uint deadline
     ) external override payable ensure(deadline) returns (uint _amountIn, uint _amountOut)
     {
@@ -229,11 +267,20 @@ contract CoFiXRouter is ICoFiXRouter {
         IWETH(WETH).deposit{value: amountInMax}();
         address pair = pairFor(factory, token);
         assert(IWETH(WETH).transfer(pair, amountInMax));
-        uint oracleFeeChange; 
-        (_amountIn, _amountOut, oracleFeeChange) = ICoFiXPair(pair).swapForExact{
+        uint oracleFeeChange;
+        uint256[3] memory tradeInfo;
+        (_amountIn, _amountOut, oracleFeeChange, tradeInfo) = ICoFiXPair(pair).swapForExact{
             value: msg.value.sub(amountInMax) }(token, amountOutExact, to);
         // assert amountOutExact equals with _amountOut
         require(_amountIn <= amountInMax, "CRouter: spend more than expected");
+
+        // distribute trading rewards - CoFi!
+        address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
+        if (vaultForTrader != address(0) && tradeInfo[0] > 0) {
+            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pair, tradeInfo[0], tradeInfo[1], tradeInfo[2], rewardTo);
+        }
+
+        // refund oracle fee to msg.sender, if any
         if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
     }
 
@@ -243,6 +290,7 @@ contract CoFiXRouter is ICoFiXRouter {
         uint amountInMax,
         uint amountOutExact,
         address to,
+        address rewardTo,
         uint deadline
     ) external override payable ensure(deadline) returns (uint _amountIn, uint _amountOut)
     {
@@ -250,11 +298,19 @@ contract CoFiXRouter is ICoFiXRouter {
         address pair = pairFor(factory, token);
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountInMax);
         uint oracleFeeChange; 
-        (_amountIn, _amountOut, oracleFeeChange) = ICoFiXPair(pair).swapForExact{
+        uint256[3] memory tradeInfo;
+        (_amountIn, _amountOut, oracleFeeChange, tradeInfo) = ICoFiXPair(pair).swapForExact{
             value: msg.value}(WETH, amountOutExact, address(this));
         // assert amountOutExact equals with _amountOut
         require(_amountIn <= amountInMax, "CRouter: got less than expected");
         IWETH(WETH).withdraw(_amountOut);
+
+        // distribute trading rewards - CoFi!
+        address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
+        if (vaultForTrader != address(0) && tradeInfo[0] > 0) {
+            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pair, tradeInfo[0], tradeInfo[1], tradeInfo[2], rewardTo);
+        }
+
         TransferHelper.safeTransferETH(to, amountOutExact);
         // refund oracle fee to msg.sender, if any
         if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);

@@ -26,7 +26,6 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
 
     // managed by governance
     address public governance;
-    address public governanceVault;
 
     uint256 public initCoFiRate = 10*1e18; // yield per block
     uint256 public decayPeriod = 2400000; // yield decays for every 2,400,000 blocks
@@ -44,7 +43,6 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
         cofiToken = cofi;
         factory = _factory;
         governance = msg.sender;
-        governanceVault = msg.sender; // governance vault could be governance itself or a specific contract
         genesisBlock = block.number;
     }
 
@@ -52,11 +50,6 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
     function setGovernance(address _new) external override {
         require(msg.sender == governance, "CVaultForLP: !governance");
         governance = _new;
-    }
-
-    function setGovernanceVault(address _new) external override {
-        require(msg.sender == governance, "CVaultForLP: !governance");
-        governanceVault = _new;
     }
 
     function setInitCoFiRate(uint256 _new) external override {
@@ -160,7 +153,4 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
         return pairToStakingPool[pair];
     }
 
-    function getGovernanceVault() external override view returns (address vault) {
-        return governanceVault;
-    }
 }

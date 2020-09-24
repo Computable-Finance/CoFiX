@@ -6,7 +6,8 @@ const CoFiXVaultForLP = artifacts.require("CoFiXVaultForLP");
 const CoFiToken = artifacts.require("CoFiToken");
 const CoFiXStakingRewards = artifacts.require("CoFiXStakingRewards.sol");
 const TestXToken = artifacts.require("TestXToken");
-
+const CoFiXFactory = artifacts.require("CoFiXFactory");
+const WETH9 = artifacts.require("WETH9");
 
 const verbose = process.env.VERBOSE;
 
@@ -16,31 +17,25 @@ contract('CoFiXStakingRewards', (accounts) => {
 
     const governance = deployer;
 
-
     const LP_1 = accounts[1];
     const LP_2 = accounts[2];
 
-    const TotalSupplyOfCoFi = new BN("100000000000000000000000000"); // 1e8 * 1e18
-    const HalfSupplyOfCoFi = TotalSupplyOfCoFi.div(new BN(2)); // or the init supply to CoFiXVaultForLP
-
     const INIT_COFI_RATE = web3.utils.toWei('10', 'ether');
 
-
     before(async () => {
+        WETH = await WETH9.new();
+        CFactory = await CoFiXFactory.new(WETH.address, { from: deployer });
         CoFi = await CoFiToken.new({ from: deployer });
-        VaultForLP = await CoFiXVaultForLP.new(CoFi.address, { from: deployer });
+        VaultForLP = await CoFiXVaultForLP.new(CoFi.address, CFactory.address, { from: deployer });
         XToken = await TestXToken.new({ from: deployer });
         StakingRewards = await CoFiXStakingRewards.new(CoFi.address, XToken.address, VaultForLP.address, { from: deployer });
     });
 
-    it("test", async () => {
-    });
-
-    it("should transfer enough CoFi to VaultForLp for staking rewards correctly", async () => {
-        const amount = HalfSupplyOfCoFi;
-        await CoFi.transfer(VaultForLP.address, amount, {from: deployer});
-        const balance = await CoFi.balanceOf(VaultForLP.address);
-        expect(balance).to.bignumber.equal(amount);
+    it("should add VaultForLP as minter of CoFi correctly", async () => {
+        const receipt = await CoFi.addMinter(VaultForLP.address, {from: governance});
+        expectEvent(receipt, "MinterAdded", {_minter: VaultForLP.address});
+        const allowed = await CoFi.minters(VaultForLP.address);
+        expect(allowed).equal(true);
     });
 
     it("should addPool correctly", async () => {
@@ -74,6 +69,10 @@ contract('CoFiXStakingRewards', (accounts) => {
         const amount = web3.utils.toWei('1', 'ether');
         await XToken.approve(StakingRewards.address, amount, {from: LP_1});
         await StakingRewards.stake(amount, {from: LP_1});
+        // first one deposit in, totalSupply is zero before this stake, accrued should be zero
+        // means no CoFi will be transferred into StakingRewards contract
+        const balance = await CoFi.balanceOf(StakingRewards.address);
+        expect(balance).to.bignumber.equal("0");
     });
 
     it("should have correct stats after stake", async () => {
@@ -101,10 +100,10 @@ contract('CoFiXStakingRewards', (accounts) => {
             console.log(`earned: ${earned}`);
             console.log(`rewardPerToken: ${rewardPerToken}`);
         }
-        let reward = new BN(INIT_COFI_RATE).mul(new BN(1));
-        expect(accrued).to.bignumber.equal(reward);
-        expect(earned).to.bignumber.equal(reward);
-        expect(rewardPerToken).to.bignumber.equal(reward);
+        let expectReward = new BN(INIT_COFI_RATE).mul(new BN(1));
+        expect(accrued).to.bignumber.equal(expectReward);
+        expect(earned).to.bignumber.equal(expectReward);
+        expect(rewardPerToken).to.bignumber.equal(expectReward);
     });
 
     it("should exit (withdraw & getReward) correctly", async () => {
@@ -113,9 +112,11 @@ contract('CoFiXStakingRewards', (accounts) => {
         expect(reward).to.bignumber.equal("0");
         let balance = await XToken.balanceOf(LP_1);
         expect(balance).to.bignumber.equal("0");
+        let poolBalance = await CoFi.balanceOf(StakingRewards.address);
         if (verbose) {
             console.log(`before exit, CoFi reward Of LP_1: ${reward}`);
             console.log(`before exit, XToken balance Of LP_1: ${balance}`);
+            console.log(`before exit, CoFi balance Of pool: ${poolBalance}`);
         }
         // withdraw and getReward
         await StakingRewards.exit({from: LP_1});
@@ -126,9 +127,14 @@ contract('CoFiXStakingRewards', (accounts) => {
         balance = await XToken.balanceOf(LP_1);
         expectedBalance = web3.utils.toWei('1', 'ether');
         expect(expectedBalance).to.bignumber.equal(balance);
+
+        poolBalance = await CoFi.balanceOf(StakingRewards.address);
+        expect(poolBalance).to.bignumber.equal("0");
+
         if (verbose) {
             console.log(`after exit, CoFi reward Of LP_1: ${reward}`);
             console.log(`after exit, XToken balance Of LP_1: ${balance}`);
+            console.log(`after exit, CoFi balance Of pool: ${poolBalance}`);
         }
     });
 
@@ -200,14 +206,14 @@ contract('CoFiXStakingRewards', (accounts) => {
     });
 
     // addPoolForPair, keep this test at the end so we don't need to change the tests before
-    it("should revert if add two pool with the same pair(XToken)", async () => {
+    it("should revert if add two pool with the same pair (XToken)", async () => {
         const StakingRewards2 = await CoFiXStakingRewards.new(CoFi.address, XToken.address, VaultForLP.address, { from: deployer });
         await VaultForLP.addPoolForPair(StakingRewards2.address, {from: governance});
         const stakingPool = await VaultForLP.stakingPoolForPair(XToken.address);
         expect(stakingPool).equal(StakingRewards2.address);
     });
 
-    it("should revert if add two pool with the same pair(XToken)", async () => {
+    it("should revert if add two pool with the same pair (XToken)", async () => {
         const StakingRewards3 = await CoFiXStakingRewards.new(CoFi.address, XToken.address, VaultForLP.address, { from: deployer });
         await expectRevert(VaultForLP.addPoolForPair(StakingRewards3.address, {from: governance}), "CVaultForLP: pair added");
     });

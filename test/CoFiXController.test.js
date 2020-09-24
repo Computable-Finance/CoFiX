@@ -108,7 +108,7 @@ contract('CoFiXController', (accounts) => {
       _msgValue = web3.utils.toWei('0.01', 'ether');
       // tmpCFactory = await CoFiXFactory.deployed();
       let WETH = await WETH9.new();
-      tmpCFactory = await CoFiXFactory.new(WETH.address, constants.ZERO_ADDRESS, { from: deployer });
+      tmpCFactory = await CoFiXFactory.new(WETH.address, { from: deployer });
       constOracle = await NEST3PriceOracleConstMock.new(NEST.address, { from: deployer });
       tmpController = await CoFiXController.new(constOracle.address, NEST.address, tmpCFactory.address, KTable.address, { from: deployer });
       // tmpController.initialize(constOracle.address, { from: deployer });
@@ -125,20 +125,21 @@ contract('CoFiXController', (accounts) => {
 
       let result = await tmpController.queryOracle(Token.address, deployer, { from: deployer, value: _msgValue });
       console.log("queryOracle> receipt.gasUsed:", result.receipt.gasUsed);
-      let evtArgs0 = result.receipt.logs[0].args;
-      printKInfoEvent(evtArgs0);
-      expect(evtArgs0.sigma).to.bignumber.equal(new BN(0)); // sigma should be zero because we returned constant price
-      expect(evtArgs0.T).to.bignumber.equal(new BN(42)); // sigma should be zero because we returned constant price
+      // let evtArgs0 = result.receipt.logs[0].args;
+      // printKInfoEvent(evtArgs0);
+      // expect(evtArgs0.sigma).to.bignumber.equal(new BN(0)); // sigma should be zero because we returned constant price
+      // expect(evtArgs0.T).to.bignumber.equal(new BN(42)); // sigma should be zero because we returned constant price
       // k calculated from contract
       // evtArgs0.K.toNumber() / 
       // k for constant price, T = 28
       // let kExpected = calcK(alpha, beta_one, beta_two, theta, evtArgs0.sigma.toNumber(), evtArgs0.T.toNumber());
-      let kExpected = calcK(convert_from_fixed_point(evtArgs0.K0), evtArgs0.sigma.toNumber(), evtArgs0.T.toNumber());
-      let kActual = convert_from_fixed_point(evtArgs0.K);
-      // let error = Math.abs((kActual - kExpected) / kExpected);
-      let error = calcRelativeDiff(kExpected, kActual);
-      console.log(`kExpected: ${kExpected}, kActual:${kActual}, error:${error}`);
-      assert.isAtMost(error.toNumber(), errorDelta);
+      // disable because we use constant k now
+      // let kExpected = calcK(convert_from_fixed_point(evtArgs0.K0), evtArgs0.sigma.toNumber(), evtArgs0.T.toNumber());
+      // let kActual = convert_from_fixed_point(evtArgs0.K);
+      // // let error = Math.abs((kActual - kExpected) / kExpected);
+      // let error = calcRelativeDiff(kExpected, kActual);
+      // console.log(`kExpected: ${kExpected}, kActual:${kActual}, error:${error}`);
+      // assert.isAtMost(error.toNumber(), errorDelta);
 
       // should revert if no enough oracle fee
 
@@ -219,7 +220,7 @@ contract('CoFiXController', (accounts) => {
     let tmpCtrl;
     before(async function () {
       let WETH = await WETH9.new();
-      let tmpCFactory = await CoFiXFactory.new(WETH.address, constants.ZERO_ADDRESS, { from: deployer });
+      let tmpCFactory = await CoFiXFactory.new(WETH.address, { from: deployer });
       let constOracle = await NEST3PriceOracleConstMock.new(NEST.address, { from: deployer });
       tmpCtrl = await CoFiXController.new(constOracle.address, NEST.address, tmpCFactory.address, KTable.address, { from: deployer });
     });

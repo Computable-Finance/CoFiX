@@ -155,14 +155,20 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         emit Burn(msg.sender, outToken, amountOut, to);
     }
 
+
     // this low-level function should be called from a contract which performs important safety checks
-    function swapWithExact(address outToken, address to) external payable override lock returns (uint amountIn, uint amountOut, uint oracleFeeChange) {
+    function swapWithExact(address outToken, address to)
+        external
+        payable override lock
+        returns (uint amountIn, uint amountOut, uint oracleFeeChange, uint256[3] memory tradeInfo)
+    {
+        // tradeInfo[0]: thetaFee, tradeInfo[1]: x, tradeInfo[2]: y
         address _token0 = token0;
         address _token1 = token1;
         uint256 balance0 = IERC20(_token0).balanceOf(address(this));
         uint256 balance1 = IERC20(_token1).balanceOf(address(this));
 
-        uint256 fee;
+        // uint256 fee;
         { // scope for ethAmount/erc20Amount/blockNum to avoid stack too deep error
             uint256 _ethBalanceBefore = address(this).balance;
             bytes memory data = abi.encodePacked(msg.sender, CoFiX_OP.SWAP_WITH_EXACT, outToken, to);
@@ -173,11 +179,15 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             if (outToken == _token1) {
                 amountIn = balance0.sub(_reserve0);
                 require(amountIn > 0, "CPair: wrong amount0In");
-                (amountOut, fee) = calcOutToken1(amountIn, _op);
+                (amountOut, tradeInfo[0]) = calcOutToken1(amountIn, _op);
+                tradeInfo[1] = _reserve0; // swap token0 for token1 out
+                tradeInfo[2] = uint256(_reserve1).mul(_op.ethAmount).div(_op.erc20Amount); // _reserve1 value as _reserve0
             } else if (outToken == _token0) {
                 amountIn = balance1.sub(_reserve1);
                 require(amountIn > 0, "CPair: wrong amount1In");
-                (amountOut, fee) = calcOutToken0(amountIn, _op);
+                (amountOut, tradeInfo[0]) = calcOutToken0(amountIn, _op);
+                tradeInfo[1] = uint256(_reserve1).mul(_op.ethAmount).div(_op.erc20Amount); // _reserve1 value as _reserve0
+                tradeInfo[2] = _reserve0; // swap token1 for token0 out
             } else {
                 revert("CPair: wrong outToken");
             }
@@ -187,7 +197,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         require(to != _token0 && to != _token1, "CPair: INVALID_TO");
 
         _safeTransfer(outToken, to, amountOut); // optimistically transfer tokens
-        if (fee > 0) _safeTransfer(_token0, ICoFiXFactory(factory).getFeeReceiver(), fee); // transfer fee to protocol feeReceiver
+        if (tradeInfo[0] > 0) _safeTransfer(_token0, ICoFiXFactory(factory).getFeeReceiver(), tradeInfo[0]); // transfer fee to protocol feeReceiver
 
         balance0 = IERC20(_token0).balanceOf(address(this));
         balance1 = IERC20(_token1).balanceOf(address(this));
@@ -202,13 +212,14 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
     function swapForExact(address outToken, uint amountOutExact, address to)
         external
         payable override lock
-        returns (uint amountIn, uint amountOut, uint oracleFeeChange)
+        returns (uint amountIn, uint amountOut, uint oracleFeeChange, uint256[3] memory tradeInfo)
     {
+        // tradeInfo[0]: thetaFee, tradeInfo[1]: x, tradeInfo[2]: y
         address _token0 = token0;
         address _token1 = token1;
         OraclePrice memory _op;
 
-        uint256 fee;
+        // uint256 fee;
 
         { // scope for ethAmount/erc20Amount/blockNum to avoid stack too deep error
             uint256 _ethBalanceBefore = address(this).balance;
@@ -226,9 +237,13 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             if (outToken == _token1) {
                 amountIn = balance0.sub(_reserve0);
                 require(amountIn > 0, "CPair: wrong amount0In"); // for different revert reason
+                tradeInfo[1] = _reserve0; // swap token0 for token1 out
+                tradeInfo[2] = uint256(_reserve1).mul(_op.ethAmount).div(_op.erc20Amount); // _reserve1 value as _reserve0
             } else if (outToken == _token0) {
                 amountIn = balance1.sub(_reserve1);
                 require(amountIn > 0, "CPair: wrong amount1In"); // for different revert reason
+                tradeInfo[1] = uint256(_reserve1).mul(_op.ethAmount).div(_op.erc20Amount); // _reserve1 value as _reserve0
+                tradeInfo[2] = _reserve0; // swap token1 for token0 out
             } else {
                 revert("CPair: wrong outToken");
             }
@@ -238,14 +253,14 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             uint _amountInNeeded;
             uint _amountInLeft;
             if (outToken == _token1) {
-                (_amountInNeeded, fee) = calcInNeededToken0(amountOutExact, _op);
+                (_amountInNeeded, tradeInfo[0]) = calcInNeededToken0(amountOutExact, _op);
                 require(_amountInNeeded <= amountIn, "CPair: insufficient amount0In"); // for clear revert reason
                 _amountInLeft = amountIn.sub(_amountInNeeded);
                 if (_amountInLeft > 0) {
                     _safeTransfer(_token0, to, _amountInLeft); // send back the amount0 token change
                 }
             } else if (outToken == _token0) {
-                (_amountInNeeded, fee) = calcInNeededToken1(amountOutExact, _op);
+                (_amountInNeeded, tradeInfo[0]) = calcInNeededToken1(amountOutExact, _op);
                 require(_amountInNeeded <= amountIn, "CPair: insufficient wrong amount1In"); // for clear revert reason
                 _amountInLeft = amountIn.sub(_amountInNeeded);
                 if (_amountInLeft > 0) {
@@ -260,7 +275,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
 
             amountOut = amountOutExact;
             _safeTransfer(outToken, to, amountOut); // optimistically transfer tokens
-            if (fee > 0) _safeTransfer(_token0, ICoFiXFactory(factory).getFeeReceiver(), fee); // transfer fee to protocol feeReceiver
+            if (tradeInfo[0] > 0) _safeTransfer(_token0, ICoFiXFactory(factory).getFeeReceiver(), tradeInfo[0]); // transfer fee to protocol feeReceiver
 
             uint256 balance0 = IERC20(_token0).balanceOf(address(this));
             uint256 balance1 = IERC20(_token1).balanceOf(address(this));

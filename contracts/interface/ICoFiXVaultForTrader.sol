@@ -4,12 +4,14 @@ pragma solidity 0.6.12;
 
 interface ICoFiXVaultForTrader {
 
-    event PairAllowed(address pair);
-    event PairDisallowed(address pair);
+    event RouterAllowed(address router);
+    event RouterDisallowed(address router);
 
-    function allowPair(address pair) external;
+    function setGovernance(address gov) external;
 
-    function disallowPair(address pair) external;
+    function allowRouter(address router) external;
+
+    function disallowRouter(address router) external;
 
     function currentPeriod() external view returns (uint256);
 
@@ -17,20 +19,23 @@ interface ICoFiXVaultForTrader {
 
     function currentCoFiRate() external view returns (uint256);
 
-    function stdMiningAmount(uint256 thetaFee) external view returns (uint256);
+    function currentThreshold(uint256 cofiRate) external view returns (uint256);
 
-    function recentYield() external view returns (uint256);
+    function stdMiningRateAndAmount(uint256 thetaFee) external view returns (uint256 cofiRate, uint256 stdAmount);
+
+    function calcDensity(uint256 _stdAmount) external view returns (uint256);
 
     function calcLambda(uint256 x, uint256 y) external pure returns (uint256);
 
-    function currentCoFiLeft() external view returns (uint256);
+    function actualMiningAmountAndDensity(uint256 thetaFee, uint256 x, uint256 y) external view returns (uint256 amount, uint256 density);
 
-    function currentCoFiMined() external view returns (uint256);
+    function distributeReward(address pair, uint256 thetaFee, uint256 x, uint256 y, address rewardTo) external;
 
-    function currentS() external view returns (uint256);
+    function clearPendingRewardOfCNode() external;
 
-    function actualMiningAmount(uint256 thetaFee, uint256 x, uint256 y) external view returns (uint256);
+    function clearPendingRewardOfLP(address pair) external;
 
-    function distributeTradingReward(uint256 thetaFee, uint256 x, uint256 y, address mineTo) external;
+    function getPendingRewardOfCNode() external view returns (uint256);
 
+    function getPendingRewardOfLP(address pair) external view returns (uint256);
 }

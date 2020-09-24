@@ -22,17 +22,17 @@ contract CoFiXFactory is ICoFiXFactory {
 
     address public vaultForLP;
     address public vaultForTrader;
+    address public vaultForCNode;
 
     modifier onlyGovernance() {
         require(msg.sender == governance, "CFactory: !governance");
         _;
     }
 
-    constructor(address _WETH, address _vaultForLP) public {
+    constructor(address _WETH) public {
         governance = msg.sender;
         feeReceiver = msg.sender; // set feeReceiver to a feeReceiver contract later
         WETH = _WETH;
-        vaultForLP = _vaultForLP;
     }
 
     function allPairsLength() external override view returns (uint256) {
@@ -90,6 +90,20 @@ contract CoFiXFactory is ICoFiXFactory {
         emit NewVaultForLP(_new);
     }
 
+    function setVaultForTrader(address _new) external override onlyGovernance {
+        require(_new != address(0), "CFactory: zero addr");
+        require(_new != vaultForTrader, "CFactory: same addr");
+        vaultForTrader = _new;
+        emit NewVaultForTrader(_new);
+    }
+
+    function setVaultForCNode(address _new) external override onlyGovernance {
+        require(_new != address(0), "CFactory: zero addr");
+        require(_new != vaultForCNode, "CFactory: same addr");
+        vaultForLP = _new;
+        emit NewVaultForCNode(_new);
+    }
+
     function getController() external view override returns (address) {
         return controller;
     }
@@ -100,6 +114,14 @@ contract CoFiXFactory is ICoFiXFactory {
 
     function getVaultForLP() external view override returns (address) {
         return vaultForLP;
+    }
+
+    function getVaultForTrader() external view override returns (address) {
+        return vaultForTrader;
+    }
+
+    function getVaultForCNode() external view override returns (address) {
+        return vaultForCNode;
     }
 
     function append(string memory a, string memory b) internal pure returns (string memory) {

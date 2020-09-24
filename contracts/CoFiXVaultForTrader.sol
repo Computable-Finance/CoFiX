@@ -6,76 +6,74 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./lib/ABDKMath64x64.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interface/ICoFiXVaultForTrader.sol";
+import "./interface/ICoFiToken.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "./interface/ICoFiXFactory.sol";
 
-contract CoFiXVaultForTrader is ICoFiXVaultForTrader {
+// Reward Pool Controller for Trader
+// Trade to earn CoFi Token
+contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
     using SafeMath for uint256;
 
     uint256 public constant RATE_BASE = 1e18;
     uint256 public constant LAMBDA_BASE = 100;
-    uint256 public constant S_BASE = 1e8;
-    uint256 public constant INIT_SUPPLY = 50_000_000*1e18;
+    uint256 public constant RECENT_RANGE = 300;
+
+    uint256 public constant SHARE_BASE = 100;
+    uint256 public constant SHARE_FOR_TRADER = 80;
+    uint256 public constant SHARE_FOR_LP = 10;
+    uint256 public constant SHARE_FOR_CNODE = 10;
 
     address public cofiToken;
+    address public factory;
 
     uint256 public genesisBlock; // TODO: make this constant to reduce gas cost
 
     // managed by governance
     address public governance;
 
-    uint256 public initCoFiRate = 10*1e18; // yield per block
-    uint256 public cofiDecayPeriod = 7200; // yield decays for every 2,400,000 blocks
-    int128 public cofiDecayRate = 0xFFBE76C8B4395800; // (0.999*2**64).toString(16), 0.999 as 64.64-bit fixed point
+    uint256 public initCoFiRate = 10*1e18; // yield per unit
+    uint256 public cofiDecayPeriod = 2400000; // yield decays for every 2,400,000 blocks
+    int128 public cofiDecayRate = 0xCCCCCCCCCCCCD000; // (0.8*2**64).toString(16), 0.8 as 64.64-bit fixed point
 
     uint256 public thetaFeeUnit = 0.01 ether;
 
-    uint256 public initS = 1e8; // 1 * S_BASE
-    uint256 public sDecayOffset = 100000*1e18;
-    int128 public sDecayRate = 0xF851EB851EB85000;  // (0.97*2**64).toString(16), 0.97 as 64.64-bit fixed point
+    uint256 public singleLimitK = 100*1e18;
 
-    uint256 public singleLimitM = 50000*1e18;
+    uint256 public pendingRewardsForCNode;
 
-    uint256 public constant RECENT_RANGE = 300;
+    mapping(address => uint256) public pendingRewardsForLP; // pair address to pending rewards amount
+    mapping (address => bool) public routerAllowed;
 
-    struct CoFiMiningInfo {
-        uint256 minedSnapshot; // cofi mined snapshot, mined = INIT_SUPPLY - currentBalanceOf(this)
-        uint256 preMinedAt; // block number
-    }
-
-    mapping (address => bool) public pairAllowed;
-
-    mapping (uint256 => CoFiMiningInfo) public minedBlockRecords;
-
+    // TODO: Combine to reduce write gas cost
     uint256 public lastMinedBlock; // last block mined cofi token
+    uint256 public lastDensity; // last mining density, see currentDensity()
 
-    constructor() public {
+    constructor(address cofi, address _factory) public {
+        cofiToken = cofi;
+        factory = _factory;
         governance = msg.sender;
         genesisBlock = block.number;
     }
 
-    event PairAllowed(address pair);
-    event PairDisallowed(address pair);
-
-    function allowPair(address pair) external override {
+    /* setters for protocol governance */
+    function setGovernance(address _new) external override {
         require(msg.sender == governance, "CVaultForTrader: !governance");
-        require(pairAllowed[pair] == false, "CVaultForTrader: pair allowed");
-        pairAllowed[pair] = true;
-        emit PairAllowed(pair);
+        governance = _new;
     }
 
-    function disallowPair(address pair) external override {
+    function allowRouter(address router) external override {
         require(msg.sender == governance, "CVaultForTrader: !governance");
-        require(pairAllowed[pair] == true, "CVaultForTrader: pair disallowed");
-        pairAllowed[pair] = false;
-        emit PairDisallowed(pair);
+        require(routerAllowed[router] == false, "CVaultForTrader: router allowed");
+        routerAllowed[router] = true;
+        emit RouterAllowed(router);
     }
 
-    function _addDistributeRecord() internal {
-        uint256 _previous = lastMinedBlock;
-        if (block.number != _previous) {
-            minedBlockRecords[block.number].preMinedAt = _previous;
-            lastMinedBlock = block.number;
-            minedBlockRecords[block.number].minedSnapshot = INIT_SUPPLY.sub(currentCoFiLeft()); // only set once, it's the mined snapshot before the distribution of this block
-        }
+    function disallowRouter(address router) external override {
+        require(msg.sender == governance, "CVaultForTrader: !governance");
+        require(routerAllowed[router] == true, "CVaultForTrader: router disallowed");
+        routerAllowed[router] = false;
+        emit RouterDisallowed(router);
     }
 
     function currentPeriod() public override view returns (uint256) {
@@ -85,6 +83,7 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader {
 
     function currentDecay() public override view returns (int128) {
         uint256 periodIdx = currentPeriod();
+        // TODO: max value for periodIdx
         return ABDKMath64x64.pow(cofiDecayRate, periodIdx); // TODO: prevent index too large
     }
 
@@ -97,62 +96,38 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader {
         return uint256(ABDKMath64x64.toUInt(decayRatio)).mul(initCoFiRate).div(RATE_BASE); // TODO: if we want mul not overflow revert, should limit initCoFiRate
     }
 
-    function stdMiningAmount(uint256 thetaFee) public override view returns (uint256) {
+    function currentThreshold(uint256 cofiRate) public override view returns (uint256) {
+        return singleLimitK.mul(cofiRate).div(thetaFeeUnit);
+    }
+
+    function stdMiningRateAndAmount(uint256 thetaFee) public override view returns (uint256 cofiRate, uint256 stdAmount) {
         // thetaFee / thetaFeeUnit * currentCoFiRate
-        return thetaFee.mul(currentCoFiRate()).div(thetaFeeUnit);
+        cofiRate = currentCoFiRate();
+        stdAmount = thetaFee.mul(cofiRate).div(thetaFeeUnit);
+        return (cofiRate, stdAmount);
     }
 
-    function recentYield() public override view returns (uint256) {
+    // s >= 300: f_t = yt * at, (yt * at is stdMiningAmount)
+    // s < 300: f_t = f_{t-1} * (300 - s) / 300 + yt * at
+    function calcDensity(uint256 _stdAmount) public override view returns (uint256) {
         uint256 _last = lastMinedBlock;
-        if (_last == 0) {
-            return 0;
-        }
         uint256 _offset = block.number.sub(_last);
-        if (_offset > RECENT_RANGE) {
-            return currentCoFiMined().sub(minedBlockRecords[_last].minedSnapshot);
+        if (_offset >= RECENT_RANGE) {
+            return _stdAmount;
+        } else {
+            uint256 _lastDensity = lastDensity;
+            return _lastDensity.mul(RECENT_RANGE.sub(_offset)).div(RECENT_RANGE).add(_stdAmount);
         }
-        uint256 _save;
-        while (_last > 0 && _offset < RECENT_RANGE) {
-            _save = _last;
-            _last = minedBlockRecords[_last].preMinedAt;
-            _offset = block.number.sub(_last);
-        }
-        // means _last is 0, but _save (the last _last) is not, _save is the oldest block recently (we do not have enough blocks)
-        if (_last == 0) {
-            return currentCoFiMined().sub(minedBlockRecords[_save].minedSnapshot);
-        }
-        // means find the oldest block recently
-        return currentCoFiMined().sub(minedBlockRecords[_last].minedSnapshot);
     }
-
-    // struct CoFiMiningRecord {
-    //     uint256 blockNumber; // cofi mined at which block
-    //     uint256 minedSnapshot; // cofi mined snapshot, mined = INIT_SUPPLY - currentBalanceOf(this)
-    // }
-
-    // CoFiMiningRecord[] public minedBlockList; // store the block numbers cofi got mined
-
-    // // the yield of cofi during the last 300 blocks 
-    // function recentBYield() public view returns (uint256) {
-    //     uint256 len = minedBlockList.length;
-    //     if (len > RECENT_RANGE) {
-    //         uint256 stopIdx = len.sub(RECENT_RANGE);
-    //         for (uint256 i = len.sub(1); i >= stopIdx; i--) {
-    //             uint256 bn = minedBlockList[i].blockNumber;
-    //             if (bn.sub(block.number) >= RECENT_RANGE) {
-    //                 return currentCoFiMined().sub(minedBlockList[i].minedSnapshot);
-    //             }
-    //         }
-    //     } else if (len == 0) {
-    //         return 0;
-    //     } else {
-    //         return currentCoFiMined().sub(minedBlockList[0].minedSnapshot); // calc how many mined during the offset
-    //     }
-    // }
 
     function calcLambda(uint256 x, uint256 y) public override pure returns (uint256) {
         // (0.1 0.33 3 10) => (10 33 300 1000)
-        uint256 ratio = x.mul(100).div(y);
+        uint256 ratio;
+        if (y == 0) {
+            ratio = 1000;
+        } else {
+            ratio = x.mul(LAMBDA_BASE).div(y);
+        }
         if (ratio >= 1000) { // x/y >= 10, lambda = 0.5
             return 50;
         } else if (ratio >= 300) { // 3 <= x/y < 10, lambda = 0.75
@@ -166,59 +141,62 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader {
         }
     }
 
-    function currentCoFiLeft() public override view returns (uint256) {
-        return IERC20(cofiToken).balanceOf(address(this));
-    }
-
-    function currentCoFiMined() public override view returns (uint256) {
-        return INIT_SUPPLY.sub(currentCoFiLeft());
-    }
-
-    function currentS() public override view returns (uint256) {
-        // initS * ( sDecayRate^(distributed/sDecayOffset) ), distributed = INIT_SUPPLY - currentBalance
-        uint256 distributed = INIT_SUPPLY.sub(IERC20(cofiToken).balanceOf(address(this)));
-        uint256 power = distributed.div(sDecayOffset);
-        int128 decay = ABDKMath64x64.pow(sDecayRate, power);
-        int128 s = ABDKMath64x64.mul(
-            ABDKMath64x64.fromUInt(initS), // 1e8*2**64
-            decay // (0~1)*2**64
-        );
-        return ABDKMath64x64.toUInt(s); // 1e8 * (0.97)^n
-    }
-
-    function actualMiningAmount(uint256 thetaFee, uint256 x, uint256 y) public override view returns (uint256) {
-        uint256 O_T = stdMiningAmount(thetaFee);
-        // uint256 O_recent = recentBYield();
-        uint256 O_recent = recentYield();
-        uint256 Q = O_T.add(O_recent);
-        uint256 s = currentS(); // with S_BASE
-        uint256 ms = singleLimitM.mul(s).div(S_BASE); // TODO: verify precision here
+    function actualMiningAmountAndDensity(uint256 thetaFee, uint256 x, uint256 y) public override view returns (uint256 amount, uint256 density) {
+        (uint256 cofiRate, uint256 stdAmount) = stdMiningRateAndAmount(thetaFee);
+        density = calcDensity(stdAmount); // f
         uint256 lambda = calcLambda(x, y);
-        if (Q <= ms) {
-            return O_T.mul(lambda).div(LAMBDA_BASE);
-        } else {
-            // O_T * ms * (2Q - ms) * lambda / (Q * Q)
-            return O_T.mul(ms).mul(Q.mul(2).sub(ms)).mul(lambda).div(Q).div(Q);
+        uint256 th = currentThreshold(cofiRate); // threshold of mining rewards amount, k*at
+        // TODO: confirm, we don't include density here?
+        if (stdAmount <= th) { // we can use thetaFee vs singleLimitK here too, but just use memory results for gas saving
+            // yt<=k, yt*at * lambda, yt is thetaFee, at is cofiRate
+            return (stdAmount.mul(lambda).div(LAMBDA_BASE), density);
         }
+        // yt>=k: yt*at * k*at * (2ft - k*at) * lambda / (ft*ft), yt*at is stdAmount, k*at is threshold
+        uint256 numerator = stdAmount.mul(th).mul(density.mul(2).sub(th)).mul(lambda);
+        return (numerator.div(density).div(density).div(LAMBDA_BASE), density);
     }
 
-    function distributeTradingReward(uint256 thetaFee, uint256 x, uint256 y, address mineTo) public override {
-        require(pairAllowed[msg.sender] == true, "CVaultForTrader: not allowed pair");
-        uint256 balance = IERC20(cofiToken).balanceOf(address(this));
-        if (balance == 0) {
-            return; // no need to calc minng amount
-        }
-        uint256 amount = actualMiningAmount(thetaFee, x, y);
-        if (amount > balance) {
-            amount = balance;
-        }
-        _addDistributeRecord(); // TODO: verify, save minedSnapshot before transfer 
-        _transferCoFi(amount, mineTo); // send to receiver directly, reduce gas cost
+    function distributeReward(address pair, uint256 thetaFee, uint256 x, uint256 y, address rewardTo) external override nonReentrant {
+        require(routerAllowed[msg.sender] == true, "CVaultForTrader: not allowed router");  // caution: be careful when adding new router
+
+        (uint256 amount, uint256 density) = actualMiningAmountAndDensity(thetaFee, x, y);
+
+        // TODO: update lastDensity & lastUpdateBlock
+        lastDensity = density;
+        lastMinedBlock = block.number; // TODO: only write when not equal
+
+        // TODO: think about add a mint role check, to ensure this call never fail?
+        uint256 amountForTrader = amount.mul(SHARE_FOR_TRADER).div(SHARE_BASE);
+        uint256 amountForLP = amount.mul(SHARE_FOR_LP).div(SHARE_BASE);
+        uint256 amountForCNode = amount.mul(SHARE_FOR_CNODE).div(SHARE_BASE);
+
+        ICoFiToken(cofiToken).mint(rewardTo, amountForTrader); // allows zero, send to receiver directly, reduce gas cost
+        pendingRewardsForLP[pair] = pendingRewardsForLP[pair].add(amountForLP); // possible key: token or pair, we use pair here
+        pendingRewardsForCNode = pendingRewardsForCNode.add(amountForCNode);
     }
 
-    function _transferCoFi(uint256 amount, address to) internal returns (uint256) {
-        IERC20(cofiToken).transfer(to, amount); // allows zero amount
-        return amount;
+    function clearPendingRewardOfCNode() external override nonReentrant {
+        address vaultForCNode = ICoFiXFactory(factory).getVaultForCNode();
+        require(msg.sender == vaultForCNode, "CVaultForTrader: only vaultForCNode"); // caution
+        // uint256 pending = pendingRewardsForCNode;
+        pendingRewardsForCNode = 0; // take all, set to 0
+        // ICoFiToken(cofiToken).mint(msg.sender, pending); // no need to mint from here, we can mint directly in valult
+    }
+
+    // vaultForLP should ensure passing the correct pair address
+    function clearPendingRewardOfLP(address pair) external override nonReentrant {
+        address vaultForLP = ICoFiXFactory(factory).getVaultForLP();
+        require(msg.sender == vaultForLP, "CVaultForTrader: only vaultForLP"); // caution 
+        pendingRewardsForLP[pair] = 0; // take all, set to 0
+        // ICoFiToken(cofiToken).mint(to, pending); // no need to mint from here, we can mint directly in valult
+    }
+
+    function getPendingRewardOfCNode() external override view returns (uint256) {
+        return pendingRewardsForCNode;
+    }
+
+    function getPendingRewardOfLP(address pair) external override view returns (uint256) {
+        return pendingRewardsForLP[pair];
     }
 
 }

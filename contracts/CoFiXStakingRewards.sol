@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-pragma solidity 0.6.12;
+pragma solidity ^0.6.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./lib/TransferHelper.sol";
@@ -8,16 +8,20 @@ import "@openzeppelin/contracts/math/Math.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./interface/ICoFiXStakingRewards.sol";
 import "./interface/ICoFiXVaultForLP.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./interface/ICoFiStakingRewards.sol";
 
+
+// Stake XToken to earn CoFi Token
 contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
     using SafeMath for uint256;
 
     /* ========== STATE VARIABLES ========== */
 
-    address public override rewardsToken;
-    address public override stakingToken;
-    address public cofixVaultForLP;
-    // uint256 public rewardRate = 0;
+    address public override rewardsToken; // CoFi
+    address public override stakingToken; // XToken or CNode
+    address public cofixVault;
+
     uint256 public lastUpdateBlock;
     uint256 public rewardPerTokenStored;
 
@@ -32,11 +36,11 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
     constructor(
         address _rewardsToken,
         address _stakingToken,
-        address _cofixVaultForLP
+        address _cofixVault
     ) public {
         rewardsToken = _rewardsToken;
         stakingToken = _stakingToken;
-        cofixVaultForLP = _cofixVaultForLP;
+        cofixVault = _cofixVault;
         lastUpdateBlock = block.number;        
     }
 
@@ -60,27 +64,32 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
         }
         return
             rewardPerTokenStored.add(
-                accrued().mul(1e18).div(_totalSupply) // TODO: 90%
+                accrued().mul(1e18).div(_totalSupply)
             );
     }
 
     function _rewardPerTokenAndAccrued() internal view returns (uint256, uint256) {
         if (_totalSupply == 0) {
-            return (rewardPerTokenStored, 0); // TODO: think about totalSupply = 0 situation
+            // use the old rewardPerTokenStored, and accrued should be zero here
+            // if not the new accrued amount will never be distributed to anyone
+            return (rewardPerTokenStored, 0);
         }
         uint256 _accrued = accrued();
         uint256 _rewardPerToken = rewardPerTokenStored.add(
-                _accrued.mul(1e18).div(_totalSupply) // TODO: 90%
+                _accrued.mul(1e18).div(_totalSupply)
             );
         return (_rewardPerToken, _accrued);
     }
 
-    function rewardRate() public override view returns (uint256) {
-        return ICoFiXVaultForLP(cofixVaultForLP).currentPoolRate();
+    function rewardRate() public virtual override view returns (uint256) {
+        return ICoFiXVaultForLP(cofixVault).currentPoolRate();
     }
 
-    function accrued() public override view returns (uint256) {
-        return lastBlockRewardApplicable().sub(lastUpdateBlock).mul(rewardRate()); // TODO: handle the last mining issue
+    function accrued() public virtual override view returns (uint256) {
+        // TODO: collect pending reward from Trader pool
+        uint256 blockReward = lastBlockRewardApplicable().sub(lastUpdateBlock).mul(rewardRate());
+        uint256 tradingReward = ICoFiXVaultForLP(cofixVault).getPendingRewardOfLP(stakingToken); // pair trading rewards
+        return blockReward.add(tradingReward); // TODO: handle the last mining issue
     }
 
     function earned(address account) public override view returns (uint256) {
@@ -113,11 +122,39 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
         emit Withdrawn(msg.sender, amount);
     }
 
+    // Withdraw without caring about rewards. EMERGENCY ONLY.
+    function emergencyWithdraw() external override nonReentrant {
+        uint256 amount = _balances[msg.sender];
+        require(amount > 0, "Cannot withdraw 0");
+        _totalSupply = _totalSupply.sub(amount);
+        _balances[msg.sender] = 0;
+        rewards[msg.sender] = 0;
+        TransferHelper.safeTransfer(stakingToken, msg.sender, amount);
+        emit EmergencyWithdraw(msg.sender, amount);
+    }
+
     function getReward() public override nonReentrant updateReward(msg.sender) {
         uint256 reward = rewards[msg.sender];
         if (reward > 0) {
             rewards[msg.sender] = 0;
-            TransferHelper.safeTransfer(rewardsToken, msg.sender, reward);
+            // TransferHelper.safeTransfer(rewardsToken, msg.sender, reward);
+            uint256 transferred = _safeCoFiTransfer(msg.sender, reward);
+            emit RewardPaid(msg.sender, transferred);
+        }
+    }
+
+    // get CoFi rewards and staking into CoFiStakingRewards pool
+    function getRewardAndStake() external override nonReentrant updateReward(msg.sender) {
+        uint256 reward = rewards[msg.sender];
+        if (reward > 0) {
+            rewards[msg.sender] = 0;
+            address cofiStakingPool = ICoFiXVaultForLP(cofixVault).getCoFiStakingPool(); // also work for VaultForCNode
+            require(cofiStakingPool != address(0), "cofiStakingPool not set");
+            // approve to staking pool
+            address _rewardsToken = rewardsToken;
+            IERC20(_rewardsToken).approve(cofiStakingPool, reward);
+            ICoFiStakingRewards(cofiStakingPool).stakeForOther(msg.sender, reward);
+            IERC20(_rewardsToken).approve(cofiStakingPool, 0); // ensure
             emit RewardPaid(msg.sender, reward);
         }
     }
@@ -136,20 +173,27 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
         emit RewardAdded(msg.sender, amount);
     }
 
+    // Safe CoFi transfer function, just in case if rounding error or ending of mining causes pool to not have enough CoFis.
+    function _safeCoFiTransfer(address _to, uint256 _amount) internal returns (uint256) {
+        uint256 cofiBal = IERC20(rewardsToken).balanceOf(address(this));
+        if (_amount > cofiBal) {
+            _amount = cofiBal;
+        }
+        TransferHelper.safeTransfer(rewardsToken, _to, _amount); // allow zero amount
+        return _amount;
+    }
+
     /* ========== MODIFIERS ========== */
 
-    modifier updateReward(address account) {
+    modifier updateReward(address account) virtual {
         // rewardPerTokenStored = rewardPerToken();
         // uint256 newAccrued = accrued();
         (uint256 newRewardPerToken, uint256 newAccrued) = _rewardPerTokenAndAccrued();
         rewardPerTokenStored = newRewardPerToken;
         if (newAccrued > 0) {
-            // TODO: transfer from CoFiXVaultForLP
-            // TODO: must never fail
-            uint256 received = ICoFiXVaultForLP(cofixVaultForLP).transferCoFi(newAccrued);
-            if (received > 0) {
-                // TODO: transfer 10% out
-            }
+            // distributeReward could fail if CoFiXVaultForLP is not minter of CoFi anymore
+            // Should set reward rate to zero first, and then do a settlement of pool reward by call getReward
+            ICoFiXVaultForLP(cofixVault).distributeReward(address(this), newAccrued);
         } 
         lastUpdateBlock = lastBlockRewardApplicable();
         if (account != address(0)) {
@@ -165,5 +209,6 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
     event Staked(address indexed user, uint256 amount);
     event StakedForOther(address indexed user, address indexed other, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
+    event EmergencyWithdraw(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
 }

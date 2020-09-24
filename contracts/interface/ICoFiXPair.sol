@@ -13,6 +13,15 @@ interface ICoFiXPair is ICoFiXERC20 {
         uint256 theta;
     }
     
+    // struct TradeInfo {
+    //     uint256 amountIn;
+    //     uint256 amountOut;
+    //     uint256 oracleFeeChange;
+    //     uint256 thetaFee;
+    //     uint256 x;
+    //     uint256 y;
+    // }
+
     // All pairs: {ETH <-> ERC20 Token}
     event Mint(address indexed sender, uint amount0, uint amount1);
     event Burn(address indexed sender, address outToken, uint outAmount, address indexed to);
@@ -33,8 +42,8 @@ interface ICoFiXPair is ICoFiXERC20 {
 
     function mint(address to) external payable returns (uint liquidity, uint oracleFeeChange);
     function burn(address outToken, address to) external payable returns (uint amountOut, uint oracleFeeChange);
-    function swapWithExact(address outToken, address to) external payable returns (uint amountIn, uint amountOut, uint oracleFeeChange);
-    function swapForExact(address outToken, uint amountOutExact, address to) external payable returns (uint amountIn, uint amountOut, uint oracleFeeChange);
+    function swapWithExact(address outToken, address to) external payable returns (uint amountIn, uint amountOut, uint oracleFeeChange, uint256[3] memory tradeInfo);
+    function swapForExact(address outToken, uint amountOutExact, address to) external payable returns (uint amountIn, uint amountOut, uint oracleFeeChange, uint256[3] memory tradeInfo);
     function skim(address to) external;
     function sync() external;
 

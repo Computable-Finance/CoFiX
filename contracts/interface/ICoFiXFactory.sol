@@ -9,6 +9,8 @@ interface ICoFiXFactory {
     event NewController(address _new);
     event NewFeeReceiver(address _new);
     event NewVaultForLP(address _new);
+    event NewVaultForTrader(address _new);
+    event NewVaultForCNode(address _new);
 
     /// @dev Create a new token pair for trading
     /// @param  token the address of token to trade
@@ -27,7 +29,11 @@ interface ICoFiXFactory {
     function setController(address _new) external;
     function setFeeReceiver(address _new) external;
     function setVaultForLP(address _new) external;
+    function setVaultForTrader(address _new) external;
+    function setVaultForCNode(address _new) external;
     function getController() external view returns (address controller);
     function getFeeReceiver() external view returns (address feeReceiver);
     function getVaultForLP() external view returns (address vaultForLP);
+    function getVaultForTrader() external view returns (address vaultForTrader);
+    function getVaultForCNode() external view returns (address vaultForCNode);
 }

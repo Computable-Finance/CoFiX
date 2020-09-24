@@ -13,8 +13,9 @@ interface ICoFiXVaultForLP {
 
     function addPool(address pool) external;
     function addPoolForPair(address pool) external;
-    function transferCoFi(uint256 amount) external returns (uint256);
+    function distributeReward(address to, uint256 amount) external;
 
+    function getPendingRewardOfLP(address pair) external view returns (uint256);
     function currentPeriod() external view returns (uint256);
     function currentCoFiRate() external view returns (uint256);
     function currentPoolRate() external view returns (uint256 poolRate);
@@ -23,4 +24,7 @@ interface ICoFiXVaultForLP {
     /// @param  pair The address of XToken(pair) contract
     /// @return pool The pool address
     function stakingPoolForPair(address pair) external view returns (address pool);
+
+    function getCoFiStakingPool() external view returns (address pool);
+
 }

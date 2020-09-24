@@ -16,6 +16,7 @@ interface ICoFiXVaultForLP {
     function addPoolForPair(address pool) external;
     function distributeReward(address to, uint256 amount) external;
 
+    function getPendingRewardOfLP(address pair) external view returns (uint256);
     function currentPeriod() external view returns (uint256);
     function currentCoFiRate() external view returns (uint256);
     function currentPoolRate() external view returns (uint256 poolRate);

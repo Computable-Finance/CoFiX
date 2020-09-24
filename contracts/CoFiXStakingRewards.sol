@@ -85,7 +85,9 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
 
     function accrued() public override view returns (uint256) {
         // TODO: collect pending reward from Trader pool
-        return lastBlockRewardApplicable().sub(lastUpdateBlock).mul(rewardRate()); // TODO: handle the last mining issue
+        uint256 blockReward = lastBlockRewardApplicable().sub(lastUpdateBlock).mul(rewardRate());
+        uint256 tradingReward = ICoFiXVaultForLP(cofixVaultForLP).getPendingRewardOfLP(stakingToken); // pair trading rewards
+        return blockReward.add(tradingReward); // TODO: handle the last mining issue
     }
 
     function earned(address account) public override view returns (uint256) {

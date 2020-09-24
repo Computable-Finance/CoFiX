@@ -8,14 +8,19 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interface/ICoFiXVaultForLP.sol";
 import "./interface/ICoFiXStakingRewards.sol";
 import "./interface/ICoFiToken.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "./interface/ICoFiXFactory.sol";
+import "./interface/ICoFiXVaultForTrader.sol";
 
-contract CoFiXVaultForLP is ICoFiXVaultForLP {
+
+contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
 
     using SafeMath for uint256;
 
     uint256 public constant RATE_BASE = 1e18;
 
     address public cofiToken;
+    address public factory;
 
     uint256 public genesisBlock; // TODO: make this constant to reduce gas cost
 
@@ -35,8 +40,9 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP {
 
     event NewPoolAdded(address pool, uint256 index);
 
-    constructor(address cofi) public {
+    constructor(address cofi, address _factory) public {
         cofiToken = cofi;
+        factory = _factory;
         governance = msg.sender;
         governanceVault = msg.sender; // governance vault could be governance itself or a specific contract
         genesisBlock = block.number;
@@ -100,8 +106,25 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP {
     //     return amount;
     // }
     
-    function distributeReward(address to, uint256 amount) external override {
+    function getPendingRewardOfLP(address pair) external override view returns (uint256) {
+        address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
+        if (vaultForTrader == address(0)) {
+            return 0; // vaultForTrader is not set yet
+        }
+        uint256 pending = ICoFiXVaultForTrader(vaultForTrader).getPendingRewardOfLP(pair);
+        return pending;
+    }
+
+    function distributeReward(address to, uint256 amount) external override nonReentrant {
         require(poolAllowed[msg.sender] == true, "CVaultForLP: only pool allowed"); // caution: be careful when adding new pool
+        address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
+        if (vaultForTrader != address(0)) { // if not equal, means vaultForTrader is not set yet
+            address pair = ICoFiXStakingRewards(msg.sender).stakingToken();
+            uint256 pending = ICoFiXVaultForTrader(vaultForTrader).getPendingRewardOfLP(pair);
+            if (pending > 0) {
+                ICoFiXVaultForTrader(vaultForTrader).clearPendingRewardOfLP(pair);
+            }
+        }
         // TODO: think about add a mint role check, to ensure this call never fail?
         ICoFiToken(cofiToken).mint(to, amount); // allows zero
     }

@@ -5,6 +5,8 @@ const { BN, constants, expectEvent, expectRevert, time } = require('@openzeppeli
 const CoFiXVaultForLP = artifacts.require("CoFiXVaultForLP");
 const CoFiToken = artifacts.require("CoFiToken");
 const CoFiXStakingRewards = artifacts.require("CoFiXStakingRewards.sol");
+const CoFiXFactory = artifacts.require("CoFiXFactory");
+const WETH9 = artifacts.require("WETH9");
 
 const verbose = process.env.VERBOSE;
 
@@ -27,8 +29,10 @@ contract('CoFiXVaultForLP', (accounts) => {
     const INIT_COFI_RATE = web3.utils.toWei('10', 'ether');
 
     before(async () => {
+        WETH = await WETH9.new();
+        CFactory = await CoFiXFactory.new(WETH.address, { from: deployer });
         CoFi = await CoFiToken.new({ from: deployer });
-        VaultForLP = await CoFiXVaultForLP.new(CoFi.address, { from: deployer });
+        VaultForLP = await CoFiXVaultForLP.new(CoFi.address, CFactory.address, { from: deployer });
     });
 
     it("should revert if no GOVERNANCE add pool", async () => {

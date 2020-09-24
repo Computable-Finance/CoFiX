@@ -70,9 +70,10 @@ contract('CoFiX', (accounts) => {
         NEST = await TestNEST.new({ from: deployer });
         WETH = await WETH9.new();
         CoFi = await CoFiToken.new({ from: deployer });
-        VaultForLP = await CoFiXVaultForLP.new(CoFi.address, { from: deployer });
+        CFactory = await CoFiXFactory.new(WETH.address, { from: deployer });
+        VaultForLP = await CoFiXVaultForLP.new(CoFi.address, CFactory.address, { from: deployer });
+        await CFactory.setVaultForLP(VaultForLP.address);
         PriceOracle = await NEST3PriceOracleMock.new(NEST.address, { from: deployer });
-        CFactory = await CoFiXFactory.new(WETH.address, VaultForLP.address, { from: deployer });
         KTable = await CoFiXKTable.new({ from: deployer });
         CoFiXCtrl = await CoFiXController.new(PriceOracle.address, NEST.address, CFactory.address, KTable.address);
         await CFactory.setController(CoFiXCtrl.address);

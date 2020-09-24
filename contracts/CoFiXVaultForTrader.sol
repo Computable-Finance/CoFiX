@@ -7,14 +7,24 @@ import "./lib/ABDKMath64x64.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interface/ICoFiXVaultForTrader.sol";
 import "./interface/ICoFiToken.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "./interface/ICoFiXFactory.sol";
 
-contract CoFiXVaultForTrader is ICoFiXVaultForTrader {
+
+contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
     using SafeMath for uint256;
 
     uint256 public constant RATE_BASE = 1e18;
     uint256 public constant LAMBDA_BASE = 100;
+    uint256 public constant RECENT_RANGE = 300;
+
+    uint256 public constant SHARE_BASE = 100;
+    uint256 public constant SHARE_FOR_TRADER = 80;
+    uint256 public constant SHARE_FOR_LP = 10;
+    uint256 public constant SHARE_FOR_CNODE = 10;
 
     address public cofiToken;
+    address public factory;
 
     uint256 public genesisBlock; // TODO: make this constant to reduce gas cost
 
@@ -29,16 +39,18 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader {
 
     uint256 public singleLimitK = 100*1e18;
 
-    uint256 public constant RECENT_RANGE = 300;
+    uint256 public pendingRewardsForCNode;
 
+    mapping(address => uint256) public pendingRewardsForLP; // pair address to pending rewards amount
     mapping (address => bool) public routerAllowed;
 
-    // Combine to reduce write gas cost
+    // TODO: Combine to reduce write gas cost
     uint256 public lastMinedBlock; // last block mined cofi token
     uint256 public lastDensity; // last mining density, see currentDensity()
 
-    constructor(address cofi) public {
+    constructor(address cofi, address _factory) public {
         cofiToken = cofi;
+        factory = _factory;
         governance = msg.sender;
         genesisBlock = block.number;
     }
@@ -143,7 +155,7 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader {
         return (numerator.div(density).div(density).div(LAMBDA_BASE), density);
     }
 
-    function distributeReward(uint256 thetaFee, uint256 x, uint256 y, address mineTo) external override {
+    function distributeReward(address pair, uint256 thetaFee, uint256 x, uint256 y, address mineTo) external override nonReentrant {
         require(routerAllowed[msg.sender] == true, "CVaultForTrader: not allowed router");  // caution: be careful when adding new router
 
         (uint256 amount, uint256 density) = actualMiningAmountAndDensity(thetaFee, x, y);
@@ -152,10 +164,38 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader {
         lastDensity = density;
         lastMinedBlock = block.number; // TODO: only write when not equal
 
-        // TODO: update pending rewards for CNode pool and LP pool
-
         // TODO: think about add a mint role check, to ensure this call never fail?
-        ICoFiToken(cofiToken).mint(mineTo, amount); // allows zero, send to receiver directly, reduce gas cost
+        uint256 amountForTrader = amount.mul(SHARE_FOR_TRADER).div(SHARE_BASE);
+        uint256 amountForLP = amount.mul(SHARE_FOR_LP).div(SHARE_BASE);
+        uint256 amountForCNode = amount.mul(SHARE_FOR_CNODE).div(SHARE_BASE);
+
+        ICoFiToken(cofiToken).mint(mineTo, amountForTrader); // allows zero, send to receiver directly, reduce gas cost
+        pendingRewardsForLP[pair] = pendingRewardsForLP[pair].add(amountForLP); // possible key: token or pair, we use pair here
+        pendingRewardsForCNode = pendingRewardsForCNode.add(amountForCNode);
+    }
+
+    function clearPendingRewardOfCNode() external override nonReentrant {
+        address vaultForCNode = ICoFiXFactory(factory).getVaultForCNode();
+        require(msg.sender == vaultForCNode, "CVaultForTrader: only vaultForCNode"); // caution
+        // uint256 pending = pendingRewardsForCNode;
+        pendingRewardsForCNode = 0; // take all, set to 0
+        // ICoFiToken(cofiToken).mint(msg.sender, pending); // no need to mint from here, we can mint directly in valult
+    }
+
+    // vaultForLP should ensure passing the correct pair address
+    function clearPendingRewardOfLP(address pair) external override nonReentrant {
+        address vaultForLP = ICoFiXFactory(factory).getVaultForLP();
+        require(msg.sender == vaultForLP, "CVaultForTrader: only vaultForLP"); // caution 
+        pendingRewardsForLP[pair] = 0; // take all, set to 0
+        // ICoFiToken(cofiToken).mint(to, pending); // no need to mint from here, we can mint directly in valult
+    }
+
+    function getPendingRewardsOfCNode() external override view returns (uint256) {
+        return pendingRewardsForCNode;
+    }
+
+    function getPendingRewardOfLP(address pair) external override view returns (uint256) {
+        return pendingRewardsForLP[pair];
     }
 
 }

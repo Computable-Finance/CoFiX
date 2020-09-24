@@ -70,9 +70,6 @@ contract('CoFiXVaultForTrader', (accounts) => {
         const cofi = await VaultForTrader.cofiToken();
         expect(CoFi.address).equal(cofi);
 
-        const initialSupply = await VaultForTrader.INIT_SUPPLY();
-        expect(initialSupply).to.bignumber.equal(HalfSupplyOfCoFi);
-
         const currentPeriod = await VaultForTrader.currentPeriod();
         expect(currentPeriod).to.bignumber.equal("0");
 
@@ -84,23 +81,14 @@ contract('CoFiXVaultForTrader', (accounts) => {
         expect(INIT_COFI_RATE).to.bignumber.equal(currentCoFiRate);
 
         const thetaFee = web3.utils.toWei('0.01', 'ether');
-        const stdMiningAmount = await VaultForTrader.stdMiningAmount(thetaFee);
+        const {cofiRate, stdAmount} = await VaultForTrader.stdMiningRateAndAmount(thetaFee);
+        expect(cofiRate).to.bignumber.equal(currentCoFiRate);
         const expectedAmount = (new BN(thetaFee)).mul(new BN(currentCoFiRate)).div(new BN(THETA_FEE_UNIT));
-        expect(expectedAmount).to.bignumber.equal(stdMiningAmount);
+        expect(expectedAmount).to.bignumber.equal(stdAmount);
 
-        const recentYield = await VaultForTrader.recentYield();
-        expect(recentYield).to.bignumber.equal("0");
-        if (verbose) {
-            console.log(`recentYield: ${recentYield}`);
-        }
     });
 
     it("should calcLambda correctly", async () => {
-        // let x = 0;
-        // let y = 0;
-        // let lamda = await VaultForTrader.calcLambda(x, y);
-        // expect(lamda).to.bignumber.equal("50");
-
         const input = [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 10, y: 1 }, { x: 300, y: 30 },
                 { x: 300, y: 100 }, { x: 300, y: 900 }, { x: 300, y: 910 }, { x: 300, y: 3000 },
                 { x: 300, y: 30001 }, { x: 0, y: 1 }];
@@ -119,84 +107,113 @@ contract('CoFiXVaultForTrader', (accounts) => {
     });
 
     it("should have correct current stats before anything", async () => {
-        const currentCoFiLeft = await VaultForTrader.currentCoFiLeft();
-        const currentCoFiMined = await VaultForTrader.currentCoFiMined();
-        const currentS = await VaultForTrader.currentS();
+
         const thetaFee = web3.utils.toWei('0.01', 'ether');
         const x = web3.utils.toWei('10000', 'ether');
         const y = web3.utils.toWei('10000', 'ether');
-        const actualMiningAmount = await VaultForTrader.actualMiningAmount(thetaFee, x, y);
+        const actualMiningAmountAndDensity = await VaultForTrader.actualMiningAmountAndDensity(thetaFee, x, y);
         if (verbose) {
-            console.log(`currentCoFiLeft: ${currentCoFiLeft}, currentCoFiMined: ${currentCoFiMined}, currentS: ${currentS}, actualMiningAmount: ${actualMiningAmount}`);
+            console.log(`actualMiningAmount: ${actualMiningAmountAndDensity.amount}, density: ${actualMiningAmountAndDensity.density}`);
         }
-        expect(currentCoFiLeft).to.bignumber.equal("0");
-        expect(currentCoFiMined).to.bignumber.equal(HalfSupplyOfCoFi);
-        expect(currentS).to.bignumber.equal("24");
-        // uint256 ms = singleLimitM.mul(s).div(S_BASE); 50000*1e18*24/1e8=1.2E16
-        // go into Q >= ms branch
-        // O_T.mul(ms).mul(Q.mul(2).sub(ms)).mul(lambda).div(Q).div(Q);
-        // O_T * m * s * (2Q - m*s) * lambda / Q / Q
-        // (10*1E18) * (1.2E16) * (2*(10*1E18) - 1.2E16) * 1 / (10*1e18) / (10*1e18) = 2.39856E16
-        const expectedActualAmount = (10*1E18) * (1.2E16) * (2*(10*1E18) - 1.2E16) * 1 / (10*1e18) / (10*1e18);
-        expect(actualMiningAmount).to.bignumber.equal(expectedActualAmount.toString());
+        expect(actualMiningAmountAndDensity.amount).to.bignumber.equal(INIT_COFI_RATE);
+        // // uint256 ms = singleLimitM.mul(s).div(S_BASE); 50000*1e18*24/1e8=1.2E16
+        // // go into Q >= ms branch
+        // // O_T.mul(ms).mul(Q.mul(2).sub(ms)).mul(lambda).div(Q).div(Q);
+        // // O_T * m * s * (2Q - m*s) * lambda / Q / Q
+        // // (10*1E18) * (1.2E16) * (2*(10*1E18) - 1.2E16) * 1 / (10*1e18) / (10*1e18) = 2.39856E16
+        // const expectedActualAmount = (10*1E18) * (1.2E16) * (2*(10*1E18) - 1.2E16) * 1 / (10*1e18) / (10*1e18);
     });
 
-    it("should have correct current stats after sending in enough CoFi", async () => {
-        await CoFi.transfer(VaultForTrader.address, HalfSupplyOfCoFi, {from: deployer});
-        const balance = await CoFi.balanceOf(VaultForTrader.address);
-        expect(balance).to.bignumber.equal(HalfSupplyOfCoFi);
-        const currentCoFiLeft = await VaultForTrader.currentCoFiLeft();
-        const currentCoFiMined = await VaultForTrader.currentCoFiMined();
-        const currentS = await VaultForTrader.currentS();
-        const thetaFee = web3.utils.toWei('0.01', 'ether');
-        const x = web3.utils.toWei('10000', 'ether');
-        const y = web3.utils.toWei('10000', 'ether');
-        const actualMiningAmount = await VaultForTrader.actualMiningAmount(thetaFee, x, y);
-        if (verbose) {
-            console.log(`currentCoFiLeft: ${currentCoFiLeft}, currentCoFiMined: ${currentCoFiMined}, currentS: ${currentS}, actualMiningAmount: ${actualMiningAmount}`);
-        }
-        expect(currentCoFiLeft).to.bignumber.equal(HalfSupplyOfCoFi);
-        expect(currentCoFiMined).to.bignumber.equal("0");
-        expect(currentS).to.bignumber.equal((1e8).toString()); // 1 * 1e8
-        expect(actualMiningAmount).to.bignumber.equal(INIT_COFI_RATE);
-    });
-
-    it("should revert if distributeTradingReward by NON ROUTER_1", async () => {
-        const thetaFee = web3.utils.toWei('0.01', 'ether');
-        const x = web3.utils.toWei('10000', 'ether');
-        const y = web3.utils.toWei('10000', 'ether');
-        const mineTo = ROUTER_2;
-        await expectRevert(VaultForTrader.distributeTradingReward(thetaFee, x, y, mineTo, { from: ROUTER_2 }), "CVaultForTrader: not allowed router");
-    });
-
-    it("should distributeTradingReward correctly by ROUTER_1", async () => {
+    it("should revert if not set VaultForTrader as minter of CoFi", async () => {
         const thetaFee = web3.utils.toWei('0.01', 'ether');
         const x = web3.utils.toWei('10000', 'ether');
         const y = web3.utils.toWei('10000', 'ether');
         const mineTo = ROUTER_1;
-        await VaultForTrader.distributeTradingReward(thetaFee, x, y, mineTo, { from: ROUTER_1 });
+        await expectRevert(VaultForTrader.distributeReward(thetaFee, x, y, mineTo, { from: ROUTER_1 }), "CoFi: !minter");
+    });
+
+    it("should add VaultForTrader as minter of CoFi correctly", async () => {
+        const receipt = await CoFi.addMinter(VaultForTrader.address, {from: governance});
+        expectEvent(receipt, "MinterAdded", {_minter: VaultForTrader.address});
+        const allowed = await CoFi.minters(VaultForTrader.address);
+        expect(allowed).equal(true);
+    });
+
+    it("should revert if distributeReward by NON ROUTER_1", async () => {
+        const thetaFee = web3.utils.toWei('0.01', 'ether');
+        const x = web3.utils.toWei('10000', 'ether');
+        const y = web3.utils.toWei('10000', 'ether');
+        const mineTo = ROUTER_2;
+        await expectRevert(VaultForTrader.distributeReward(thetaFee, x, y, mineTo, { from: ROUTER_2 }), "CVaultForTrader: not allowed router");
+    });
+
+    it("should distributeReward correctly by ROUTER_1", async () => {
+        const thetaFee = web3.utils.toWei('0.01', 'ether');
+        const x = web3.utils.toWei('10000', 'ether');
+        const y = web3.utils.toWei('10000', 'ether');
+        const mineTo = ROUTER_1;
+        await VaultForTrader.distributeReward(thetaFee, x, y, mineTo, { from: ROUTER_1 });
         const cofiBalanceOfRouter1 = await CoFi.balanceOf(ROUTER_1);
-        const cofiBalanceOfVault = await CoFi.balanceOf(VaultForTrader.address);
         if (verbose) {
-            console.log(`cofiBalanceOfRouter1: ${cofiBalanceOfRouter1}, cofiBalanceOfVault: ${cofiBalanceOfVault}`);
+            console.log(`cofiBalanceOfRouter1: ${cofiBalanceOfRouter1}`);
         }
         const expectedReward = INIT_COFI_RATE;
         expect(cofiBalanceOfRouter1).to.bignumber.equal(expectedReward);
-        expect(cofiBalanceOfVault).to.bignumber.equal((new BN(HalfSupplyOfCoFi)).sub(new BN(cofiBalanceOfRouter1)));
     });
 
-    it("should distributeTradingReward repeatedly and correctly by ROUTER_1", async () => {
+    it("should distributeReward repeatedly and correctly by ROUTER_1", async () => {
         const thetaFee = web3.utils.toWei('0.01', 'ether');
         const x = web3.utils.toWei('10000', 'ether');
         const y = web3.utils.toWei('10000', 'ether');
         const mineTo = ROUTER_1;
         
-        for (let i = 0; i < 5; i++) {
-            await VaultForTrader.distributeTradingReward(thetaFee, x, y, mineTo, { from: ROUTER_1 });
+        for (let i = 0; i < 5; i++) { // for gas cost statistics
+            const {cofiRate, stdAmount} = await VaultForTrader.stdMiningRateAndAmount(thetaFee);
+            const density = await VaultForTrader.calcDensity(stdAmount);
+            const actual = await VaultForTrader.actualMiningAmountAndDensity(thetaFee, x, y);
+            await VaultForTrader.distributeReward(thetaFee, x, y, mineTo, { from: ROUTER_1 });
             const cofiBalanceOfRouter1 = await CoFi.balanceOf(ROUTER_1);
             const cofiBalanceOfVault = await CoFi.balanceOf(VaultForTrader.address);
             if (verbose) {
-                console.log(`index: ${i}, cofiBalanceOfRouter1: ${cofiBalanceOfRouter1}, cofiBalanceOfVault: ${cofiBalanceOfVault}`);
+                console.log(`index: ${i}, cofiRate: ${cofiRate}, stdAmount: ${stdAmount}, density: ${density}, actualAmount: ${actual.amount}, cofiBalanceOfRouter1: ${cofiBalanceOfRouter1}, cofiBalanceOfVault: ${cofiBalanceOfVault}, density decay ratio: ${stdAmount/actual.amount}`);
+            }
+        }
+    });
+
+    it("should distributeReward repeatedly and correctly by ROUTER_1 when thetaFee is 100 ether", async () => {
+        const thetaFee = web3.utils.toWei('100', 'ether');
+        const x = web3.utils.toWei('10000', 'ether');
+        const y = web3.utils.toWei('10000', 'ether');
+        const mineTo = ROUTER_1;
+        
+        for (let i = 0; i < 5; i++) { // for gas cost statistics
+            const {cofiRate, stdAmount} = await VaultForTrader.stdMiningRateAndAmount(thetaFee);
+            const density = await VaultForTrader.calcDensity(stdAmount);
+            const actual = await VaultForTrader.actualMiningAmountAndDensity(thetaFee, x, y);
+            await VaultForTrader.distributeReward(thetaFee, x, y, mineTo, { from: ROUTER_1 });
+            const cofiBalanceOfRouter1 = await CoFi.balanceOf(ROUTER_1);
+            const cofiBalanceOfVault = await CoFi.balanceOf(VaultForTrader.address);
+            if (verbose) {
+                console.log(`index: ${i}, cofiRate: ${cofiRate}, stdAmount: ${stdAmount}, density: ${density}, actualAmount: ${actual.amount}, cofiBalanceOfRouter1: ${cofiBalanceOfRouter1}, cofiBalanceOfVault: ${cofiBalanceOfVault}, density decay ratio: ${stdAmount/actual.amount}`);
+            }
+        }
+    });
+
+    it("should distributeReward repeatedly and correctly by ROUTER_1 when thetaFee is large", async () => {
+        const thetaFee = web3.utils.toWei('101', 'ether');
+        const x = web3.utils.toWei('10000', 'ether');
+        const y = web3.utils.toWei('10000', 'ether');
+        const mineTo = ROUTER_1;
+        
+        for (let i = 0; i < 5; i++) { // for gas cost statistics
+            const {cofiRate, stdAmount} = await VaultForTrader.stdMiningRateAndAmount(thetaFee);
+            const density = await VaultForTrader.calcDensity(stdAmount);
+            const actual = await VaultForTrader.actualMiningAmountAndDensity(thetaFee, x, y);
+            await VaultForTrader.distributeReward(thetaFee, x, y, mineTo, { from: ROUTER_1 });
+            const cofiBalanceOfRouter1 = await CoFi.balanceOf(ROUTER_1);
+            const cofiBalanceOfVault = await CoFi.balanceOf(VaultForTrader.address);
+            if (verbose) {
+                console.log(`index: ${i}, cofiRate: ${cofiRate}, stdAmount: ${stdAmount}, density: ${density}, actualAmount: ${actual.amount}, cofiBalanceOfRouter1: ${cofiBalanceOfRouter1}, cofiBalanceOfVault: ${cofiBalanceOfVault}, density decay ratio: ${stdAmount/actual.amount}`);
             }
         }
     });

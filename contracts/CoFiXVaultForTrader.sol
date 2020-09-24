@@ -27,7 +27,7 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader {
 
     uint256 public thetaFeeUnit = 0.01 ether;
 
-    uint256 public singleLimitK = 50000*1e18;
+    uint256 public singleLimitK = 100*1e18;
 
     uint256 public constant RECENT_RANGE = 300;
 
@@ -84,7 +84,7 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader {
     }
 
     function currentThreshold(uint256 cofiRate) public override view returns (uint256) {
-        return singleLimitK.mul(cofiRate);
+        return singleLimitK.mul(cofiRate).div(thetaFeeUnit);
     }
 
     function stdMiningRateAndAmount(uint256 thetaFee) public override view returns (uint256 cofiRate, uint256 stdAmount) {
@@ -128,28 +128,27 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader {
         }
     }
 
-    function actualMiningAmount(uint256 thetaFee, uint256 x, uint256 y) public override view returns (uint256) {
+    function actualMiningAmountAndDensity(uint256 thetaFee, uint256 x, uint256 y) public override view returns (uint256 amount, uint256 density) {
         (uint256 cofiRate, uint256 O_T) = stdMiningRateAndAmount(thetaFee);
-        uint256 O_recent = calcDensity(O_T);
-        uint256 Q = O_T.add(O_recent);
+        density = calcDensity(O_T);
+        uint256 Q = O_T.add(density);
         uint256 lambda = calcLambda(x, y);
         uint256 th = currentThreshold(cofiRate); // threshold of mining rewards amount
         if (Q <= th) {
-            return O_T.mul(lambda).div(LAMBDA_BASE);
-        } else {
-            // O_T * th * (2Q - th) * lambda / (Q * Q)
-            uint256 numerator = O_T.mul(th).mul(Q.mul(2).sub(th)).mul(lambda);
-            return numerator.div(Q).div(Q).div(LAMBDA_BASE);
+            return (O_T.mul(lambda).div(LAMBDA_BASE), density);
         }
+        // O_T * th * (2Q - th) * lambda / (Q * Q)
+        uint256 numerator = O_T.mul(th).mul(Q.mul(2).sub(th)).mul(lambda);
+        return (numerator.div(Q).div(Q).div(LAMBDA_BASE), density);
     }
 
     function distributeReward(uint256 thetaFee, uint256 x, uint256 y, address mineTo) external override {
         require(routerAllowed[msg.sender] == true, "CVaultForTrader: not allowed router");  // caution: be careful when adding new router
 
-        uint256 amount = actualMiningAmount(thetaFee, x, y);
+        (uint256 amount, uint256 density) = actualMiningAmountAndDensity(thetaFee, x, y);
 
         // TODO: update lastDensity & lastUpdateBlock
-        lastDensity = amount;
+        lastDensity = density;
         lastMinedBlock = block.number; // TODO: only write when not equal
 
         // TODO: update pending rewards for CNode pool and LP pool

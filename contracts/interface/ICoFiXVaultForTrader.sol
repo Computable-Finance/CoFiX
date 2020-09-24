@@ -27,7 +27,7 @@ interface ICoFiXVaultForTrader {
 
     function calcLambda(uint256 x, uint256 y) external pure returns (uint256);
 
-    function actualMiningAmount(uint256 thetaFee, uint256 x, uint256 y) external view returns (uint256);
+    function actualMiningAmountAndDensity(uint256 thetaFee, uint256 x, uint256 y) external view returns (uint256 amount, uint256 density);
 
     function distributeReward(uint256 thetaFee, uint256 x, uint256 y, address mineTo) external;
 

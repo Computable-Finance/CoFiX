@@ -108,7 +108,7 @@ contract CoFiXController is ICoFiXController {
     function addCaller(address caller) external override {
         require(msg.sender == factory || msg.sender == governance, "CoFiXCtrl: only factory or gov");
         callerAllowed[caller] = true;
-    }  
+    }
 
     // We can make use of `data` bytes in the future
     function queryOracle(address token, bytes memory /*data*/) external override payable returns (uint256 _k, uint256, uint256, uint256, uint256) {

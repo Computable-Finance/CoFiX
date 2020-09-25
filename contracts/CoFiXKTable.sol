@@ -10,7 +10,7 @@ contract CoFiXKTable is ICoFiXKTable {
 
     address public governance;
 
-    int128[20][91] public k0Table; // sigmaIdx (0~29), tIdx (0~90)
+    int128[20][91] public k0Table; // sigmaIdx (0~20), tIdx (0~90)
 
     modifier onlyGovernance() {
         require(msg.sender == governance, "CKTable: !governance");

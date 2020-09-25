@@ -12,15 +12,6 @@ interface ICoFiXPair is ICoFiXERC20 {
         uint256 K;
         uint256 theta;
     }
-    
-    // struct TradeInfo {
-    //     uint256 amountIn;
-    //     uint256 amountOut;
-    //     uint256 oracleFeeChange;
-    //     uint256 thetaFee;
-    //     uint256 x;
-    //     uint256 y;
-    // }
 
     // All pairs: {ETH <-> ERC20 Token}
     event Mint(address indexed sender, uint amount0, uint amount1);

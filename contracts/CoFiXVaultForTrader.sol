@@ -143,15 +143,14 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
 
     function actualMiningAmountAndDensity(uint256 thetaFee, uint256 x, uint256 y) public override view returns (uint256 amount, uint256 density) {
         (uint256 cofiRate, uint256 stdAmount) = stdMiningRateAndAmount(thetaFee);
-        density = calcDensity(stdAmount); // f
+        density = calcDensity(stdAmount); // ft
         uint256 lambda = calcLambda(x, y);
         uint256 th = currentThreshold(cofiRate); // threshold of mining rewards amount, k*at
-        // TODO: confirm, we don't include density here?
-        if (stdAmount <= th) { // we can use thetaFee vs singleLimitK here too, but just use memory results for gas saving
-            // yt<=k, yt*at * lambda, yt is thetaFee, at is cofiRate
+        if (density <= th) {
+            // ft<=k, yt*at * lambda, yt is thetaFee, at is cofiRate
             return (stdAmount.mul(lambda).div(LAMBDA_BASE), density);
         }
-        // yt>=k: yt*at * k*at * (2ft - k*at) * lambda / (ft*ft), yt*at is stdAmount, k*at is threshold
+        // ft>=k: yt*at * k*at * (2ft - k*at) * lambda / (ft*ft), yt*at is stdAmount, k*at is threshold
         uint256 numerator = stdAmount.mul(th).mul(density.mul(2).sub(th)).mul(lambda);
         return (numerator.div(density).div(density).div(LAMBDA_BASE), density);
     }

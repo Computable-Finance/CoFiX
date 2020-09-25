@@ -207,7 +207,7 @@ contract('CoFiXVaultForTrader', (accounts) => {
             if (verbose) {
                 console.log(`index: ${i}, cofiRate: ${cofiRate}, stdAmount: ${stdAmount}, density: ${density}, actualAmount: ${actual.amount}, cofiBalanceOfRouter1: ${cofiBalanceOfRouter1}, cofiBalanceOfVault: ${cofiBalanceOfVault}, density decay ratio: ${densityDecayRatio}`);
             }
-            expect(densityDecayRatio.toString()).to.bignumber.equal("1");
+            expect(densityDecayRatio.toString()).to.bignumber.above("1");
         }
     });
 

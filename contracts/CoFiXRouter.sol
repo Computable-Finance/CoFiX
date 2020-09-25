@@ -173,7 +173,7 @@ contract CoFiXRouter is ICoFiXRouter {
 
         // distribute trading rewards - CoFi!
         address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
-        if (vaultForTrader != address(0) && tradeInfo[0] > 0) {
+        if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
             ICoFiXVaultForTrader(vaultForTrader).distributeReward(pair, tradeInfo[0], tradeInfo[1], tradeInfo[2], rewardTo);
         }
 
@@ -204,7 +204,7 @@ contract CoFiXRouter is ICoFiXRouter {
 
         // distribute trading rewards - CoFi!
         address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
-        if (vaultForTrader != address(0) && tradeInfo[0] > 0) {
+        if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
             ICoFiXVaultForTrader(vaultForTrader).distributeReward(pairs[0], tradeInfo[0], tradeInfo[1], tradeInfo[2], rewardTo);
         }
 
@@ -215,7 +215,7 @@ contract CoFiXRouter is ICoFiXRouter {
         require(_amountOut >= amountOutMin, "CRouter: got less than expected");
 
         // distribute trading rewards - CoFi!
-        if (vaultForTrader != address(0) && tradeInfo[0] > 0) {
+        if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
             ICoFiXVaultForTrader(vaultForTrader).distributeReward(pairs[1], tradeInfo[0], tradeInfo[1], tradeInfo[2], rewardTo);
         }
 
@@ -245,7 +245,7 @@ contract CoFiXRouter is ICoFiXRouter {
 
         // distribute trading rewards - CoFi!
         address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
-        if (vaultForTrader != address(0) && tradeInfo[0] > 0) {
+        if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
             ICoFiXVaultForTrader(vaultForTrader).distributeReward(pair, tradeInfo[0], tradeInfo[1], tradeInfo[2], rewardTo);
         }
 
@@ -276,7 +276,7 @@ contract CoFiXRouter is ICoFiXRouter {
 
         // distribute trading rewards - CoFi!
         address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
-        if (vaultForTrader != address(0) && tradeInfo[0] > 0) {
+        if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
             ICoFiXVaultForTrader(vaultForTrader).distributeReward(pair, tradeInfo[0], tradeInfo[1], tradeInfo[2], rewardTo);
         }
 
@@ -307,7 +307,7 @@ contract CoFiXRouter is ICoFiXRouter {
 
         // distribute trading rewards - CoFi!
         address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
-        if (vaultForTrader != address(0) && tradeInfo[0] > 0) {
+        if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
             ICoFiXVaultForTrader(vaultForTrader).distributeReward(pair, tradeInfo[0], tradeInfo[1], tradeInfo[2], rewardTo);
         }
 

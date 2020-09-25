@@ -155,6 +155,26 @@ npm run genabi
 | CoFiXRouter | 0x30f1c72CfcF96c4de2e279fa256567F8ADbEf888 |
 | CoFiXVaultForLP | 0x4F6544aF9Ea4107b52D4563F16c2A660D1E7EB41 |
 
+### Beta-V0.8
+
+|       Contract       |                  Address                   |
+| :------------------: | :----------------------------------------: |
+| USDT | 0x200506568C2980B4943B5EaA8713A5740eb2c98A |
+| HBTC | 0xA674f71ce49CE7F298aea2F23D918d114965eb40 |
+| NEST | 0xD287Bc43eCD3D892204aA3792165fe8728636E29 |
+| WETH | 0x59b8881812Ac484Ab78b8fc7c10b2543e079a6C3 |
+| NestPriceOracle | 0x70B9b6F0e1E4073403cF7143b45a862fe73af3B9 |
+| CoFiXKTable | 0xe609B978635c7Bb8D22Ffc4Ec7f7a16615a3b1cA |
+| CoFiToken | 0x93c9753e638d242d1ca9EDa04962b0dEbd775D99 |
+| CNodeToken | 0x5F0025E59514c3E8c7aabbca08D46Ff01DFe483B |
+| CoFiXFactory | 0x87067A940C2c0c5B878FeB2c92bBddcc46Cebb01 |
+| CoFiXRouter | 0xfF3951f94c38812a76a9eb717A9af47391652A32 |
+| CoFiXController | 0x15192BeCf3bDA4915fc1282282a5cF384cA653c6 |
+| CoFiXVaultForLP | 0x283D7D9Ce67F26DdefC9bbcE14B08c267cbf7A2f |
+| CoFiXVaultForTrader | 0x5C8AA2C4355252E5D461aDC95f733eC2e45c63c8 |
+| CoFiXVaultForCNode | 0xAdDB1f88D9c742ACaD1a1A6fd46Baad294618aae |
+| CoFiStakingRewards | 0xfDEa9b00220C4901834dc1d9f467D8Cb52300B41 |
+
 ## Kovan Testnet
 
 ### Beta-V0.5

@@ -46,8 +46,8 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
     mapping (address => bool) public routerAllowed;
 
     // TODO: Combine to reduce write gas cost
-    uint256 public lastMinedBlock; // last block mined cofi token
-    uint256 public lastDensity; // last mining density, see currentDensity()
+    uint128 public lastMinedBlock; // last block mined cofi token
+    uint128 public lastDensity; // last mining density, see currentDensity()
 
     constructor(address cofi, address _factory) public {
         cofiToken = cofi;
@@ -87,6 +87,7 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
         return ABDKMath64x64.pow(cofiDecayRate, periodIdx); // TODO: prevent index too large
     }
 
+    // could use storage cache to reduce gas of compute, but now clear is more important
     function currentCoFiRate() public override view returns (uint256) {
         // initCoFiRate * ((cofiDecayRate)^((block.number-genesisBlock)/cofiDecayPeriod))
         int128 decayRatio = ABDKMath64x64.mul(
@@ -160,9 +161,10 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
 
         (uint256 amount, uint256 density) = actualMiningAmountAndDensity(thetaFee, x, y);
 
-        // TODO: update lastDensity & lastUpdateBlock
-        lastDensity = density;
-        lastMinedBlock = block.number; // TODO: only write when not equal
+        // gas saving, distributeReward is used in router::swap
+        require(density < 2**128, "CVaultForTrader: density overflow");
+        lastDensity = uint128(density); // safe convert from uint256 to uint128
+        lastMinedBlock = uint128(block.number); // uint128 is enough for block.number
 
         // TODO: think about add a mint role check, to ensure this call never fail?
         uint256 amountForTrader = amount.mul(SHARE_FOR_TRADER).div(SHARE_BASE);

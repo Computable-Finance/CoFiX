@@ -98,7 +98,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
 
         uint256 _ethBalanceBefore = address(this).balance;
         { // scope for ethAmount/erc20Amount/blockNum to avoid stack too deep error
-            bytes memory data = abi.encodePacked(msg.sender, to);
+            bytes memory data = abi.encode(msg.sender, to);
             // query price
             OraclePrice memory _op;
             (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = _queryOracle(_token1, CoFiX_OP.MINT, data);
@@ -127,7 +127,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         uint256 _ethBalanceBefore = address(this).balance;
         uint256 fee;
         {
-            bytes memory data = abi.encodePacked(msg.sender, outToken, to);
+            bytes memory data = abi.encode(msg.sender, outToken, to);
             // query price
             OraclePrice memory _op;
             (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = _queryOracle(_token1, CoFiX_OP.BURN, data);
@@ -171,7 +171,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         // uint256 fee;
         { // scope for ethAmount/erc20Amount/blockNum to avoid stack too deep error
             uint256 _ethBalanceBefore = address(this).balance;
-            bytes memory data = abi.encodePacked(msg.sender, outToken, to);
+            bytes memory data = abi.encode(msg.sender, outToken, to);
             // query price
             OraclePrice memory _op;
             (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = _queryOracle(_token1, CoFiX_OP.SWAP_WITH_EXACT, data);
@@ -223,7 +223,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
 
         { // scope for ethAmount/erc20Amount/blockNum to avoid stack too deep error
             uint256 _ethBalanceBefore = address(this).balance;
-            bytes memory data = abi.encodePacked(msg.sender, outToken, amountOutExact, to);
+            bytes memory data = abi.encode(msg.sender, outToken, amountOutExact, to);
             // query price
             (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = _queryOracle(_token1, CoFiX_OP.SWAP_FOR_EXACT, data);
             oracleFeeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));

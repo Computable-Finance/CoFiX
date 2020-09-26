@@ -45,7 +45,6 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
     mapping(address => uint256) public pendingRewardsForLP; // pair address to pending rewards amount
     mapping (address => bool) public routerAllowed;
 
-    // TODO: Combine to reduce write gas cost
     uint128 public lastMinedBlock; // last block mined cofi token
     uint128 public lastDensity; // last mining density, see currentDensity()
 

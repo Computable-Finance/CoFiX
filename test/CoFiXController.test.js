@@ -80,7 +80,7 @@ contract('CoFiXController', (accounts) => {
     it("should revert if not activated", async () => {
       // add caller
       await CoFiXCtrl.addCaller(deployer, { from: deployer });
-      await expectRevert(CoFiXCtrl.queryOracle(Token.address, deployer, { from: deployer, value: _msgValue }), "oracleMock: not activeted yet");
+      await expectRevert(CoFiXCtrl.queryOracle(Token.address, "0", deployer, { from: deployer, value: _msgValue }), "oracleMock: not activeted yet");
     });
 
     it("should activate nest oracle correctly", async () => {
@@ -123,7 +123,7 @@ contract('CoFiXController', (accounts) => {
       // add caller
       await tmpController.addCaller(deployer, { from: deployer });
 
-      let result = await tmpController.queryOracle(Token.address, deployer, { from: deployer, value: _msgValue });
+      let result = await tmpController.queryOracle(Token.address, "0", deployer, { from: deployer, value: _msgValue });
       console.log("queryOracle> receipt.gasUsed:", result.receipt.gasUsed);
       // let evtArgs0 = result.receipt.logs[0].args;
       // printKInfoEvent(evtArgs0);
@@ -155,7 +155,7 @@ contract('CoFiXController', (accounts) => {
       for (let i = 0; i < max_interval_block - 3; i++) {
         await time.advanceBlock();
       }
-      let result = await tmpController.queryOracle(Token.address, deployer, { from: deployer, value: _msgValue });
+      let result = await tmpController.queryOracle(Token.address, "0", deployer, { from: deployer, value: _msgValue });
       console.log("queryOracle> receipt.gasUsed:", result.receipt.gasUsed);
       if (result.receipt.logs[0]) {
         let evtArgs0 = result.receipt.logs[0].args;
@@ -164,12 +164,12 @@ contract('CoFiXController', (accounts) => {
 
       await time.increase(time.duration.minutes(5)); // increase time to make activation be effective
       // await expectRevert(tmpController.queryOracle(Token.address, deployer, { from: deployer, value: _msgValue }), "CoFiXCtrl: K");
-      await expectRevert.unspecified(tmpController.queryOracle(Token.address, deployer, { from: deployer, value: _msgValue }));
+      await expectRevert.unspecified(tmpController.queryOracle(Token.address, "0", deployer, { from: deployer, value: _msgValue }));
     });
 
     it("should revert if someone not allowed calling queryOracle", async () => {
       await constOracle.feedPrice(Token.address, ethAmount, tokenAmount, { from: deployer });
-      await expectRevert(tmpController.queryOracle(Token.address, deployer, { from: callerNotAllowed, value: _msgValue }), "CoFiXCtrl: caller not allowed");
+      await expectRevert(tmpController.queryOracle(Token.address, "0", deployer, { from: callerNotAllowed, value: _msgValue }), "CoFiXCtrl: caller not allowed");
     });
   });
 
@@ -205,11 +205,11 @@ contract('CoFiXController', (accounts) => {
     let _msgValue = web3.utils.toWei('0.01', 'ether');
 
     it("should revert if not price available", async () => {
-      await expectRevert(CoFiXCtrl.queryOracle(Token.address, deployer, { from: deployer, value: _msgValue }), "oracleMock: num too large");
+      await expectRevert(CoFiXCtrl.queryOracle(Token.address, "0", deployer, { from: deployer, value: _msgValue }), "oracleMock: num too large");
     });
 
     it("should revert if no enough oracle fee provided", async () => {
-      await expectRevert(CoFiXCtrl.queryOracle(Token.address, deployer, { from: deployer, value: web3.utils.toWei('0.009', 'ether') }), "oracleMock: insufficient oracle fee");
+      await expectRevert(CoFiXCtrl.queryOracle(Token.address, "0", deployer, { from: deployer, value: web3.utils.toWei('0.009', 'ether') }), "oracleMock: insufficient oracle fee");
     });
   });
 

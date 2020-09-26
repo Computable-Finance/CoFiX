@@ -66,7 +66,7 @@ module.exports = async function (callback) {
 
         // queryOracle
         const _msgValue = web3.utils.toWei('0.01', 'ether');
-        let result = await CoFiXCtrl.queryOracle(Token.address, argv.account, { value: _msgValue });
+        let result = await CoFiXCtrl.queryOracle(Token.address, "0", argv.account, { value: _msgValue });
         console.log("receipt.gasUsed:", result.receipt.gasUsed); // 494562
         let evtArgs0 = result.receipt.logs[0].args;
         printKInfoEvent(evtArgs0);

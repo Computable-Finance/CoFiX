@@ -13,7 +13,9 @@ import "./interface/ICoFiXController.sol";
 contract CoFiXController is ICoFiXController {
 
     using SafeMath for uint256;
-    
+
+    enum CoFiX_OP { QUERY, MINT, BURN, SWAP_WITH_EXACT, SWAP_FOR_EXACT } // operations in CoFiX
+
     uint256 constant public AONE = 1 ether;
     uint256 constant public K_BASE = 1E8;
     uint256 constant internal TIMESTAMP_MODULUS = 2**32;
@@ -115,7 +117,8 @@ contract CoFiXController is ICoFiXController {
     // We use expected value of K based on statistical calculations here to save gas
     // In the future, NEST could provide the variance of price directly. We can adopt it then.
     // We can make use of `data` bytes in the future
-    function queryOracle(address token, bytes memory /*data*/) external override payable returns (uint256 _k, uint256, uint256, uint256, uint256) {
+    function queryOracle(address token, uint8 /*op*/, bytes memory /*data*/) external override payable returns (uint256 _k, uint256, uint256, uint256, uint256) {
+        // CoFiX_OP cop = CoFiX_OP(op);
         require(callerAllowed[msg.sender], "CoFiXCtrl: caller not allowed");
         return getLatestPrice(token);
     }

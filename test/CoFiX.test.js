@@ -128,7 +128,7 @@ contract('CoFiX', (accounts) => {
 
             // let gas = await CoFiXCtrl.methods['queryOracle(address,address)'].estimateGas(USDT.address, deployer, { from: deployer })
             // console.log("estimateGas:", gas.toString())
-            let result = await CoFiXCtrl.queryOracle(USDT.address, deployer, { from: deployer, value: _msgValue });
+            let result = await CoFiXCtrl.queryOracle(USDT.address, "0", deployer, { from: deployer, value: _msgValue });
             console.log("USDT>receipt.gasUsed:", result.receipt.gasUsed); // 494562
             // let evtArgs0 = result.receipt.logs[0].args;
             // printKInfoEvent(evtArgs0);
@@ -143,7 +143,7 @@ contract('CoFiX', (accounts) => {
             priceLen = await PriceOracle.getPriceLength(USDT.address);
             console.log("USDT>priceLen:", priceLen.toString(), ", tokenAmount:", usdtAmount.toString());
             expect(priceLen).to.bignumber.equal(new BN("100"));
-            result = await CoFiXCtrl.queryOracle(USDT.address, deployer, { from: deployer, value: _msgValue });
+            result = await CoFiXCtrl.queryOracle(USDT.address, "0", deployer, { from: deployer, value: _msgValue });
             console.log("USDT>receipt.gasUsed:", result.receipt.gasUsed); // 544914
             if (result.receipt.logs[0]) {
                 evtArgs0 = result.receipt.logs[0].args;

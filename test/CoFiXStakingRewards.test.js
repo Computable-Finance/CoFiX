@@ -27,8 +27,9 @@ contract('CoFiXStakingRewards', (accounts) => {
         CFactory = await CoFiXFactory.new(WETH.address, { from: deployer });
         CoFi = await CoFiToken.new({ from: deployer });
         VaultForLP = await CoFiXVaultForLP.new(CoFi.address, CFactory.address, { from: deployer });
+        await CFactory.setVaultForLP(VaultForLP.address);
         XToken = await TestXToken.new({ from: deployer });
-        StakingRewards = await CoFiXStakingRewards.new(CoFi.address, XToken.address, VaultForLP.address, { from: deployer });
+        StakingRewards = await CoFiXStakingRewards.new(CoFi.address, XToken.address, CFactory.address, { from: deployer });
     });
 
     it("should add VaultForLP as minter of CoFi correctly", async () => {
@@ -207,14 +208,14 @@ contract('CoFiXStakingRewards', (accounts) => {
 
     // addPoolForPair, keep this test at the end so we don't need to change the tests before
     it("should revert if add two pool with the same pair (XToken)", async () => {
-        const StakingRewards2 = await CoFiXStakingRewards.new(CoFi.address, XToken.address, VaultForLP.address, { from: deployer });
+        const StakingRewards2 = await CoFiXStakingRewards.new(CoFi.address, XToken.address, CFactory.address, { from: deployer });
         await VaultForLP.addPoolForPair(StakingRewards2.address, {from: governance});
         const stakingPool = await VaultForLP.stakingPoolForPair(XToken.address);
         expect(stakingPool).equal(StakingRewards2.address);
     });
 
     it("should revert if add two pool with the same pair (XToken)", async () => {
-        const StakingRewards3 = await CoFiXStakingRewards.new(CoFi.address, XToken.address, VaultForLP.address, { from: deployer });
+        const StakingRewards3 = await CoFiXStakingRewards.new(CoFi.address, XToken.address, CFactory.address, { from: deployer });
         await expectRevert(VaultForLP.addPoolForPair(StakingRewards3.address, {from: governance}), "CVaultForLP: pair added");
     });
 });

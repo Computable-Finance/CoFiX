@@ -6,6 +6,10 @@ pragma solidity 0.6.12;
 interface ICoFiXStakingRewards {
     // Views
 
+    /// @dev The rewards vault contract address set in factory contract
+    /// @return Returns the vault address
+    function rewardsVault() external view returns (address);
+
     /// @dev The lastBlock reward applicable
     /// @return Returns the latest block.number on-chain
     function lastBlockRewardApplicable() external view returns (uint256);

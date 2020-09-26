@@ -10,7 +10,7 @@ import "./interface/ICoFiXStakingRewards.sol";
 import "./interface/ICoFiXVaultForLP.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interface/ICoFiStakingRewards.sol";
-
+import "./interface/ICoFiXFactory.sol";
 
 // Stake XToken to earn CoFi Token
 contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
@@ -20,7 +20,8 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
 
     address public override rewardsToken; // CoFi
     address public override stakingToken; // XToken or CNode
-    address public cofixVault;
+
+    address public factory;
 
     uint256 public lastUpdateBlock;
     uint256 public rewardPerTokenStored;
@@ -36,15 +37,21 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
     constructor(
         address _rewardsToken,
         address _stakingToken,
-        address _cofixVault
+        address _factory
     ) public {
         rewardsToken = _rewardsToken;
         stakingToken = _stakingToken;
-        cofixVault = _cofixVault;
+        require(ICoFiXFactory(_factory).getVaultForLP() != address(0), "VaultForLP not set yet"); // check
+        factory = _factory;
         lastUpdateBlock = block.number;        
     }
 
     /* ========== VIEWS ========== */
+
+    // replace cofixVault with rewardsVault, this could introduce more calls, but clear is more important 
+    function rewardsVault() public virtual override view returns (address) {
+        return ICoFiXFactory(factory).getVaultForLP();
+    }
 
     function totalSupply() external override view returns (uint256) {
         return _totalSupply;
@@ -82,14 +89,15 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
     }
 
     function rewardRate() public virtual override view returns (uint256) {
-        return ICoFiXVaultForLP(cofixVault).currentPoolRate();
+        return ICoFiXVaultForLP(rewardsVault()).currentPoolRate();
     }
 
     function accrued() public virtual override view returns (uint256) {
-        // TODO: collect pending reward from Trader pool
+        // calc block rewards
         uint256 blockReward = lastBlockRewardApplicable().sub(lastUpdateBlock).mul(rewardRate());
-        uint256 tradingReward = ICoFiXVaultForLP(cofixVault).getPendingRewardOfLP(stakingToken); // pair trading rewards
-        return blockReward.add(tradingReward); // TODO: handle the last mining issue
+        // query pair trading rewards
+        uint256 tradingReward = ICoFiXVaultForLP(rewardsVault()).getPendingRewardOfLP(stakingToken);
+        return blockReward.add(tradingReward);
     }
 
     function earned(address account) public override view returns (uint256) {
@@ -148,7 +156,7 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
         uint256 reward = rewards[msg.sender];
         if (reward > 0) {
             rewards[msg.sender] = 0;
-            address cofiStakingPool = ICoFiXVaultForLP(cofixVault).getCoFiStakingPool(); // also work for VaultForCNode
+            address cofiStakingPool = ICoFiXVaultForLP(rewardsVault()).getCoFiStakingPool(); // also work for VaultForCNode
             require(cofiStakingPool != address(0), "cofiStakingPool not set");
             // approve to staking pool
             address _rewardsToken = rewardsToken;
@@ -169,7 +177,7 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
         // transfer from caller (router contract)
         TransferHelper.safeTransferFrom(rewardsToken, msg.sender, address(this), amount);
         // update rewardPerTokenStored
-        rewardPerTokenStored = rewardPerTokenStored.add(amount.mul(1e18).div(_totalSupply)); // TODO: confirm 1e18 is enough for amount
+        rewardPerTokenStored = rewardPerTokenStored.add(amount.mul(1e18).div(_totalSupply));
         emit RewardAdded(msg.sender, amount);
     }
 
@@ -193,7 +201,7 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
         if (newAccrued > 0) {
             // distributeReward could fail if CoFiXVaultForLP is not minter of CoFi anymore
             // Should set reward rate to zero first, and then do a settlement of pool reward by call getReward
-            ICoFiXVaultForLP(cofixVault).distributeReward(address(this), newAccrued);
+            ICoFiXVaultForLP(rewardsVault()).distributeReward(address(this), newAccrued);
         } 
         lastUpdateBlock = lastBlockRewardApplicable();
         if (account != address(0)) {

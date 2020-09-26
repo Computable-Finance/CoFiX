@@ -463,11 +463,10 @@ contract('CoFiX', (accounts) => {
             console.log("user balance HBTC:", hbtcUserBalance.toString());
         });
 
-
         it("should addPoolForPair correctly", async () => {
             let usdtPairAddr = await CFactory.getPair(USDT.address);
             let USDTPair = await CoFiXPair.at(usdtPairAddr);
-            const StakingRewards = await CoFiXStakingRewards.new(CoFi.address, USDTPair.address, VaultForLP.address, { from: deployer });
+            const StakingRewards = await CoFiXStakingRewards.new(CoFi.address, USDTPair.address, CFactory.address, { from: deployer });
 
             await VaultForLP.addPoolForPair(StakingRewards.address, {from: deployer});
             const allowed = await VaultForLP.poolAllowed(StakingRewards.address);

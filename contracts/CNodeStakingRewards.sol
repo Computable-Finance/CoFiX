@@ -12,22 +12,30 @@ contract CNodeStakingRewards is CoFiXStakingRewards {
     constructor(
         address _rewardsToken,
         address _stakingToken,
-        address _cofixVault
+        address _factory
     ) public CoFiXStakingRewards(
         _rewardsToken,
         _stakingToken,
-        _cofixVault
-    ) {}
+        _factory
+    ) {
+        require(ICoFiXFactory(_factory).getVaultForCNode() != address(0), "VaultForCNode not set yet"); // check
+    }
+
+    // replace cofixVault with rewardsVault, this could introduce more calls, but clear is more important 
+    function rewardsVault() public virtual override view returns (address) {
+        return ICoFiXFactory(factory).getVaultForCNode();
+    }
 
     function rewardRate() public virtual override view returns (uint256) {
-        return ICoFiXVaultForCNode(cofixVault).currentCoFiRate();
+        return ICoFiXVaultForCNode(rewardsVault()).currentCoFiRate();
     }
 
     function accrued() public virtual override view returns (uint256) {
-        // TODO: collect pending reward from Trader pool
+        // calc block rewards
         uint256 blockReward = lastBlockRewardApplicable().sub(lastUpdateBlock).mul(rewardRate());
-        uint256 tradingReward = ICoFiXVaultForCNode(cofixVault).getPendingRewardOfCNode(); // trading rewards
-        return blockReward.add(tradingReward); // TODO: handle the last mining issue
+        // query pair trading rewards
+        uint256 tradingReward = ICoFiXVaultForCNode(rewardsVault()).getPendingRewardOfCNode(); // trading rewards
+        return blockReward.add(tradingReward);
     }
 
     modifier updateReward(address account) virtual override {
@@ -38,7 +46,7 @@ contract CNodeStakingRewards is CoFiXStakingRewards {
         if (newAccrued > 0) {
             // distributeReward could fail if CoFiXVaultForCNode is not minter of CoFi anymore
             // Should set reward rate to zero first, and then do a settlement of pool reward by call getReward
-            ICoFiXVaultForCNode(cofixVault).distributeReward(address(this), newAccrued);
+            ICoFiXVaultForCNode(rewardsVault()).distributeReward(address(this), newAccrued);
         } 
         lastUpdateBlock = lastBlockRewardApplicable();
         if (account != address(0)) {

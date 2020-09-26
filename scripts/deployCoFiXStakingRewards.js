@@ -7,6 +7,7 @@ const Decimal = require('decimal.js');
 const CoFiToken = artifacts.require("CoFiToken");
 const TestXToken = artifacts.require("TestXToken");
 const CoFiXVaultForLP = artifacts.require("CoFiXVaultForLP");
+const CoFiXFactory = artifacts.require("CoFiXFactory");
 const CoFiXStakingRewards = artifacts.require("CoFiXStakingRewards.sol");
 
 
@@ -15,13 +16,18 @@ const argv = require('yargs').argv;
 module.exports = async function (callback) {
 
     try {
-        console.log(`argv> cofi=${argv.cofi}, xtoken=${argv.xtoken}, vault=${argv.vault}, addpool=${argv.addpool}`);
+        console.log(`argv> cofi=${argv.cofi}, xtoken=${argv.xtoken}, factory=${argv.factory}, addpool=${argv.addpool}`);
 
         CoFi = await CoFiToken.at(argv.cofi);
         XToken = await TestXToken.at(argv.xtoken);
-        VaultForLP = await CoFiXVaultForLP.at(argv.vault);
+        CoFiXFactory = await CoFiXFactory.at(argv.factory);
 
-        StakingRewards = await CoFiXStakingRewards.new(CoFi.address, XToken.address, VaultForLP.address);
+        const vaultForLP = await CoFiXFactory.getVaultForLP();
+        console.log("vaultForLP:", vaultForLP);
+
+        VaultForLP = await CoFiXVaultForLP.at(vaultForLP);
+
+        StakingRewards = await CoFiXStakingRewards.new(CoFi.address, XToken.address, CoFiXFactory.address);
     
         console.log("new CoFiXStakingRewards deployed at:", StakingRewards.address);
 

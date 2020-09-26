@@ -22,6 +22,11 @@ contract CoFiXController is ICoFiXController {
     int128 constant internal SIGMA_STEP = 0x346DC5D638865; // (0.00005*2**64).toString(16), 0.00005 as 64.64-bit fixed point
     int128 constant internal ZERO_POINT_FIVE = 0x8000000000000000; // (0.5*2**64).toString(16)
     uint256 constant internal K_EXPECTED_VALUE = 0.0025*1E8;
+    // impact cost params
+    uint256 constant internal C_BUYIN_ALPHA = 25700000000000; // α=2.570e-05*1e18
+    uint256 constant internal C_BUYIN_BETA = 854200000000; // β=8.542e-07*1e18
+    uint256 constant internal C_SELLOUT_ALPHA = 117100000000000; // α=-1.171e-04*1e18
+    uint256 constant internal C_SELLOUT_BETA = 838600000000; // β=8.386e-07*1e18
 
     mapping(address => uint32[3]) internal KInfoMap; // gas saving, index [0] is k vlaue, index [1] is updatedAt, index [2] is theta
     mapping(address => bool) public callerAllowed;
@@ -117,10 +122,63 @@ contract CoFiXController is ICoFiXController {
     // We use expected value of K based on statistical calculations here to save gas
     // In the future, NEST could provide the variance of price directly. We can adopt it then.
     // We can make use of `data` bytes in the future
-    function queryOracle(address token, uint8 /*op*/, bytes memory /*data*/) external override payable returns (uint256 _k, uint256, uint256, uint256, uint256) {
-        // CoFiX_OP cop = CoFiX_OP(op);
+    function queryOracle(address token, uint8 op, bytes memory data) external override payable returns (uint256 _k, uint256 _ethAmount, uint256 _erc20Amount, uint256 _blockNum, uint256 _theta) {
         require(callerAllowed[msg.sender], "CoFiXCtrl: caller not allowed");
-        return getLatestPrice(token);
+        (_ethAmount, _erc20Amount, _blockNum) = getLatestPrice(token);
+        CoFiX_OP cop = CoFiX_OP(op);
+        uint256 impactCost;
+        if (cop == CoFiX_OP.SWAP_WITH_EXACT) {
+            impactCost = calcImpactCostFor_SWAP_WITH_EXACT(token, data, _ethAmount, _erc20Amount);
+        } else if (cop == CoFiX_OP.SWAP_FOR_EXACT) {
+            impactCost = calcImpactCostFor_SWAP_FOR_EXACT(token, data, _ethAmount, _erc20Amount);
+        }
+        return (K_EXPECTED_VALUE.add(impactCost), _ethAmount, _erc20Amount, _blockNum, KInfoMap[token][2]);
+    }
+
+    function calcImpactCostFor_SWAP_WITH_EXACT(address token, bytes memory data, uint256 ethAmount, uint256 erc20Amount) public pure returns (uint256 impactCost) {
+        (, address outToken, , uint256 amountIn) = abi.decode(data, (address, address, address, uint256));
+        if (outToken != token) {
+            // buy in ETH, outToken is ETH, amountIn is token
+            // convert to amountIn in ETH
+            uint256 vol = uint256(amountIn).mul(ethAmount).div(erc20Amount);
+            return impactCostForBuyInETH(vol);
+        }
+        // sell out ETH, amountIn is ETH
+        return impactCostForSellOutETH(amountIn);
+    }
+
+    function calcImpactCostFor_SWAP_FOR_EXACT(address token, bytes memory data, uint256 ethAmount, uint256 erc20Amount) public pure returns (uint256 impactCost) {
+        (, address outToken, uint256 amountOutExact,) = abi.decode(data, (address, address, uint256, address));
+        if (outToken != token) {
+            // buy in ETH, outToken is ETH, amountOutExact is ETH
+            return impactCostForBuyInETH(amountOutExact);
+        }
+        // sell out ETH, amountIn is ETH, amountOutExact is token
+        // convert to amountOutExact in ETH
+        uint256 vol = uint256(amountOutExact).mul(ethAmount).div(erc20Amount);
+        return impactCostForSellOutETH(vol);
+    }
+
+    // impact cost
+    // - C = 0, if VOL < 500
+    // - C = α + β * VOL, if VOL >= 500
+
+    // α=2.570e-05，β=8.542e-07
+    function impactCostForBuyInETH(uint256 vol) public pure returns (uint256 impactCost) {
+        if (vol < 500 ether) {
+            return 0;
+        }
+        // return C_BUYIN_ALPHA.add(C_BUYIN_BETA.mul(vol).div(1e18)).mul(1e8).div(1e18);
+        return C_BUYIN_ALPHA.add(C_BUYIN_BETA.mul(vol).div(1e18)).div(1e10); // combine mul div
+    }
+
+    // α=-1.171e-04，β=8.386e-07
+    function impactCostForSellOutETH(uint256 vol) public pure returns (uint256 impactCost) {
+        if (vol < 500 ether) {
+            return 0;
+        }
+        // return (C_SELLOUT_BETA.mul(vol).div(1e18)).sub(C_SELLOUT_ALPHA).mul(1e8).div(1e18);
+        return (C_SELLOUT_BETA.mul(vol).div(1e18)).sub(C_SELLOUT_ALPHA).div(1e10); // combine mul div
     }
 
     // // We can make use of `data` bytes in the future
@@ -205,7 +263,7 @@ contract CoFiXController is ICoFiXController {
         theta = KInfoMap[token][2];
     }
 
-    function getLatestPrice(address token) internal returns (uint256 _k, uint256 _ethAmount, uint256 _erc20Amount, uint256 _blockNum, uint256 _theta) {
+    function getLatestPrice(address token) internal returns (uint256 _ethAmount, uint256 _erc20Amount, uint256 _blockNum) {
         uint256 _balanceBefore = address(this).balance;
         uint256[] memory _rawPriceList = INest_3_OfferPrice(oracle).updateAndCheckPriceList{value: msg.value}(token, 1);
         require(_rawPriceList.length == 3, "CoFiXCtrl: bad price len");
@@ -214,7 +272,8 @@ contract CoFiXController is ICoFiXController {
         require(_T < 900, "CoFiXCtrl: oralce price outdated");
         uint256 oracleFeeChange = msg.value.sub(_balanceBefore.sub(address(this).balance));
         if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
-        return (K_EXPECTED_VALUE, _rawPriceList[0], _rawPriceList[1], _rawPriceList[2], KInfoMap[token][2]);
+        return (_rawPriceList[0], _rawPriceList[1], _rawPriceList[2]);
+        // return (K_EXPECTED_VALUE, _rawPriceList[0], _rawPriceList[1], _rawPriceList[2], KInfoMap[token][2]);
     }
 
     // calc Variance, a.k.a. sigma squared

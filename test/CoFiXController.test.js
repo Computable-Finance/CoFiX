@@ -13,9 +13,10 @@ const TestNEST = artifacts.require("test/NEST");
 const CoFiXFactory = artifacts.require("CoFiXFactory");
 const CoFiXKTable = artifacts.require("CoFiXKTable");
 const WETH9 = artifacts.require("WETH9");
-
+const verbose = process.env.VERBOSE;
 
 const errorDelta = 10 ** -15;
+const ERROR_DELTA_FOR_IMPACT_COST = 10 ** -5;
 
 contract('CoFiXController', (accounts) => {
 
@@ -198,6 +199,101 @@ contract('CoFiXController', (accounts) => {
     it("should revert if oldGovernance call addCaller", async () => {
       await expectRevert(CoFiXCtrl.addCaller(oldGovernance, { from: oldGovernance }), "CoFiXCtrl: only factory");
     });
+  });
+
+  describe('impact cost', function () {
+
+    it("should impactCostForBuyInETH correctly for vol < 500 Ether", async () => {
+      const vol = web3.utils.toWei('499', 'ether');
+      const impactCost = await CoFiXCtrl.impactCostForBuyInETH(vol);
+      expect(impactCost).to.bignumber.equal("0");
+    });
+
+    it("should impactCostForSellOutETH correctly for vol < 500 Ether", async () => {
+      const vol = web3.utils.toWei('499', 'ether');
+      const impactCost = await CoFiXCtrl.impactCostForSellOutETH(vol);
+      expect(impactCost).to.bignumber.equal("0");
+    });
+
+    function impactCostForBuyInETH(volAmount) {
+      const alpha = 2.570e-05;
+      const beta = 8.542e-07;
+      const expectedImpactCost = alpha + beta * volAmount;
+      return expectedImpactCost;
+    }
+
+    function impactCostForSellOutETH(volAmount) {
+      const alpha = -1.171e-04;
+      const beta = 8.386e-07;
+      const expectedImpactCost = alpha + beta * volAmount;
+      return expectedImpactCost;
+    }    
+
+    it("should impactCostForBuyInETH correctly for vol = 500 Ether", async () => {
+      const volAmount = "500";
+      const vol = web3.utils.toWei('500', 'ether');
+      const impactCost = await CoFiXCtrl.impactCostForBuyInETH(vol);
+      const expectedImpactCost = impactCostForBuyInETH(volAmount);
+      const actualImpactCost = impactCost/1e8;
+      const error = calcRelativeDiff(expectedImpactCost.toString(), actualImpactCost.toString());
+      if (verbose) {
+        console.log(`volAmount: ${volAmount} Ether, expectedImpactCost: ${expectedImpactCost}, actualImpactCost: ${actualImpactCost}, error:${error}`);
+      }
+      assert.isAtMost(error.toNumber(), ERROR_DELTA_FOR_IMPACT_COST);
+    });
+
+    it("should impactCostForBuyInETH correctly for vol = 501 Ether", async () => {
+      const volAmount = "501";
+      const vol = web3.utils.toWei('501', 'ether');
+      const impactCost = await CoFiXCtrl.impactCostForBuyInETH(vol);
+      const expectedImpactCost = impactCostForBuyInETH(volAmount);
+      const actualImpactCost = impactCost/1e8;
+      const error = calcRelativeDiff(expectedImpactCost.toString(), actualImpactCost.toString());
+      if (verbose) {
+        console.log(`volAmount: ${volAmount} Ether, expectedImpactCost: ${expectedImpactCost}, actualImpactCost: ${actualImpactCost}, error:${error}`);
+      }
+      assert.isAtMost(error.toNumber(), ERROR_DELTA_FOR_IMPACT_COST);
+    });
+
+    it("should impactCostForBuyInETH correctly for vol = 5000 Ether", async () => {
+      const volAmount = "5000";
+      const vol = web3.utils.toWei('5000', 'ether');
+      const impactCost = await CoFiXCtrl.impactCostForBuyInETH(vol);
+      const expectedImpactCost = impactCostForBuyInETH(volAmount);
+      const actualImpactCost = impactCost/1e8;
+      const error = calcRelativeDiff(expectedImpactCost.toString(), actualImpactCost.toString());
+      if (verbose) {
+        console.log(`volAmount: ${volAmount} Ether, expectedImpactCost: ${expectedImpactCost}, actualImpactCost: ${actualImpactCost}, error:${error}`);
+      }
+      assert.isAtMost(error.toNumber(), ERROR_DELTA_FOR_IMPACT_COST);
+    });
+
+    it("should impactCostForSellOutETH correctly for vol = 500 Ether", async () => {
+      const volAmount = "500";
+      const vol = web3.utils.toWei('500', 'ether');
+      const impactCost = await CoFiXCtrl.impactCostForSellOutETH(vol);
+      const expectedImpactCost = impactCostForSellOutETH(volAmount);
+      const actualImpactCost = impactCost/1e8;
+      const error = calcRelativeDiff(expectedImpactCost.toString(), actualImpactCost.toString());
+      if (verbose) {
+        console.log(`volAmount: ${volAmount} Ether, expectedImpactCost: ${expectedImpactCost}, actualImpactCost: ${actualImpactCost}, error:${error}`);
+      }
+      assert.isAtMost(error.toNumber(), ERROR_DELTA_FOR_IMPACT_COST);
+    });
+
+    it("should impactCostForSellOutETH correctly for vol = 5000 Ether", async () => {
+      const volAmount = "5000";
+      const vol = web3.utils.toWei('5000', 'ether');
+      const impactCost = await CoFiXCtrl.impactCostForSellOutETH(vol);
+      const expectedImpactCost = impactCostForSellOutETH(volAmount);
+      const actualImpactCost = impactCost/1e8;
+      const error = calcRelativeDiff(expectedImpactCost.toString(), actualImpactCost.toString());
+      if (verbose) {
+        console.log(`volAmount: ${volAmount} Ether, expectedImpactCost: ${expectedImpactCost}, actualImpactCost: ${actualImpactCost}, error:${error}`);
+      }
+      assert.isAtMost(error.toNumber(), ERROR_DELTA_FOR_IMPACT_COST);
+    });
+
   });
 
   // move to the end to avoid unknown errors in coverage test

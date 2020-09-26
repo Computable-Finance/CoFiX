@@ -171,25 +171,29 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         // uint256 fee;
         { // scope for ethAmount/erc20Amount/blockNum to avoid stack too deep error
             uint256 _ethBalanceBefore = address(this).balance;
-            bytes memory data = abi.encode(msg.sender, outToken, to);
-            // query price
-            OraclePrice memory _op;
-            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = _queryOracle(_token1, CoFiX_OP.SWAP_WITH_EXACT, data);
             (uint112 _reserve0, uint112 _reserve1) = getReserves(); // gas savings
+            // calc amountIn
             if (outToken == _token1) {
                 amountIn = balance0.sub(_reserve0);
                 require(amountIn > 0, "CPair: wrong amount0In");
+            } else if (outToken == _token0) {
+                amountIn = balance1.sub(_reserve1);
+                require(amountIn > 0, "CPair: wrong amount1In");
+            } else {
+                revert("CPair: wrong outToken");
+            }
+            bytes memory data = abi.encode(msg.sender, outToken, to, amountIn);
+            // query price
+            OraclePrice memory _op;
+            (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = _queryOracle(_token1, CoFiX_OP.SWAP_WITH_EXACT, data);
+            if (outToken == _token1) {
                 (amountOut, tradeInfo[0]) = calcOutToken1(amountIn, _op);
                 tradeInfo[1] = _reserve0; // swap token0 for token1 out
                 tradeInfo[2] = uint256(_reserve1).mul(_op.ethAmount).div(_op.erc20Amount); // _reserve1 value as _reserve0
             } else if (outToken == _token0) {
-                amountIn = balance1.sub(_reserve1);
-                require(amountIn > 0, "CPair: wrong amount1In");
                 (amountOut, tradeInfo[0]) = calcOutToken0(amountIn, _op);
                 tradeInfo[1] = uint256(_reserve1).mul(_op.ethAmount).div(_op.erc20Amount); // _reserve1 value as _reserve0
                 tradeInfo[2] = _reserve0; // swap token1 for token0 out
-            } else {
-                revert("CPair: wrong outToken");
             }
             oracleFeeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
         }

@@ -100,7 +100,7 @@ contract CoFiXFactory is ICoFiXFactory {
     function setVaultForCNode(address _new) external override onlyGovernance {
         require(_new != address(0), "CFactory: zero addr");
         require(_new != vaultForCNode, "CFactory: same addr");
-        vaultForLP = _new;
+        vaultForCNode = _new;
         emit NewVaultForCNode(_new);
     }
 

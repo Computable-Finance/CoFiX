@@ -29,6 +29,8 @@ contract('CoFiXStakingRewards', (accounts) => {
         VaultForLP = await CoFiXVaultForLP.new(CoFi.address, CFactory.address, { from: deployer });
         await CFactory.setVaultForLP(VaultForLP.address);
         XToken = await TestXToken.new({ from: deployer });
+        const mint_amount = web3.utils.toWei('10000', 'ether');
+        await XToken.mint(deployer, mint_amount, { from: deployer });
         StakingRewards = await CoFiXStakingRewards.new(CoFi.address, XToken.address, CFactory.address, { from: deployer });
     });
 

@@ -1,11 +1,16 @@
-// SPDX-License-Identifier: UNLICENSED
-
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.6.12;
 
-import "./TestERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract TestXToken is TestERC20 {
+contract TestXToken is ERC20("TestXToken", "XT-1") {
 
-    constructor() TestERC20(10**9*10**18, "TestXToken", "XT-1", 18) public {
+    constructor() public {
     }
+
+    // ONLY TEST, NOT SAFE!
+    function mint(address _to, uint256 _amount) external {
+        _mint(_to, _amount);
+    }
+
 }

@@ -160,9 +160,9 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
     function swapWithExact(address outToken, address to)
         external
         payable override lock
-        returns (uint amountIn, uint amountOut, uint oracleFeeChange, uint256[3] memory tradeInfo)
+        returns (uint amountIn, uint amountOut, uint oracleFeeChange, uint256[4] memory tradeInfo)
     {
-        // tradeInfo[0]: thetaFee, tradeInfo[1]: x, tradeInfo[2]: y
+        // tradeInfo[0]: thetaFee, tradeInfo[1]: x, tradeInfo[2]: y, tradeInfo[3]: navps
         address _token0 = token0;
         address _token1 = token1;
         uint256 balance0 = IERC20(_token0).balanceOf(address(this));
@@ -196,6 +196,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
                 tradeInfo[2] = _reserve0; // swap token1 for token0 out
             }
             oracleFeeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
+            tradeInfo[3] = calcNAVPerShare(_reserve0, _reserve1, _op);
         }
         
         require(to != _token0 && to != _token1, "CPair: INVALID_TO");
@@ -216,9 +217,9 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
     function swapForExact(address outToken, uint amountOutExact, address to)
         external
         payable override lock
-        returns (uint amountIn, uint amountOut, uint oracleFeeChange, uint256[3] memory tradeInfo)
+        returns (uint amountIn, uint amountOut, uint oracleFeeChange, uint256[4] memory tradeInfo)
     {
-        // tradeInfo[0]: thetaFee, tradeInfo[1]: x, tradeInfo[2]: y
+        // tradeInfo[0]: thetaFee, tradeInfo[1]: x, tradeInfo[2]: y, tradeInfo[3]: navps
         address _token0 = token0;
         address _token1 = token1;
         OraclePrice memory _op;
@@ -251,6 +252,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             } else {
                 revert("CPair: wrong outToken");
             }
+            tradeInfo[3] = calcNAVPerShare(_reserve0, _reserve1, _op);
         }
 
         { // split with branch upbove to make code more clear
@@ -350,6 +352,26 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         }
     }
 
+    // calc Net Asset Value Per Share (no K)
+    // use it in this contract, for optimized gas usage
+    function calcNAVPerShare(uint256 balance0, uint256 balance1, OraclePrice memory _op) public view returns (uint256 navps) {
+        uint _totalSupply = totalSupply;
+        if (_totalSupply == 0) {
+            navps = NAVPS_BASE;
+        } else {
+            /*
+            N_{p}^{'} &= (A_{u}/P + A_{e})/S \\\\
+                      &= (\frac{A_{u}}{\frac{erc20Amount}{ethAmount}} + A_{e})/S \\\\
+                      &= (\frac{A_{u}*ethAmount}{erc20Amount}+ A_{e}) / S \\\\
+                      &= (A_{u}*ethAmount+ A_{e}*erc20Amount) / S / (erc20Amount) \\\\
+            N_{p}^{'} &= NAVPS_{BASE}*(A_{u}*ethAmount+ A_{e}*erc20Amount) / S / (erc20Amount) \\\\
+            // navps = NAVPS_BASE * ( (balance1*_op.ethAmount) + (balance0*_op.erc20Amount) ) / _totalSupply / _op.erc20Amount;
+            */
+            uint256 balance1MulEth = balance1.mul(_op.ethAmount);
+            uint256 balance0MulErc = balance0.mul(_op.erc20Amount);
+            navps = NAVPS_BASE.mul( (balance1MulEth).add(balance0MulErc) ).div(_totalSupply).div(_op.erc20Amount);
+        }
+    }
 
     // use it in this contract, for optimized gas usage
     function calcLiquidity(uint256 amount0, uint256 amount1, uint256 navps, OraclePrice memory _op) public pure returns (uint256 liquidity) {

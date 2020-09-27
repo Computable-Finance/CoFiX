@@ -25,6 +25,8 @@ interface ICoFiXVaultForLP {
     /// @return pool The pool address
     function stakingPoolForPair(address pair) external view returns (address pool);
 
+    function getPoolCnt() external view returns (uint256);
+
     function getCoFiStakingPool() external view returns (address pool);
 
 }

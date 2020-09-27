@@ -166,7 +166,7 @@ contract CoFiXRouter is ICoFiXRouter {
         address pair = pairFor(factory, token);
         assert(IWETH(WETH).transfer(pair, amountIn));
         uint oracleFeeChange; 
-        uint256[3] memory tradeInfo;
+        uint256[4] memory tradeInfo;
         (_amountIn, _amountOut, oracleFeeChange, tradeInfo) = ICoFiXPair(pair).swapWithExact{
             value: msg.value.sub(amountIn)}(token, to);
         require(_amountOut >= amountOutMin, "CRouter: got less than expected");
@@ -174,7 +174,7 @@ contract CoFiXRouter is ICoFiXRouter {
         // distribute trading rewards - CoFi!
         address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
         if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
-            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pair, tradeInfo[0], tradeInfo[1], tradeInfo[2], rewardTo);
+            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pair, tradeInfo[0], tradeInfo[1], tradeInfo[2], tradeInfo[3], rewardTo);
         }
 
         // refund oracle fee to msg.sender, if any
@@ -199,13 +199,13 @@ contract CoFiXRouter is ICoFiXRouter {
         pairs[0] = pairFor(factory, tokenIn);
         TransferHelper.safeTransferFrom(tokenIn, msg.sender, pairs[0], amountIn);
         uint oracleFeeChange;
-        uint256[3] memory tradeInfo;
+        uint256[4] memory tradeInfo;
         (_amountIn, _amountOut, oracleFeeChange, tradeInfo) = ICoFiXPair(pairs[0]).swapWithExact{value: msg.value}(WETH, address(this));
 
         // distribute trading rewards - CoFi!
         address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
         if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
-            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pairs[0], tradeInfo[0], tradeInfo[1], tradeInfo[2], rewardTo);
+            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pairs[0], tradeInfo[0], tradeInfo[1], tradeInfo[2], tradeInfo[3], rewardTo);
         }
 
         // swapExactETHForTokens
@@ -216,7 +216,7 @@ contract CoFiXRouter is ICoFiXRouter {
 
         // distribute trading rewards - CoFi!
         if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
-            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pairs[1], tradeInfo[0], tradeInfo[1], tradeInfo[2], rewardTo);
+            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pairs[1], tradeInfo[0], tradeInfo[1], tradeInfo[2], tradeInfo[3], rewardTo);
         }
 
         // refund oracle fee to msg.sender, if any
@@ -237,7 +237,7 @@ contract CoFiXRouter is ICoFiXRouter {
         address pair = pairFor(factory, token);
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountIn);
         uint oracleFeeChange; 
-        uint256[3] memory tradeInfo;
+        uint256[4] memory tradeInfo;
         (_amountIn, _amountOut, oracleFeeChange, tradeInfo) = ICoFiXPair(pair).swapWithExact{value: msg.value}(WETH, address(this));
         require(_amountOut >= amountOutMin, "CRouter: got less than expected");
         IWETH(WETH).withdraw(_amountOut);
@@ -246,7 +246,7 @@ contract CoFiXRouter is ICoFiXRouter {
         // distribute trading rewards - CoFi!
         address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
         if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
-            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pair, tradeInfo[0], tradeInfo[1], tradeInfo[2], rewardTo);
+            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pair, tradeInfo[0], tradeInfo[1], tradeInfo[2], tradeInfo[3], rewardTo);
         }
 
         // refund oracle fee to msg.sender, if any
@@ -268,7 +268,7 @@ contract CoFiXRouter is ICoFiXRouter {
         address pair = pairFor(factory, token);
         assert(IWETH(WETH).transfer(pair, amountInMax));
         uint oracleFeeChange;
-        uint256[3] memory tradeInfo;
+        uint256[4] memory tradeInfo;
         (_amountIn, _amountOut, oracleFeeChange, tradeInfo) = ICoFiXPair(pair).swapForExact{
             value: msg.value.sub(amountInMax) }(token, amountOutExact, to);
         // assert amountOutExact equals with _amountOut
@@ -277,7 +277,7 @@ contract CoFiXRouter is ICoFiXRouter {
         // distribute trading rewards - CoFi!
         address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
         if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
-            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pair, tradeInfo[0], tradeInfo[1], tradeInfo[2], rewardTo);
+            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pair, tradeInfo[0], tradeInfo[1], tradeInfo[2], tradeInfo[3], rewardTo);
         }
 
         // refund oracle fee to msg.sender, if any
@@ -298,7 +298,7 @@ contract CoFiXRouter is ICoFiXRouter {
         address pair = pairFor(factory, token);
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountInMax);
         uint oracleFeeChange; 
-        uint256[3] memory tradeInfo;
+        uint256[4] memory tradeInfo;
         (_amountIn, _amountOut, oracleFeeChange, tradeInfo) = ICoFiXPair(pair).swapForExact{
             value: msg.value}(WETH, amountOutExact, address(this));
         // assert amountOutExact equals with _amountOut
@@ -308,7 +308,7 @@ contract CoFiXRouter is ICoFiXRouter {
         // distribute trading rewards - CoFi!
         address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
         if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
-            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pair, tradeInfo[0], tradeInfo[1], tradeInfo[2], rewardTo);
+            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pair, tradeInfo[0], tradeInfo[1], tradeInfo[2], tradeInfo[3], rewardTo);
         }
 
         TransferHelper.safeTransferETH(to, amountOutExact);

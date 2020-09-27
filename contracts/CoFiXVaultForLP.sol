@@ -153,6 +153,10 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
         return pairToStakingPool[pair];
     }
 
+    function getPoolCnt() external override view returns (uint256) {
+        return allPools.length;
+    }
+
     function getCoFiStakingPool() external override view returns (address pool) {
         return ICoFiXFactory(factory).getFeeReceiver();
     }

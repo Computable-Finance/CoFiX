@@ -9,11 +9,19 @@ import "./interface/ICoFiXVaultForTrader.sol";
 import "./interface/ICoFiToken.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./interface/ICoFiXFactory.sol";
+import "./interface/ICoFiXVaultForLP.sol";
+import "./interface/ICoFiXStakingRewards.sol";
+import "./interface/ICoFiXPair.sol";
 
 // Reward Pool Controller for Trader
 // Trade to earn CoFi Token
 contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
     using SafeMath for uint256;
+
+    struct CoFiRateCache {
+        uint128 cofiRate;
+        uint128 updatedBlock;
+    }
 
     uint256 public constant RATE_BASE = 1e18;
     uint256 public constant LAMBDA_BASE = 100;
@@ -24,6 +32,14 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
     uint256 public constant SHARE_FOR_LP = 10;
     uint256 public constant SHARE_FOR_CNODE = 10;
 
+    uint256 constant public NAVPS_BASE = 1E18; // NAVPS (Net Asset Value Per Share), need accuracy
+
+    // make all of these constant, so we can reduce gas cost for swap features
+    uint256 public constant COFI_DECAY_PERIOD = 2400000; // LP pool yield decays for every 2,400,000 blocks
+    uint256 public constant THETA_FEE_UINIT = 1 ether;
+    uint256 public constant SINGLE_LIMIT_K = 100*1e18*1/1000; // K= L*theta, 100 ether * theta, theta is 0.0001, means thetaFee 0.1 ether
+    uint256 public constant COFI_RATE_UPDATE_INTERVAL = 1000;
+
     address public cofiToken;
     address public factory;
 
@@ -32,16 +48,9 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
     // managed by governance
     address public governance;
 
-    uint256 public initCoFiRate = 10*1e18; // yield per unit
-    uint256 public cofiDecayPeriod = 2400000; // yield decays for every 2,400,000 blocks
-    int128 public cofiDecayRate = 0xCCCCCCCCCCCCD000; // (0.8*2**64).toString(16), 0.8 as 64.64-bit fixed point
-
-    uint256 public thetaFeeUnit = 0.01 ether;
-
-    uint256 public singleLimitK = 100*1e18;
-
     uint256 public pendingRewardsForCNode;
 
+    mapping (address => CoFiRateCache) internal cofiRateCache;
     mapping(address => uint256) public pendingRewardsForLP; // pair address to pending rewards amount
     mapping (address => bool) public routerAllowed;
 
@@ -75,35 +84,60 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
         emit RouterDisallowed(router);
     }
 
-    function currentPeriod() public override view returns (uint256) {
-        return (block.number).sub(genesisBlock).div(cofiDecayPeriod);
-        // TODO: prevent index too large
+    function calcCoFiRate(uint256 bt, uint256 xt, uint256 np, uint256 q) public view returns (uint256 at) {
+        /*
+        at = (bt/q)*2400000/(xt*np*0.3)
+        - at is CoFi yield per unit
+        - bt is the current CoFi rate of the specific XToken staking rewards pool
+        - xt is totalSupply of the specific XToken
+        - np is Net Asset Value Per Share for the specific XToken
+        - q is the total count of the XToken staking rewards pools
+        e.g. 10/1 * 2400000 / (20000 * 1 * 0.3) = 4000
+        take decimal into account: 10*1e18 / 1 * 2400000 /( 20000*1e18 * 1e18/1e18 * 0.3 ) * 1e18 = 4000 * 1e18
+        */
+        uint256 tvl = xt.mul(np).div(NAVPS_BASE); // total locked value represent in ETH
+        if (tvl < 20000 ether) {
+            tvl = 20000 ether; // minimum total locked value requirement
+        }
+        uint256 numerator = bt.mul(COFI_DECAY_PERIOD).mul(1e18).mul(10);
+        if (q == 0) {
+            q = 1; // or swap could fail
+        }
+        at = numerator.div(3).div(tvl).div(q);
     }
 
-    function currentDecay() public override view returns (int128) {
-        uint256 periodIdx = currentPeriod();
-        // TODO: max value for periodIdx
-        return ABDKMath64x64.pow(cofiDecayRate, periodIdx); // TODO: prevent index too large
-    }
-
-    // could use storage cache to reduce gas of compute, but now clear is more important
-    function currentCoFiRate() public override view returns (uint256) {
-        // initCoFiRate * ((cofiDecayRate)^((block.number-genesisBlock)/cofiDecayPeriod))
-        int128 decayRatio = ABDKMath64x64.mul(
-            currentDecay(), // 0~1
-            ABDKMath64x64.fromUInt(RATE_BASE)
-        ); // TODO: verify decayRatio var is small 
-        return uint256(ABDKMath64x64.toUInt(decayRatio)).mul(initCoFiRate).div(RATE_BASE); // TODO: if we want mul not overflow revert, should limit initCoFiRate
+    // np need price, must be a param passing in
+    function currentCoFiRate(address pair, uint256 np) public override view returns (uint256) {
+        // get np from router
+        // get bt from CoFiXVaultForLP: cofiRateForLP
+        // get q from CoFiXVaultForLP: poolCnt
+        // get xt from XToken.totalSupply: totalSupply
+        uint256 updatedBlock = cofiRateCache[pair].updatedBlock;
+        if (block.number.sub(updatedBlock) < COFI_RATE_UPDATE_INTERVAL && updatedBlock != 0) {
+            return cofiRateCache[pair].cofiRate;
+        } 
+        address vaultForLP = ICoFiXFactory(factory).getVaultForLP(); // TODO: handle zero
+        uint256 cofiRateForLP = ICoFiXVaultForLP(vaultForLP).currentCoFiRate();
+        uint256 poolCnt = ICoFiXVaultForLP(vaultForLP).getPoolCnt();
+        uint256 totalSupply = ICoFiXPair(pair).totalSupply();
+        return calcCoFiRate(cofiRateForLP, totalSupply, np, poolCnt);
     }
 
     function currentThreshold(uint256 cofiRate) public override view returns (uint256) {
-        return singleLimitK.mul(cofiRate).div(thetaFeeUnit);
+        return SINGLE_LIMIT_K.mul(cofiRate).div(THETA_FEE_UINIT);
     }
 
-    function stdMiningRateAndAmount(uint256 thetaFee) public override view returns (uint256 cofiRate, uint256 stdAmount) {
-        // thetaFee / thetaFeeUnit * currentCoFiRate
-        cofiRate = currentCoFiRate();
-        stdAmount = thetaFee.mul(cofiRate).div(thetaFeeUnit);
+    function stdMiningRateAndAmount(
+        address pair,
+        uint256 np,
+        uint256 thetaFee
+    ) public override view returns (
+        uint256 cofiRate,
+        uint256 stdAmount
+    ) {
+        // thetaFee / THETA_FEE_UINIT * currentCoFiRate
+        cofiRate = currentCoFiRate(pair, np);
+        stdAmount = thetaFee.mul(cofiRate).div(THETA_FEE_UINIT);
         return (cofiRate, stdAmount);
     }
 
@@ -141,38 +175,70 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
         }
     }
 
-    function actualMiningAmountAndDensity(uint256 thetaFee, uint256 x, uint256 y) public override view returns (uint256 amount, uint256 density) {
-        (uint256 cofiRate, uint256 stdAmount) = stdMiningRateAndAmount(thetaFee);
+    function actualMiningAmountAndDensity(
+        address pair,
+        uint256 thetaFee,
+        uint256 x,
+        uint256 y,
+        uint256 np
+    ) public override view returns (
+        uint256 amount,
+        uint256 density,
+        uint256 cofiRate
+    ) {
+        uint256 stdAmount;
+        (cofiRate, stdAmount) = stdMiningRateAndAmount(pair, np, thetaFee);
         density = calcDensity(stdAmount); // ft
         uint256 lambda = calcLambda(x, y);
         uint256 th = currentThreshold(cofiRate); // threshold of mining rewards amount, k*at
         if (density <= th) {
             // ft<=k, yt*at * lambda, yt is thetaFee, at is cofiRate
-            return (stdAmount.mul(lambda).div(LAMBDA_BASE), density);
+            return (stdAmount.mul(lambda).div(LAMBDA_BASE), density, cofiRate);
         }
         // ft>=k: yt*at * k*at * (2ft - k*at) * lambda / (ft*ft), yt*at is stdAmount, k*at is threshold
         uint256 numerator = stdAmount.mul(th).mul(density.mul(2).sub(th)).mul(lambda);
-        return (numerator.div(density).div(density).div(LAMBDA_BASE), density);
+        return (numerator.div(density).div(density).div(LAMBDA_BASE), density, cofiRate);
     }
 
-    function distributeReward(address pair, uint256 thetaFee, uint256 x, uint256 y, address rewardTo) external override nonReentrant {
+    function distributeReward(
+        address pair,
+        uint256 thetaFee,
+        uint256 x,
+        uint256 y,
+        uint256 np,
+        address rewardTo
+    ) external override nonReentrant {
         require(routerAllowed[msg.sender] == true, "CVaultForTrader: not allowed router");  // caution: be careful when adding new router
 
-        (uint256 amount, uint256 density) = actualMiningAmountAndDensity(thetaFee, x, y);
+        uint256 amount;
+        {
+            uint256 density;
+            uint256 cofiRate;
+            (amount, density, cofiRate) = actualMiningAmountAndDensity(pair, thetaFee, x, y, np);
 
-        // gas saving, distributeReward is used in router::swap
-        require(density < 2**128, "CVaultForTrader: density overflow");
-        lastDensity = uint128(density); // safe convert from uint256 to uint128
-        lastMinedBlock = uint128(block.number); // uint128 is enough for block.number
+            // gas saving, distributeReward is used in router::swap
+            require(density < 2**128, "CVaultForTrader: density overflow");
+            lastDensity = uint128(density); // safe convert from uint256 to uint128
+            lastMinedBlock = uint128(block.number); // uint128 is enough for block.number
+        
+            uint128 updatedBlock = cofiRateCache[pair].updatedBlock; // sigh, one more sload here
+            if (block.number.sub(updatedBlock) >= COFI_RATE_UPDATE_INTERVAL || updatedBlock == 0) {
+                cofiRateCache[pair].updatedBlock = uint128(block.number); // enough for block number
+                cofiRateCache[pair].cofiRate = uint128(cofiRate); // almost impossible to overflow
+            }
+        }
 
         // TODO: think about add a mint role check, to ensure this call never fail?
-        uint256 amountForTrader = amount.mul(SHARE_FOR_TRADER).div(SHARE_BASE);
-        uint256 amountForLP = amount.mul(SHARE_FOR_LP).div(SHARE_BASE);
-        uint256 amountForCNode = amount.mul(SHARE_FOR_CNODE).div(SHARE_BASE);
+        {
+            uint256 amountForTrader = amount.mul(SHARE_FOR_TRADER).div(SHARE_BASE);
+            uint256 amountForLP = amount.mul(SHARE_FOR_LP).div(SHARE_BASE);
+            uint256 amountForCNode = amount.mul(SHARE_FOR_CNODE).div(SHARE_BASE);
 
-        ICoFiToken(cofiToken).mint(rewardTo, amountForTrader); // allows zero, send to receiver directly, reduce gas cost
-        pendingRewardsForLP[pair] = pendingRewardsForLP[pair].add(amountForLP); // possible key: token or pair, we use pair here
-        pendingRewardsForCNode = pendingRewardsForCNode.add(amountForCNode);
+            ICoFiToken(cofiToken).mint(rewardTo, amountForTrader); // allows zero, send to receiver directly, reduce gas cost
+            pendingRewardsForLP[pair] = pendingRewardsForLP[pair].add(amountForLP); // possible key: token or pair, we use pair here
+            pendingRewardsForCNode = pendingRewardsForCNode.add(amountForCNode);
+        }
+
     }
 
     function clearPendingRewardOfCNode() external override nonReentrant {
@@ -197,6 +263,10 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
 
     function getPendingRewardOfLP(address pair) external override view returns (uint256) {
         return pendingRewardsForLP[pair];
+    }
+
+    function getCoFiRateCache(address pair) external override view returns (uint256 cofiRate, uint256 updatedBlock) {
+        return (cofiRateCache[pair].cofiRate, cofiRateCache[pair].updatedBlock);
     }
 
 }

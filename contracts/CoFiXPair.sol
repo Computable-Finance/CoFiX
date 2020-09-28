@@ -144,8 +144,12 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         require(amountOut > 0, "CPair: INSUFFICIENT_LIQUIDITY_BURNED");
         _burn(address(this), liquidity);
         _safeTransfer(outToken, to, amountOut);
-        if (fee > 0) _safeTransfer(_token0, ICoFiXFactory(factory).getFeeReceiver(), fee); // transfer fee to protocol feeReceiver
-
+        if (fee > 0) {
+            if (ICoFiXFactory(factory).getTradeMiningStatus(_token1)) {
+                // only set fee to protocol feeReceiver when trade mining is enabled for this trading pair
+                _safeTransfer(_token0, ICoFiXFactory(factory).getFeeReceiver(), fee); // transfer fee to protocol feeReceiver
+            }
+        }
         balance0 = IERC20(_token0).balanceOf(address(this));
         balance1 = IERC20(_token1).balanceOf(address(this));
 
@@ -202,8 +206,14 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         require(to != _token0 && to != _token1, "CPair: INVALID_TO");
 
         _safeTransfer(outToken, to, amountOut); // optimistically transfer tokens
-        if (tradeInfo[0] > 0) _safeTransfer(_token0, ICoFiXFactory(factory).getFeeReceiver(), tradeInfo[0]); // transfer fee to protocol feeReceiver
-
+        if (tradeInfo[0] > 0) {
+            if (ICoFiXFactory(factory).getTradeMiningStatus(_token1)) {
+                // only set fee to protocol feeReceiver when trade mining is enabled for this trading pair
+                _safeTransfer(_token0, ICoFiXFactory(factory).getFeeReceiver(), tradeInfo[0]); // transfer fee to protocol feeReceiver
+            } else {
+                tradeInfo[0] = 0; // so router won't go into the trade mining logic (reduce one more call gas cost)
+            }
+        }
         balance0 = IERC20(_token0).balanceOf(address(this));
         balance1 = IERC20(_token1).balanceOf(address(this));
 
@@ -281,8 +291,14 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
 
             amountOut = amountOutExact;
             _safeTransfer(outToken, to, amountOut); // optimistically transfer tokens
-            if (tradeInfo[0] > 0) _safeTransfer(_token0, ICoFiXFactory(factory).getFeeReceiver(), tradeInfo[0]); // transfer fee to protocol feeReceiver
-
+            if (tradeInfo[0] > 0) {
+                if (ICoFiXFactory(factory).getTradeMiningStatus(_token1)) {
+                    // only set fee to protocol feeReceiver when trade mining is enabled for this trading pair
+                    _safeTransfer(_token0, ICoFiXFactory(factory).getFeeReceiver(), tradeInfo[0]); // transfer fee to protocol feeReceiver
+                } else {
+                    tradeInfo[0] = 0; // so router won't go into the trade mining logic (reduce one more call gas cost)
+                }
+            }
             uint256 balance0 = IERC20(_token0).balanceOf(address(this));
             uint256 balance1 = IERC20(_token1).balanceOf(address(this));
 

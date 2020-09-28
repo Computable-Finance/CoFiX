@@ -25,6 +25,9 @@ interface ICoFiXFactory {
     function allPairs(uint256) external view returns (address pair);
     function allPairsLength() external view returns (uint256);
 
+    function getTradeMiningStatus(address token) external view returns (bool status);
+    function setTradeMiningStatus(address token, bool status) external;
+
     function setGovernance(address _new) external;
     function setController(address _new) external;
     function setFeeReceiver(address _new) external;

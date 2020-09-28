@@ -354,6 +354,7 @@ contract('CoFiX', (accounts) => {
             await CoFiXCtrl.setTheta(USDT.address, theta, { from: deployer });
             let kInfo = await CoFiXCtrl.getKInfo(USDT.address);
             expect(kInfo.theta).to.bignumber.equal(theta);
+
             // swapExactTokensForTokens
             // - address tokenIn,
             // - address tokenOut,
@@ -393,6 +394,14 @@ contract('CoFiX', (accounts) => {
             let feeReceiver = await CFactory.getFeeReceiver();
             let wethInFeeReceiver = await WETH.balanceOf(feeReceiver);
             console.log("WETH balance in feeReceiver:", wethInFeeReceiver.toString(), ", feeReceiver:", feeReceiver);
+            expect(wethInFeeReceiver).to.bignumber.equal("0"); // if not setTradeMiningStatus, the trading fee is kept in pool
+
+            // setTradeMiningStatus
+            await CFactory.setTradeMiningStatus(USDT.address, true);
+
+            // swap again after we setTradeMiningStatus to true
+            await CRouter.swapExactTokensForTokens(USDT.address, HBTC.address, _amountIn, 0, trader, trader, "99999999999", { from: trader, value: _msgValue });
+            wethInFeeReceiver = await WETH.balanceOf(feeReceiver); // not zero this time
             kInfo = await CoFiXCtrl.getKInfo(USDT.address);
             let k_base = await CoFiXCtrl.K_BASE(); 
             console.log("kInfo> k:", kInfo.k.toString(), "(", kInfo.k.toString() / k_base.toString(), ")", ", updatedAt:", kInfo.updatedAt.toString());

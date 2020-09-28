@@ -37,6 +37,7 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
     // make all of these constant, so we can reduce gas cost for swap features
     uint256 public constant COFI_DECAY_PERIOD = 2400000; // LP pool yield decays for every 2,400,000 blocks
     uint256 public constant THETA_FEE_UINIT = 1 ether;
+    // we may have different theta for different pairs in the future, but just use the constant here for gas reason
     uint256 public constant SINGLE_LIMIT_K = 100*1e18*1/1000; // K= L*theta, 100 ether * theta, theta is 0.0001, means thetaFee 0.1 ether
     uint256 public constant COFI_RATE_UPDATE_INTERVAL = 1000;
 

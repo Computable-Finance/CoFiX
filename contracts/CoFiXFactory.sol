@@ -41,6 +41,10 @@ contract CoFiXFactory is ICoFiXFactory {
         return allPairs.length;
     }
 
+    function pairCodeHash() external pure returns (bytes32) {
+        return keccak256(type(CoFiXPair).creationCode);
+    }
+
     function createPair(address token) external override returns (address pair) {
         require(token != address(0), 'CFactory: ZERO_ADDRESS');
         require(getPair[token] == address(0), 'CFactory: PAIR_EXISTS');
@@ -129,6 +133,8 @@ contract CoFiXFactory is ICoFiXFactory {
     function getVaultForCNode() external view override returns (address) {
         return vaultForCNode;
     }
+
+    // internal helpers
 
     function append(string memory a, string memory b) internal pure returns (string memory) {
         return string(abi.encodePacked(a, b));

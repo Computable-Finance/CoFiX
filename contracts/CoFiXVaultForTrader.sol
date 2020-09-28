@@ -84,7 +84,7 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
         emit RouterDisallowed(router);
     }
 
-    function calcCoFiRate(uint256 bt, uint256 xt, uint256 np, uint256 q) public view returns (uint256 at) {
+    function calcCoFiRate(uint256 bt, uint256 xt, uint256 np, uint256 q) public override pure returns (uint256 at) {
         /*
         at = (bt/q)*2400000/(xt*np*0.3)
         - at is CoFi yield per unit
@@ -118,7 +118,7 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
         } 
         address vaultForLP = ICoFiXFactory(factory).getVaultForLP(); // TODO: handle zero
         uint256 cofiRateForLP = ICoFiXVaultForLP(vaultForLP).currentCoFiRate();
-        uint256 poolCnt = ICoFiXVaultForLP(vaultForLP).getPoolCnt();
+        uint256 poolCnt = ICoFiXVaultForLP(vaultForLP).getEnabledPoolCnt();
         uint256 totalSupply = ICoFiXPair(pair).totalSupply();
         return calcCoFiRate(cofiRateForLP, totalSupply, np, poolCnt);
     }

@@ -13,6 +13,8 @@ interface ICoFiXVaultForTrader {
 
     function disallowRouter(address router) external;
 
+    function calcCoFiRate(uint256 bt, uint256 xt, uint256 np, uint256 q) external pure returns (uint256 at);
+
     function currentCoFiRate(address pair, uint256 np) external view returns (uint256);
 
     function currentThreshold(uint256 cofiRate) external view returns (uint256);

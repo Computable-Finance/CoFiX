@@ -47,6 +47,11 @@ contract('CoFiX', (accounts) => {
 
     const DESTRUCTION_AMOUNT = web3.utils.toWei('0', 'ether');
 
+    // enum POOL_STATE {INVALID, ENABLED, DISABLED}
+    const POOL_STATE_INVALID = "0";
+    const POOL_STATE_ENABLED = "1";
+    const POOL_STATE_DISABLED = "2";
+
     before(async () => {
         // change to openzeppelin/test-environment if it has better support for test coverage and gas cost measure
         // USDT = await ERC20.new("10000000000000000", "USDT Test Token", "USDT", 6, { from: deployer });
@@ -463,14 +468,15 @@ contract('CoFiX', (accounts) => {
             console.log("user balance HBTC:", hbtcUserBalance.toString());
         });
 
-        it("should addPoolForPair correctly", async () => {
+        it("should addPool correctly", async () => {
             let usdtPairAddr = await CFactory.getPair(USDT.address);
             let USDTPair = await CoFiXPair.at(usdtPairAddr);
             const StakingRewards = await CoFiXStakingRewards.new(CoFi.address, USDTPair.address, CFactory.address, { from: deployer });
 
-            await VaultForLP.addPoolForPair(StakingRewards.address, {from: deployer});
-            const allowed = await VaultForLP.poolAllowed(StakingRewards.address);
-            expect(allowed).equal(true);
+            await VaultForLP.addPool(StakingRewards.address, {from: deployer});
+            const poolInfo = await VaultForLP.getPoolInfo(StakingRewards.address);
+            expect(poolInfo.state).to.bignumber.equal(POOL_STATE_ENABLED);
+            expect(poolInfo.weight).to.bignumber.equal("0"); // default weight
             const stakingPool = await VaultForLP.stakingPoolForPair(USDTPair.address);
             expect(stakingPool).equal(StakingRewards.address);
         });

@@ -22,6 +22,10 @@ contract('CoFiXStakingRewards', (accounts) => {
 
     const INIT_COFI_RATE = web3.utils.toWei('10', 'ether');
 
+    const POOL_STATE_INVALID = "0";
+    const POOL_STATE_ENABLED = "1";
+    const POOL_STATE_DISABLED = "2";
+
     before(async () => {
         WETH = await WETH9.new();
         CFactory = await CoFiXFactory.new(WETH.address, { from: deployer });
@@ -43,11 +47,28 @@ contract('CoFiXStakingRewards', (accounts) => {
 
     it("should addPool correctly", async () => {
         await VaultForLP.addPool(StakingRewards.address, {from: governance});
-        const allowed = await VaultForLP.poolAllowed(StakingRewards.address);
-        expect(allowed).equal(true);
+        const poolInfo = await VaultForLP.getPoolInfo(StakingRewards.address);
+        expect(poolInfo.state).to.bignumber.equal(POOL_STATE_ENABLED);
+        expect(poolInfo.weight).to.bignumber.equal("0");
     });
 
     it("should have correct stats from starting", async () => {
+        const rewardPerToken = await StakingRewards.rewardPerToken();
+        expect(rewardPerToken).to.bignumber.equal("0");
+        const totalSupply = await StakingRewards.totalSupply();
+        expect(totalSupply).to.bignumber.equal("0");
+        const rewardRate = await StakingRewards.rewardRate();
+        expect("0").to.bignumber.equal(rewardRate);
+    });
+
+    it("should setWeight correctly", async () => {
+        const weight = "100";
+        await VaultForLP.setPoolWeight(StakingRewards.address, weight);
+        const poolInfo = await VaultForLP.getPoolInfo(StakingRewards.address);
+        expect(poolInfo.weight).to.bignumber.equal(weight);
+    });
+
+    it("should have correct stats after setWeight", async () => {
         const rewardPerToken = await StakingRewards.rewardPerToken();
         expect(rewardPerToken).to.bignumber.equal("0");
         const totalSupply = await StakingRewards.totalSupply();
@@ -208,16 +229,9 @@ contract('CoFiXStakingRewards', (accounts) => {
         }
     });
 
-    // addPoolForPair, keep this test at the end so we don't need to change the tests before
+    // addPool, keep this test at the end so we don't need to change the tests before
     it("should revert if add two pool with the same pair (XToken)", async () => {
         const StakingRewards2 = await CoFiXStakingRewards.new(CoFi.address, XToken.address, CFactory.address, { from: deployer });
-        await VaultForLP.addPoolForPair(StakingRewards2.address, {from: governance});
-        const stakingPool = await VaultForLP.stakingPoolForPair(XToken.address);
-        expect(stakingPool).equal(StakingRewards2.address);
-    });
-
-    it("should revert if add two pool with the same pair (XToken)", async () => {
-        const StakingRewards3 = await CoFiXStakingRewards.new(CoFi.address, XToken.address, CFactory.address, { from: deployer });
-        await expectRevert(VaultForLP.addPoolForPair(StakingRewards3.address, {from: governance}), "CVaultForLP: pair added");
+        await expectRevert(VaultForLP.addPool(StakingRewards2.address, {from: governance}), "CVaultForLP: pair added");
     });
 });

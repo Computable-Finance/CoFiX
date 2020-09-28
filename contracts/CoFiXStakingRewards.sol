@@ -89,7 +89,7 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
     }
 
     function rewardRate() public virtual override view returns (uint256) {
-        return ICoFiXVaultForLP(rewardsVault()).currentPoolRate();
+        return ICoFiXVaultForLP(rewardsVault()).currentPoolRate(address(this));
     }
 
     function accrued() public virtual override view returns (uint256) {

@@ -31,13 +31,19 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
     uint256 public decayPeriod = 2400000; // yield decays for every 2,400,000 blocks
     uint256 public decayRate = 80;
 
-    address[] public allPools;
+    address[] public allPools; // add every pool addr to record, make it easier to track
 
-    mapping (address => bool) public poolAllowed;
+    uint256 public enabledCnt;
+    uint256 public constant WEIGHT_BASE = 100;
 
-    mapping (address => address) public pairToStakingPool;
+    struct PoolInfo {
+        POOL_STATE state;
+        uint256 weight;
+    }
 
-    event NewPoolAdded(address pool, uint256 index);
+    mapping (address => PoolInfo) public poolInfo; // pool -> poolInfo
+
+    mapping (address => address) public pairToStakingPool; // pair -> staking pool
 
     constructor(address cofi, address _factory) public {
         cofiToken = cofi;
@@ -70,36 +76,66 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
 
     function addPool(address pool) external override {
         require(msg.sender == governance, "CVaultForLP: !governance");
-        require(poolAllowed[pool] == false, "CVaultForLP: pool added");
-        poolAllowed[pool] = true;
-        allPools.push(pool);
-        emit NewPoolAdded(pool, allPools.length); // TODO: refactor addPool
-    }
-
-    function addPoolForPair(address pool) external override {
-        require(msg.sender == governance, "CVaultForLP: !governance");
-        require(poolAllowed[pool] == false, "CVaultForLP: pool added");
-        poolAllowed[pool] = true;
-        allPools.push(pool);
+        require(poolInfo[pool].state == POOL_STATE.INVALID, "CVaultForLP: pool added"); // INVALID -> ENABLED
+        poolInfo[pool].state = POOL_STATE.ENABLED;
+        // default rate is zero, to ensure safety
+        enabledCnt = enabledCnt.add(1);
         // set pair to reward pool map
         address pair = ICoFiXStakingRewards(pool).stakingToken();
         require(pairToStakingPool[pair] == address(0), "CVaultForLP: pair added");
         pairToStakingPool[pair] = pool; // staking token is CoFiXPair (XToken)
+        allPools.push(pool); // add once never delete, using for track
         emit NewPoolAdded(pool, allPools.length);
     }
 
-    // // this function should never fail when pool contract calling it
-    // function safeCoFiTransfer(uint256 amount) external override returns (uint256) {
-    //     require(poolAllowed[msg.sender] == true, "CVaultForLP: only pool allowed");
-    //     uint256 balance = IERC20(cofiToken).balanceOf(address(this));
-    //     if (amount > balance) {
-    //         amount = balance;
-    //     }
-    //     IERC20(cofiToken).transfer(msg.sender, amount); // allow zero amount
-    //     return amount;
-    // }
+    function enablePool(address pool) external override {
+        require(msg.sender == governance, "CVaultForLP: !governance");
+        require(poolInfo[pool].state == POOL_STATE.DISABLED, "CVaultForLP: pool not disabled"); // DISABLED -> ENABLED
+        poolInfo[pool].state = POOL_STATE.ENABLED;
+        enabledCnt = enabledCnt.add(1);
+        // set pair to reward pool map
+        address pair = ICoFiXStakingRewards(pool).stakingToken();
+        require(pairToStakingPool[pair] == address(0), "CVaultForLP: pair added");
+        pairToStakingPool[pair] = pool; // staking token is CoFiXPair (XToken)
+        emit PoolEnabled(pool);
+    }
+
+    function disablePool(address pool) external override {
+        require(msg.sender == governance, "CVaultForLP: !governance");
+        require(poolInfo[pool].state == POOL_STATE.ENABLED, "CVaultForLP: pool not enabled"); // ENABLED -> DISABLED
+        poolInfo[pool].state = POOL_STATE.DISABLED;
+        poolInfo[pool].weight = 0; // set pool weight to zero;
+        enabledCnt = enabledCnt.sub(1);
+        address pair = ICoFiXStakingRewards(pool).stakingToken();
+        pairToStakingPool[pair] = address(0); // set pair mapping to zero
+        emit PoolDisabled(pool);
+    }
+
+    function setPoolWeight(address pool, uint256 weight) public override {
+        require(msg.sender == governance, "CVaultForLP: !governance");
+        require(weight <= WEIGHT_BASE, "CVaultForLP: invalid weight");
+        require(poolInfo[pool].state == POOL_STATE.ENABLED, "CVaultForLP: pool not enabled"); // only set weight if pool is enabled
+        poolInfo[pool].weight = weight;
+    }
+
+    function batchSetPoolWeight(address[] memory pools, uint256[] memory weights) external override {
+        require(msg.sender == governance, "CVaultForLP: !governance");
+        uint256 cnt = pools.length;
+        require(cnt == weights.length, "CVaultForLP: mismatch len");
+        for (uint256 i = 0; i < cnt; i++) {
+            require(weights[i] <= WEIGHT_BASE, "CVaultForLP: invalid weight");
+            require(poolInfo[pools[i]].state == POOL_STATE.ENABLED, "CVaultForLP: pool not enabled"); // only set weight if pool is enabled
+            poolInfo[pools[i]].weight = weights[i];
+        }
+        // governance should ensure total weights equal to WEIGHT_BASE
+    }
     
     function getPendingRewardOfLP(address pair) external override view returns (uint256) {
+        POOL_STATE poolState = poolInfo[msg.sender].state;
+        if (poolState == POOL_STATE.INVALID || poolState == POOL_STATE.DISABLED) {
+            return 0; // if pool is disabled, it can't mint by call distributeReward, so don't count on any reward for it
+        }
+        // if poolState is enabled, then go on
         address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
         if (vaultForTrader == address(0)) {
             return 0; // vaultForTrader is not set yet
@@ -109,9 +145,14 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
     }
 
     function distributeReward(address to, uint256 amount) external override nonReentrant {
-        require(poolAllowed[msg.sender] == true, "CVaultForLP: only pool allowed"); // caution: be careful when adding new pool
+        POOL_STATE poolState = poolInfo[msg.sender].state;
+        require(poolState != POOL_STATE.INVALID, "CVaultForLP: only pool valid");
+        if (poolState == POOL_STATE.DISABLED) {
+            return; // make sure tx would revert because user still want to withdraw and getReward
+        }
+        // if poolState is enabled, then go on. caution: be careful when adding new pool
         address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
-        if (vaultForTrader != address(0)) { // if not equal, means vaultForTrader is not set yet
+        if (vaultForTrader != address(0)) { // if equal, means vaultForTrader is not set yet
             address pair = ICoFiXStakingRewards(msg.sender).stakingToken();
             uint256 pending = ICoFiXVaultForTrader(vaultForTrader).getPendingRewardOfLP(pair);
             if (pending > 0) {
@@ -139,13 +180,14 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
         return cofiRate;
     }
 
-    function currentPoolRate() external override view returns (uint256 poolRate) {
-        uint256 len = allPools.length;
-        if (len == 0) {
+    function currentPoolRate(address pool) external override view returns (uint256 poolRate) {
+        uint256 cnt = enabledCnt;
+        if (cnt == 0) {
             return 0;
         }
         uint256 cofiRate = currentCoFiRate();
-        poolRate = cofiRate.div(allPools.length);
+        uint256 weight = poolInfo[pool].weight;
+        poolRate = cofiRate.mul(weight).div(WEIGHT_BASE);
         return poolRate;
     }
 
@@ -153,8 +195,15 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
         return pairToStakingPool[pair];
     }
 
-    function getPoolCnt() external override view returns (uint256) {
-        return allPools.length;
+    function getPoolInfo(address pool) external override view returns (POOL_STATE state, uint256 weight) {
+        state = poolInfo[pool].state;
+        weight = poolInfo[pool].weight;
+        return (state, weight);
+    }
+
+    // pools in enabled state
+    function getEnabledPoolCnt() external override view returns (uint256) {
+        return enabledCnt;
     }
 
     function getCoFiStakingPool() external override view returns (address pool) {

@@ -39,10 +39,10 @@ module.exports = async function (callback) {
         console.log(`rewardPerToken: ${rewardPerToken}, totalSupply: ${totalSupply}, rewardRate: ${rewardRate}, vault balance: ${balance}`);
 
         if (argv.addpool) {
-            await VaultForLP.addPoolForPair(StakingRewards.address);
-            const allowed = await VaultForLP.poolAllowed(StakingRewards.address);
+            await VaultForLP.addPool(StakingRewards.address);
+            const poolInfo = await VaultForLP.getPoolInfo(StakingRewards.address);
             const balanceOfVault = await CoFi.balanceOf(VaultForLP.address);
-            console.log(`addPool, StakingRewards.address: ${StakingRewards.address}, allowed: ${allowed}, vault CoFi balance: ${balanceOfVault}`);
+            console.log(`addPool, StakingRewards.address: ${StakingRewards.address}, state: ${poolInfo.state}, weight: ${poolInfo.weight}, vault CoFi balance: ${balanceOfVault}`);
         }
 
         callback();

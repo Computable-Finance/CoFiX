@@ -79,7 +79,7 @@ contract CoFiXVaultForCNode is ICoFiXVaultForCNode, ReentrancyGuard {
     function distributeReward(address to, uint256 amount) external override nonReentrant {
         require(msg.sender == cnodePool, "CVaultForCNode: only pool allowed"); // caution: be careful when adding new pool
         address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
-        if (vaultForTrader != address(0)) { // if not equal, means vaultForTrader is not set yet
+        if (vaultForTrader != address(0)) { // if equal, means vaultForTrader is not set yet
             uint256 pending = ICoFiXVaultForTrader(vaultForTrader).getPendingRewardOfCNode();
             if (pending > 0) {
                 ICoFiXVaultForTrader(vaultForTrader).clearPendingRewardOfCNode();

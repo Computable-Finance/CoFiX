@@ -12,7 +12,7 @@ import "./lib/TransferHelper.sol";
 // Pair contract for each trading pair, storing assets and handling settlement
 // No owner or governance
 contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
-    using SafeMath  for uint;
+    using SafeMath for uint;
 
     enum CoFiX_OP { QUERY, MINT, BURN, SWAP_WITH_EXACT, SWAP_FOR_EXACT } // operations in CoFiX
 

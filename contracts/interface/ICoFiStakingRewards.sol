@@ -66,6 +66,7 @@ interface ICoFiStakingRewards {
     event Staked(address indexed user, uint256 amount);
     event StakedForOther(address indexed user, address indexed other, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
+    event SavingWithdrawn(address indexed to, uint256 amount);
     event EmergencyWithdraw(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
     

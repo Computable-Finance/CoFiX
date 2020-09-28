@@ -19,6 +19,11 @@ contract CoFiStakingRewards is ICoFiStakingRewards, ReentrancyGuard {
     address public override rewardsToken; // WETH, received from CoFiXPair, to reduce gas cost for each swap
     address public override stakingToken; // CoFi
 
+    address public governance;
+    uint256 public dividendShare = 50; // 50% to CoFi holders as dividend, 50% to saving for buying back
+
+    uint256 public pendingSavingAmount;
+
     uint256 public lastUpdateRewardsTokenBalance; // must refresh after each WETH balance change
     uint256 public rewardPerTokenStored;
 
@@ -36,6 +41,7 @@ contract CoFiStakingRewards is ICoFiStakingRewards, ReentrancyGuard {
     ) public {
         rewardsToken = _rewardsToken;
         stakingToken = _stakingToken;
+        governance = msg.sender;
     }
 
     receive() external payable {}
@@ -58,8 +64,21 @@ contract CoFiStakingRewards is ICoFiStakingRewards, ReentrancyGuard {
         }
         return
             rewardPerTokenStored.add(
-                accrued().mul(1e18).div(_totalSupply)
+                accrued().mul(1e18).mul(dividendShare).div(_totalSupply).div(100)
             );
+    }
+
+    function _rewardPerTokenAndAccrued() internal view returns (uint256, uint256) {
+        if (_totalSupply == 0) {
+            // use the old rewardPerTokenStored, and accrued should be zero here
+            // if not the new accrued amount will never be distributed to anyone
+            return (rewardPerTokenStored, 0);
+        }
+        uint256 _accrued = accrued();
+        uint256 _rewardPerToken = rewardPerTokenStored.add(
+                _accrued.mul(1e18).mul(dividendShare).div(_totalSupply).div(100) // 50% of accrued to CoFi holders as dividend
+            );
+        return (_rewardPerToken, _accrued);
     }
 
     function accrued() public override view returns (uint256) {
@@ -132,29 +151,52 @@ contract CoFiStakingRewards is ICoFiStakingRewards, ReentrancyGuard {
         getReward();
     }
 
+    function setGovernance(address _new) external {
+        require(msg.sender == governance, "CoFiStaking: !governance");
+        governance = _new;
+    }
+
+    function setDividendShare(uint256 share) external {
+        require(msg.sender == governance, "CoFiStaking: !governance");
+        require(share <= 100, "CoFiStaking: invalid share setting");
+        dividendShare = share;
+    }
+
+    function withdrawSavingByGov(address _to, uint256 _amount) external nonReentrant {
+        require(msg.sender == governance, "CoFiStaking: !governance");
+        pendingSavingAmount = pendingSavingAmount.sub(_amount);
+        IWETH(rewardsToken).withdraw(_amount);
+        TransferHelper.safeTransferETH(_to, _amount);
+        // must refresh WETH balance record after updating WETH balance
+        // or lastUpdateRewardsTokenBalance could be less than the newest WETH balance in the next update
+        lastUpdateRewardsTokenBalance = IWETH(rewardsToken).balanceOf(address(this));
+        emit SavingWithdrawn(_to, _amount);
+    }
+
     // Safe WETH transfer function, just in case if rounding error or ending of mining causes pool to not have enough WETHs.
     function _safeWETHTransfer(address _to, uint256 _amount) internal returns (uint256) {
-        // TODO: verify this could never happen
-        // uint256 cofiBal = IERC20(rewardsToken).balanceOf(address(this));
-        // if (_amount > cofiBal) {
-        //     _amount = cofiBal;
-        // }
+        uint256 bal = IWETH(rewardsToken).balanceOf(address(this));
+        if (_amount > bal) {
+            _amount = bal;
+        }
         // convert WETH to ETH, and send to `_to`
         IWETH(rewardsToken).withdraw(_amount);
         TransferHelper.safeTransferETH(_to, _amount);
-
         return _amount;
     }
-
 
     /* ========== MODIFIERS ========== */
 
     modifier updateReward(address account) {
-        uint256 _rewardPerToken = rewardPerToken();
+        (uint256 _rewardPerToken, uint256 _accrued) = _rewardPerTokenAndAccrued();
         rewardPerTokenStored = _rewardPerToken;
+        if (_accrued > 0) {
+            uint256 newSaving = _accrued.sub(_accrued.mul(dividendShare).div(100)); // left 50%
+            pendingSavingAmount = pendingSavingAmount.add(newSaving);
+        }
         // means it's the first update
         // add this check to ensure the WETH transferred in before the first user stake in, could be distributed in the next update
-        if (_rewardPerToken != 0) { // TODO: verify this
+        if (_totalSupply != 0) { // we can use _accrued here too
             lastUpdateRewardsTokenBalance = IWETH(rewardsToken).balanceOf(address(this));
         }
         if (account != address(0)) {
@@ -170,6 +212,7 @@ contract CoFiStakingRewards is ICoFiStakingRewards, ReentrancyGuard {
     event Staked(address indexed user, uint256 amount);
     event StakedForOther(address indexed user, address indexed other, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
+    event SavingWithdrawn(address indexed to, uint256 amount);
     event EmergencyWithdraw(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
 }

@@ -20,7 +20,7 @@ contract('CoFiXStakingRewards', (accounts) => {
     const LP_1 = accounts[1];
     const LP_2 = accounts[2];
 
-    const INIT_COFI_RATE = web3.utils.toWei('10', 'ether');
+    const INIT_COFI_RATE = web3.utils.toWei('9', 'ether');
 
     const POOL_STATE_INVALID = "0";
     const POOL_STATE_ENABLED = "1";

@@ -92,6 +92,9 @@ module.exports = async function (deployer, network) {
     await factory.setVaultForCNode(CoFiXVaultForCNode.address);
     await factory.setFeeReceiver(CoFiStakingRewards.address);
 
+    // allowRouter
+    await CoFiXRouter.allowRouter(CoFiXRouter.address);
+
     console.log(`Contract Deployed Summary\n=========================`);
     console.log(`| USDT | ${USDT.address} |`);
     console.log(`| HBTC | ${HBTC.address} |`);

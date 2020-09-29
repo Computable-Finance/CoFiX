@@ -27,9 +27,9 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
     // managed by governance
     address public governance;
 
-    uint256 public initCoFiRate = 10*1e18; // yield per block
+    uint256 public initCoFiRate = 9*1e18; // yield per block
     uint256 public decayPeriod = 2400000; // yield decays for every 2,400,000 blocks
-    uint256 public decayRate = 80;
+    uint256 public decayRate = 65;
 
     address[] public allPools; // add every pool addr to record, make it easier to track
 
@@ -169,8 +169,8 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
 
     function currentCoFiRate() public override view returns (uint256) {
         uint256 periodIdx = currentPeriod();
-        if (periodIdx > 5) {
-            periodIdx = 5;
+        if (periodIdx > 4) {
+            periodIdx = 4; // after 5 years, the rate keep constant
         }
         uint256 cofiRate = initCoFiRate;
         uint256 _decayRate = decayRate;

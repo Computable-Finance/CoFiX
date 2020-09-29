@@ -29,9 +29,9 @@ contract('CoFiXVaultForTrader', (accounts) => {
     const RATE_BASE = web3.utils.toWei('1', 'ether');
 
     const DECAY_RATE = 80;
-    const INIT_COFI_RATE = web3.utils.toWei('10', 'ether');
+    const INIT_COFI_RATE = web3.utils.toWei('9', 'ether');
 
-    const DEFAULT_COFI_RATE = web3.utils.toWei('4000', 'ether');
+    const DEFAULT_COFI_RATE = web3.utils.toWei('3600', 'ether');
 
     const THETA_FEE_UNIT = web3.utils.toWei('1', 'ether');
 

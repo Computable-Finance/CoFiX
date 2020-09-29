@@ -34,8 +34,8 @@ contract('CoFiXVaultForLP', (accounts) => {
 
     const RATE_BASE = web3.utils.toWei('1', 'ether');
 
-    const DECAY_RATE = 80;
-    const INIT_COFI_RATE = web3.utils.toWei('10', 'ether');
+    const DECAY_RATE = 65;
+    const INIT_COFI_RATE = web3.utils.toWei('9', 'ether');
 
     before(async () => {
         WETH = await WETH9.new();
@@ -267,7 +267,11 @@ contract('CoFiXVaultForLP', (accounts) => {
         const currentCoFiRate = await VaultForLP.currentCoFiRate();
         let expectCofiRate = new BN(INIT_COFI_RATE);
         const decayRate = new BN(DECAY_RATE.toString());
-        for (let i = 0; i < newCurrentPeriod; i++) {
+        let periodIdx = newCurrentPeriod;
+        if (newCurrentPeriod > 4) {
+            periodIdx = 4;
+        }
+        for (let i = 0; i < periodIdx; i++) {
             expectCofiRate = expectCofiRate.mul(decayRate).div(new BN(100));
         }
         expect(expectCofiRate).to.bignumber.equal(currentCoFiRate);
@@ -297,8 +301,8 @@ contract('CoFiXVaultForLP', (accounts) => {
         let expectCofiRate = new BN(INIT_COFI_RATE);
         const decayRate = new BN(DECAY_RATE.toString());
         let periodIdx = newCurrentPeriod;
-        if (newCurrentPeriod > 5) {
-            periodIdx = 5;
+        if (newCurrentPeriod > 4) {
+            periodIdx = 4;
         }
         for (let i = 0; i < periodIdx; i++) {
             expectCofiRate = expectCofiRate.mul(decayRate).div(new BN(100));

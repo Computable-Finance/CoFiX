@@ -28,9 +28,9 @@ contract CoFiXVaultForCNode is ICoFiXVaultForCNode, ReentrancyGuard {
     address public governance;
     address public cnodePool;
 
-    uint256 public initCoFiRate = 10*1e18; // yield per block
+    uint256 public initCoFiRate = 1*1e18; // yield per block, 9*1e18/9
     uint256 public decayPeriod = 2400000; // yield decays for every 2,400,000 blocks
-    uint256 public decayRate = 80;
+    uint256 public decayRate = 65;
 
     constructor(address cofi, address _factory) public {
         cofiToken = cofi;
@@ -95,8 +95,8 @@ contract CoFiXVaultForCNode is ICoFiXVaultForCNode, ReentrancyGuard {
 
     function currentCoFiRate() public override view returns (uint256) {
         uint256 periodIdx = currentPeriod();
-        if (periodIdx > 5) {
-            periodIdx = 5;
+        if (periodIdx > 4) {
+            periodIdx = 4; // after 5 years, the rate keep constant
         }
         uint256 cofiRate = initCoFiRate;
         uint256 _decayRate = decayRate;

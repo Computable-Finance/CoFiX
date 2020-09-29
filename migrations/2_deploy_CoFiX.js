@@ -93,7 +93,8 @@ module.exports = async function (deployer, network) {
     await factory.setFeeReceiver(CoFiStakingRewards.address);
 
     // allowRouter
-    await CoFiXRouter.allowRouter(CoFiXRouter.address);
+    let vaultForTrader = await CoFiXVaultForTrader.deployed();
+    await vaultForTrader.allowRouter(CoFiXRouter.address);
 
     console.log(`Contract Deployed Summary\n=========================`);
     console.log(`| USDT | ${USDT.address} |`);

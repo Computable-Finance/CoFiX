@@ -664,9 +664,9 @@
         "type": "uint256"
       },
       {
-        "internalType": "uint256[3]",
+        "internalType": "uint256[4]",
         "name": "tradeInfo",
-        "type": "uint256[3]"
+        "type": "uint256[4]"
       }
     ],
     "stateMutability": "payable",
@@ -708,9 +708,9 @@
         "type": "uint256"
       },
       {
-        "internalType": "uint256[3]",
+        "internalType": "uint256[4]",
         "name": "tradeInfo",
-        "type": "uint256[3]"
+        "type": "uint256[4]"
       }
     ],
     "stateMutability": "payable",
@@ -838,6 +838,62 @@
       }
     ],
     "name": "calcNAVPerShareForBurn",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "navps",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "balance0",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "balance1",
+        "type": "uint256"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "ethAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "erc20Amount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "blockNum",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "K",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "theta",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct ICoFiXPair.OraclePrice",
+        "name": "_op",
+        "type": "tuple"
+      }
+    ],
+    "name": "calcNAVPerShare",
     "outputs": [
       {
         "internalType": "uint256",

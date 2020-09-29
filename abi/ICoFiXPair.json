@@ -549,9 +549,9 @@
         "type": "uint256"
       },
       {
-        "internalType": "uint256[3]",
+        "internalType": "uint256[4]",
         "name": "tradeInfo",
-        "type": "uint256[3]"
+        "type": "uint256[4]"
       }
     ],
     "stateMutability": "payable",
@@ -593,9 +593,9 @@
         "type": "uint256"
       },
       {
-        "internalType": "uint256[3]",
+        "internalType": "uint256[4]",
         "name": "tradeInfo",
-        "type": "uint256[3]"
+        "type": "uint256[4]"
       }
     ],
     "stateMutability": "payable",

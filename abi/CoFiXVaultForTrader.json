@@ -43,7 +43,46 @@
   },
   {
     "inputs": [],
+    "name": "COFI_DECAY_PERIOD",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "COFI_RATE_UPDATE_INTERVAL",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "LAMBDA_BASE",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "NAVPS_BASE",
     "outputs": [
       {
         "internalType": "uint256",
@@ -134,7 +173,7 @@
   },
   {
     "inputs": [],
-    "name": "cofiDecayPeriod",
+    "name": "SINGLE_LIMIT_K",
     "outputs": [
       {
         "internalType": "uint256",
@@ -147,12 +186,12 @@
   },
   {
     "inputs": [],
-    "name": "cofiDecayRate",
+    "name": "THETA_FEE_UINIT",
     "outputs": [
       {
-        "internalType": "int128",
+        "internalType": "uint256",
         "name": "",
-        "type": "int128"
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -212,25 +251,12 @@
   },
   {
     "inputs": [],
-    "name": "initCoFiRate",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "lastDensity",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint128",
         "name": "",
-        "type": "uint256"
+        "type": "uint128"
       }
     ],
     "stateMutability": "view",
@@ -241,9 +267,9 @@
     "name": "lastMinedBlock",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint128",
         "name": "",
-        "type": "uint256"
+        "type": "uint128"
       }
     ],
     "stateMutability": "view",
@@ -301,32 +327,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "singleLimitK",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "thetaFeeUnit",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "address",
@@ -366,33 +366,52 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "currentPeriod",
-    "outputs": [
+    "inputs": [
       {
         "internalType": "uint256",
-        "name": "",
+        "name": "bt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "xt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "np",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "q",
         "type": "uint256"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "currentDecay",
+    "name": "calcCoFiRate",
     "outputs": [
       {
-        "internalType": "int128",
-        "name": "",
-        "type": "int128"
+        "internalType": "uint256",
+        "name": "at",
+        "type": "uint256"
       }
     ],
-    "stateMutability": "view",
+    "stateMutability": "pure",
     "type": "function"
   },
   {
-    "inputs": [],
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "pair",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "np",
+        "type": "uint256"
+      }
+    ],
     "name": "currentCoFiRate",
     "outputs": [
       {
@@ -425,6 +444,16 @@
   },
   {
     "inputs": [
+      {
+        "internalType": "address",
+        "name": "pair",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "np",
+        "type": "uint256"
+      },
       {
         "internalType": "uint256",
         "name": "thetaFee",
@@ -493,6 +522,11 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "pair",
+        "type": "address"
+      },
+      {
         "internalType": "uint256",
         "name": "thetaFee",
         "type": "uint256"
@@ -506,6 +540,11 @@
         "internalType": "uint256",
         "name": "y",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "np",
+        "type": "uint256"
       }
     ],
     "name": "actualMiningAmountAndDensity",
@@ -518,6 +557,11 @@
       {
         "internalType": "uint256",
         "name": "density",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "cofiRate",
         "type": "uint256"
       }
     ],
@@ -544,6 +588,11 @@
       {
         "internalType": "uint256",
         "name": "y",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "np",
         "type": "uint256"
       },
       {
@@ -603,6 +652,30 @@
       {
         "internalType": "uint256",
         "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "pair",
+        "type": "address"
+      }
+    ],
+    "name": "getCoFiRateCache",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "cofiRate",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "updatedBlock",
         "type": "uint256"
       }
     ],

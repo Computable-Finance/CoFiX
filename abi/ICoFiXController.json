@@ -197,6 +197,11 @@
         "type": "address"
       },
       {
+        "internalType": "uint8",
+        "name": "op",
+        "type": "uint8"
+      },
+      {
         "internalType": "bytes",
         "name": "data",
         "type": "bytes"

@@ -13,7 +13,7 @@
       },
       {
         "internalType": "address",
-        "name": "_cofixVault",
+        "name": "_factory",
         "type": "address"
       }
     ],
@@ -142,7 +142,7 @@
   },
   {
     "inputs": [],
-    "name": "cofixVault",
+    "name": "factory",
     "outputs": [
       {
         "internalType": "address",
@@ -238,6 +238,19 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "rewardsVault",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",

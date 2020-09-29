@@ -531,8 +531,13 @@
         "type": "address"
       },
       {
+        "internalType": "uint8",
+        "name": "op",
+        "type": "uint8"
+      },
+      {
         "internalType": "bytes",
-        "name": "",
+        "name": "data",
         "type": "bytes"
       }
     ],
@@ -545,26 +550,132 @@
       },
       {
         "internalType": "uint256",
-        "name": "",
+        "name": "_ethAmount",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "",
+        "name": "_erc20Amount",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "",
+        "name": "_blockNum",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "",
+        "name": "_theta",
         "type": "uint256"
       }
     ],
     "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
+      },
+      {
+        "internalType": "uint256",
+        "name": "ethAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "erc20Amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "calcImpactCostFor_SWAP_WITH_EXACT",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "impactCost",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
+      },
+      {
+        "internalType": "uint256",
+        "name": "ethAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "erc20Amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "calcImpactCostFor_SWAP_FOR_EXACT",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "impactCost",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "vol",
+        "type": "uint256"
+      }
+    ],
+    "name": "impactCostForBuyInETH",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "impactCost",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "vol",
+        "type": "uint256"
+      }
+    ],
+    "name": "impactCostForSellOutETH",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "impactCost",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "pure",
     "type": "function"
   },
   {

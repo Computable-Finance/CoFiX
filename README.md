@@ -91,7 +91,7 @@ npm run genabi
 
 ## Ropsten Testnet
 
-### Beta-V0.1
+<!-- ### Beta-V0.1
 
 |       Contract       |                  Address                   |
 | :------------------: | :----------------------------------------: |
@@ -153,7 +153,7 @@ npm run genabi
 | CoFiXFactory | 0xf56E0C6E9D3233b99FA439710147E52b9ef26F60 |
 | CoFiXKTable | 0xe609B978635c7Bb8D22Ffc4Ec7f7a16615a3b1cA |
 | CoFiXRouter | 0x30f1c72CfcF96c4de2e279fa256567F8ADbEf888 |
-| CoFiXVaultForLP | 0x4F6544aF9Ea4107b52D4563F16c2A660D1E7EB41 |
+| CoFiXVaultForLP | 0x4F6544aF9Ea4107b52D4563F16c2A660D1E7EB41 | -->
 
 ### Beta-V0.8
 
@@ -176,6 +176,26 @@ npm run genabi
 | CoFiStakingRewards | 0xC8b29e0b4F5e9A55a0130934A690655BefbA34B4 |
 
 ## Kovan Testnet
+
+### Beta-V0.9
+
+|       Contract       |                  Address                   |
+| :------------------: | :----------------------------------------: |
+| USDT | 0x3399EB8165888221A30c822753648dfc16ed3803 |
+| HBTC | 0xC34156BE35c870D47638eFdCfA20E39e299607B0 |
+| NEST | 0xa50CB75ee798268aeA5de0F0aEE271595e1CAAa2 |
+| WETH | 0x39edE2c2ca91295BEA2F20080C0B82872B7C64b7 |
+| NestPriceOracle | 0x505A054e6064fADB9277864647641EF64B7c783B |
+| CoFiXKTable | 0xa01FeCbeD543DCF5612D379ecbE23b0D2763c0D6 |
+| CoFiToken | 0x61f423C704FcFd84adF006dB84a905dDca2ba4fA |
+| CNodeToken | 0xC2B66C87bFCA3900031b246a169fB6A67A911D8a |
+| CoFiXFactory | 0x3B4d6962A3f5184D9eb240D70070516addC3F4c5 |
+| CoFiXRouter | 0x5f6c887B22a8b30C2eca90B9C63ff370494790B7 |
+| CoFiXController | 0xed03772aFF6B83875De68C89961f83899D29EeD1 |
+| CoFiXVaultForLP | 0x1eAF116d62eB943fcf28A0645b8059EFBb829FAB |
+| CoFiXVaultForTrader | 0x37289c1d3BEAE79c0EEF494ABf5209668E1704B9 |
+| CoFiXVaultForCNode | 0x04983eEA3aA0A73A1487B255abA688619844B023 |
+| CoFiStakingRewards | 0x453FEd6fE31a17C8277bd7F477ebbCB542D4Ad5D |
 
 ### Beta-V0.5
 

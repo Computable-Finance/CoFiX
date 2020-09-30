@@ -6,7 +6,8 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract CoFiXNode is ERC20("CoFiX Node", "CN") {
 
     constructor() public {
-        _mint(msg.sender, 100*1e18);
+        _setupDecimals(0);
+        _mint(msg.sender, 100);
     }
 
 }

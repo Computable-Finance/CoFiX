@@ -14,7 +14,7 @@ contract('CoFiXNode', (accounts) => {
     const BOB = accounts[5];
 
 
-    const TOTAL_SUPPLY = web3.utils.toWei('100', 'ether');
+    const TOTAL_SUPPLY = "100";
 
     before(async () => {
         CN = await CoFiXNode.new({ from: deployer });
@@ -28,12 +28,14 @@ contract('CoFiXNode', (accounts) => {
     it("should have correct name and symbol", async () => {
         const name = await CN.name();
         const symbol = await CN.symbol();
+        const decimal = await CN.decimal();
         expect(name).equal("CoFiX Node");
         expect(symbol).equal("CN");
+        expect(decimal).equal("0");
     });
 
     it("should transfer from ALICE to BOB correctly", async () => {
-        const amount = web3.utils.toWei('50', 'ether');
+        const amount = "50";
         await CN.transfer(BOB, amount, {from: ALICE});
         const balanceOfBob = await CN.balanceOf(BOB);
         expect(balanceOfBob).to.bignumber.equal(amount);
@@ -42,7 +44,7 @@ contract('CoFiXNode', (accounts) => {
     });
 
     it("should revert if no enough balance", async () => {
-        const amount = web3.utils.toWei('51', 'ether');
+        const amount = "51";
         await expectRevert(CN.transfer(ALICE, amount, {from: BOB}), "ERC20: transfer amount exceeds balance");
     });
 

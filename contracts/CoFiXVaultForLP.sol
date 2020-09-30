@@ -45,6 +45,11 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
 
     mapping (address => address) public pairToStakingPool; // pair -> staking pool
 
+    modifier onlyGovernance() {
+        require(msg.sender == governance, "CVaultForLP: !governance");
+        _;
+    }
+
     constructor(address cofi, address _factory) public {
         cofiToken = cofi;
         factory = _factory;
@@ -53,29 +58,24 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
     }
 
     /* setters for protocol governance */
-    function setGovernance(address _new) external override {
-        require(msg.sender == governance, "CVaultForLP: !governance");
+    function setGovernance(address _new) external override onlyGovernance {
         governance = _new;
     }
 
-    function setInitCoFiRate(uint256 _new) external override {
-        require(msg.sender == governance, "CVaultForLP: !governance");
+    function setInitCoFiRate(uint256 _new) external override onlyGovernance {
         initCoFiRate = _new;
     }
 
-    function setDecayPeriod(uint256 _new) external override {
-        require(msg.sender == governance, "CVaultForLP: !governance");
+    function setDecayPeriod(uint256 _new) external override onlyGovernance {
         require(_new != 0, "CVaultForLP: wrong period setting");
         decayPeriod = _new;
     }
 
-    function setDecayRate(uint256 _new) external override {
-        require(msg.sender == governance, "CVaultForLP: !governance");
+    function setDecayRate(uint256 _new) external override onlyGovernance {
         decayRate = _new;
     }
 
-    function addPool(address pool) external override {
-        require(msg.sender == governance, "CVaultForLP: !governance");
+    function addPool(address pool) external override onlyGovernance {
         require(poolInfo[pool].state == POOL_STATE.INVALID, "CVaultForLP: pool added"); // INVALID -> ENABLED
         poolInfo[pool].state = POOL_STATE.ENABLED;
         // default rate is zero, to ensure safety
@@ -88,8 +88,7 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
         emit NewPoolAdded(pool, allPools.length);
     }
 
-    function enablePool(address pool) external override {
-        require(msg.sender == governance, "CVaultForLP: !governance");
+    function enablePool(address pool) external override onlyGovernance {
         require(poolInfo[pool].state == POOL_STATE.DISABLED, "CVaultForLP: pool not disabled"); // DISABLED -> ENABLED
         poolInfo[pool].state = POOL_STATE.ENABLED;
         enabledCnt = enabledCnt.add(1);
@@ -100,8 +99,7 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
         emit PoolEnabled(pool);
     }
 
-    function disablePool(address pool) external override {
-        require(msg.sender == governance, "CVaultForLP: !governance");
+    function disablePool(address pool) external override onlyGovernance {
         require(poolInfo[pool].state == POOL_STATE.ENABLED, "CVaultForLP: pool not enabled"); // ENABLED -> DISABLED
         poolInfo[pool].state = POOL_STATE.DISABLED;
         poolInfo[pool].weight = 0; // set pool weight to zero;
@@ -111,15 +109,13 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
         emit PoolDisabled(pool);
     }
 
-    function setPoolWeight(address pool, uint256 weight) public override {
-        require(msg.sender == governance, "CVaultForLP: !governance");
+    function setPoolWeight(address pool, uint256 weight) public override onlyGovernance {
         require(weight <= WEIGHT_BASE, "CVaultForLP: invalid weight");
         require(poolInfo[pool].state == POOL_STATE.ENABLED, "CVaultForLP: pool not enabled"); // only set weight if pool is enabled
         poolInfo[pool].weight = weight;
     }
 
-    function batchSetPoolWeight(address[] memory pools, uint256[] memory weights) external override {
-        require(msg.sender == governance, "CVaultForLP: !governance");
+    function batchSetPoolWeight(address[] memory pools, uint256[] memory weights) external override onlyGovernance {
         uint256 cnt = pools.length;
         require(cnt == weights.length, "CVaultForLP: mismatch len");
         for (uint256 i = 0; i < cnt; i++) {

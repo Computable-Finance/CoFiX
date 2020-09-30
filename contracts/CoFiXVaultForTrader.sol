@@ -58,6 +58,11 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
     uint128 public lastMinedBlock; // last block mined cofi token
     uint128 public lastDensity; // last mining density, see currentDensity()
 
+    modifier onlyGovernance() {
+        require(msg.sender == governance, "CVaultForTrader: !governance");
+        _;
+    }
+
     constructor(address cofi, address _factory) public {
         cofiToken = cofi;
         factory = _factory;
@@ -66,20 +71,17 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
     }
 
     /* setters for protocol governance */
-    function setGovernance(address _new) external override {
-        require(msg.sender == governance, "CVaultForTrader: !governance");
+    function setGovernance(address _new) external override onlyGovernance {
         governance = _new;
     }
 
-    function allowRouter(address router) external override {
-        require(msg.sender == governance, "CVaultForTrader: !governance");
+    function allowRouter(address router) external override onlyGovernance {
         require(!routerAllowed[router], "CVaultForTrader: router allowed");
         routerAllowed[router] = true;
         emit RouterAllowed(router);
     }
 
-    function disallowRouter(address router) external override {
-        require(msg.sender == governance, "CVaultForTrader: !governance");
+    function disallowRouter(address router) external override onlyGovernance {
         require(routerAllowed[router], "CVaultForTrader: router disallowed");
         routerAllowed[router] = false;
         emit RouterDisallowed(router);

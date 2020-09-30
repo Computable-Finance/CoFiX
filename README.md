@@ -75,6 +75,9 @@ npm run genabi
 
 ## Mainnet
 
+- CoFiXNode [0x08A70b53B5e8B74a60C870BfE1642219A33462fF](https://etherscan.io/address/0x08A70b53B5e8B74a60C870BfE1642219A33462fF#code)
+
+
 ### Beta-V0.6
 
 |       Contract       |                  Address                   |

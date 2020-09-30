@@ -28,10 +28,10 @@ contract('CoFiXNode', (accounts) => {
     it("should have correct name and symbol", async () => {
         const name = await CN.name();
         const symbol = await CN.symbol();
-        const decimal = await CN.decimal();
+        const decimal = await CN.decimals();
         expect(name).equal("CoFiX Node");
         expect(symbol).equal("CN");
-        expect(decimal).equal("0");
+        expect(decimal).to.bignumber.equal("0");
     });
 
     it("should transfer from ALICE to BOB correctly", async () => {

@@ -29,7 +29,7 @@ module.exports = async function (deployer, network) {
         WETH9 = await WETH9.at("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2");
         NestPriceOracle = await NestPriceOracle.at("0x7722891Ee45aD38AE05bDA8349bA4CF23cFd270F");
         CoFiXKTable = await CoFiXKTable.at("0x75E360Be6248Bd46030C6818624a09403EF5eC21");
-        CoFiXNode = await CoFiXNode.at("0x08A70b53B5e8B74a60C870BfE1642219A33462fF");
+        CoFiXNode = await CoFiXNode.at("0x558201DC4741efc11031Cdc3BC1bC728C23bF512");
     } else if (network == "ropsten" || network == "ropsten-fork") {
         USDT = await USDT.at("0x200506568C2980B4943B5EaA8713A5740eb2c98A");
         HBTC = await HBTC.at("0xA674f71ce49CE7F298aea2F23D918d114965eb40");

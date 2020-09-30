@@ -3,9 +3,11 @@ const ERC20 = artifacts.require("TestERC20");
 const { BN } = require('@openzeppelin/test-helpers');
 const { web3 } = require('@openzeppelin/test-environment');
 const Decimal = require('decimal.js');
+const { expect } = require('chai');
+require('chai').should();
 
 const CoFiToken = artifacts.require("CoFiToken");
-const TestXToken = artifacts.require("TestXToken");
+const CoFiXPair = artifacts.require("CoFiXPair");
 const CoFiXVaultForLP = artifacts.require("CoFiXVaultForLP");
 const CoFiXFactory = artifacts.require("CoFiXFactory");
 const CoFiXStakingRewards = artifacts.require("CoFiXStakingRewards.sol");
@@ -19,15 +21,19 @@ module.exports = async function (callback) {
         console.log(`argv> cofi=${argv.cofi}, xtoken=${argv.xtoken}, factory=${argv.factory}, addpool=${argv.addpool}`);
 
         CoFi = await CoFiToken.at(argv.cofi);
-        XToken = await TestXToken.at(argv.xtoken);
-        CoFiXFactory = await CoFiXFactory.at(argv.factory);
+        XToken = await CoFiXPair.at(argv.xtoken);
+        CFactory = await CoFiXFactory.at(argv.factory);
 
-        const vaultForLP = await CoFiXFactory.getVaultForLP();
+        const factory = await XToken.factory();
+        console.log(`factory: ${factory}, CFactory.address: ${CFactory.address}`)
+        expect(factory).equal(CFactory.address); // verify
+
+        const vaultForLP = await CFactory.getVaultForLP();
         console.log("vaultForLP:", vaultForLP);
 
         VaultForLP = await CoFiXVaultForLP.at(vaultForLP);
 
-        StakingRewards = await CoFiXStakingRewards.new(CoFi.address, XToken.address, CoFiXFactory.address);
+        StakingRewards = await CoFiXStakingRewards.new(CoFi.address, XToken.address, CFactory.address);
     
         console.log("new CoFiXStakingRewards deployed at:", StakingRewards.address);
 

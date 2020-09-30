@@ -111,6 +111,13 @@ npm run genabi
 | CoFiXVaultForCNode | 0x1a31b517ABF0D2F4f11A797d7b8622859429AA25 |
 | CoFiStakingRewards | 0xDe80d5423569Ea4104d127e14E3fC1BE0486531d |
 
+- ETH/USDT
+  - Pair (XToken): 0x5f22a04F81A87a7aBe9191C338fA5Ba092Af4562
+  - XToken StakingRewards Pool: 0xA3904574E4Fbf7592B3A3c1439cAe97D5622FBFD
+- ETH/HBTC
+  - Pair (XToken): 0x9D90e9e5AFF7545046FF66544B7848C21118Da22
+  - XToken StakingRewards Pool: 0xe6c3bd6D258cE7fc7554723fc2b93F848CEF30E7
+
 <!-- ### Beta-V0.1
 
 |       Contract       |                  Address                   |

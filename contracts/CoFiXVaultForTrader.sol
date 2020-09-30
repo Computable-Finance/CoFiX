@@ -58,6 +58,11 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
     uint128 public lastMinedBlock; // last block mined cofi token
     uint128 public lastDensity; // last mining density, see currentDensity()
 
+    modifier onlyGovernance() {
+        require(msg.sender == governance, "CVaultForTrader: !governance");
+        _;
+    }
+
     constructor(address cofi, address _factory) public {
         cofiToken = cofi;
         factory = _factory;
@@ -66,21 +71,18 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
     }
 
     /* setters for protocol governance */
-    function setGovernance(address _new) external override {
-        require(msg.sender == governance, "CVaultForTrader: !governance");
+    function setGovernance(address _new) external override onlyGovernance {
         governance = _new;
     }
 
-    function allowRouter(address router) external override {
-        require(msg.sender == governance, "CVaultForTrader: !governance");
-        require(routerAllowed[router] == false, "CVaultForTrader: router allowed");
+    function allowRouter(address router) external override onlyGovernance {
+        require(!routerAllowed[router], "CVaultForTrader: router allowed");
         routerAllowed[router] = true;
         emit RouterAllowed(router);
     }
 
-    function disallowRouter(address router) external override {
-        require(msg.sender == governance, "CVaultForTrader: !governance");
-        require(routerAllowed[router] == true, "CVaultForTrader: router disallowed");
+    function disallowRouter(address router) external override onlyGovernance {
+        require(routerAllowed[router], "CVaultForTrader: router disallowed");
         routerAllowed[router] = false;
         emit RouterDisallowed(router);
     }
@@ -209,7 +211,9 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
         uint256 np,
         address rewardTo
     ) external override nonReentrant {
-        require(routerAllowed[msg.sender] == true, "CVaultForTrader: not allowed router");  // caution: be careful when adding new router
+        require(routerAllowed[msg.sender], "CVaultForTrader: not allowed router");  // caution: be careful when adding new router
+        require(pair != address(0), "CVaultForTrader: invalid pair");
+        require(rewardTo != address(0), "CVaultForTrader: invalid rewardTo");
 
         uint256 amount;
         {
@@ -246,6 +250,7 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
         address vaultForCNode = ICoFiXFactory(factory).getVaultForCNode();
         require(msg.sender == vaultForCNode, "CVaultForTrader: only vaultForCNode"); // caution
         // uint256 pending = pendingRewardsForCNode;
+        emit ClearPendingRewardOfCNode(pendingRewardsForCNode);
         pendingRewardsForCNode = 0; // take all, set to 0
         // ICoFiToken(cofiToken).mint(msg.sender, pending); // no need to mint from here, we can mint directly in valult
     }
@@ -254,6 +259,7 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
     function clearPendingRewardOfLP(address pair) external override nonReentrant {
         address vaultForLP = ICoFiXFactory(factory).getVaultForLP();
         require(msg.sender == vaultForLP, "CVaultForTrader: only vaultForLP"); // caution 
+        emit ClearPendingRewardOfLP(pendingRewardsForLP[pair]);
         pendingRewardsForLP[pair] = 0; // take all, set to 0
         // ICoFiToken(cofiToken).mint(to, pending); // no need to mint from here, we can mint directly in valult
     }

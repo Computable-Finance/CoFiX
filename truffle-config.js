@@ -20,10 +20,14 @@
 
 const HDWalletProvider = require('@truffle/hdwallet-provider');
 const utils = require('web3-utils');
+const { execSync } = require("child_process")
+
 // const infuraKey = "fj4jll3k.....";
 //
 // const fs = require('fs');
 // const mnemonic = fs.readFileSync(".secret").toString().trim();
+
+const commitHash = execSync("git describe --always --long").toString().trim();
 
 module.exports = {
   /**
@@ -107,7 +111,12 @@ module.exports = {
   },
 
   verify: {
-    preamble: "Author: CoFiX Core"
+    preamble: `
+Author: CoFiX Core, https://cofix.io
+Commit hash: ${commitHash}
+Repository: https://github.com/Computable-Finance/CoFiX
+Issues: https://github.com/Computable-Finance/CoFiX/issues
+`
   },
 
   // Set default mocha options here, use special reporters etc.

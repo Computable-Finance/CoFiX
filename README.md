@@ -91,6 +91,26 @@ npm run genabi
 
 ## Ropsten Testnet
 
+### Beta-V0.9.1
+
+|       Contract       |                  Address                   |
+| :------------------: | :----------------------------------------: |
+| USDT | 0x200506568C2980B4943B5EaA8713A5740eb2c98A |
+| HBTC | 0xA674f71ce49CE7F298aea2F23D918d114965eb40 |
+| NEST | 0xD287Bc43eCD3D892204aA3792165fe8728636E29 |
+| WETH | 0x59b8881812Ac484Ab78b8fc7c10b2543e079a6C3 |
+| NestPriceOracle | 0x70B9b6F0e1E4073403cF7143b45a862fe73af3B9 |
+| CoFiXKTable | 0xe609B978635c7Bb8D22Ffc4Ec7f7a16615a3b1cA |
+| CoFiToken | 0xE68976a81572B185899205C7b8BCBD1515DF4f5b |
+| CoFiXNode | 0x1B9B116BAbb32474A367d004aCE928db4215481F |
+| CoFiXFactory | 0xC85987c73300CFd1838da40F0A4b29bB64EAed8e |
+| CoFiXRouter | 0x66aa2AC8F6557B956AE144efe85feF860d848851 |
+| CoFiXController | 0xff460A541DC7Af7FeA7b98E0Ba5eF64C80B1409B |
+| CoFiXVaultForLP | 0xA4c1FcbB8B2bc0347F2736f78558cF2F1a99BF82 |
+| CoFiXVaultForTrader | 0xCfA46cDdC9142fE1Fa86F780Aeb32799ef008cDA |
+| CoFiXVaultForCNode | 0x1a31b517ABF0D2F4f11A797d7b8622859429AA25 |
+| CoFiStakingRewards | 0xDe80d5423569Ea4104d127e14E3fC1BE0486531d |
+
 <!-- ### Beta-V0.1
 
 |       Contract       |                  Address                   |

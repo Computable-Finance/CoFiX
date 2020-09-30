@@ -13,7 +13,7 @@ const CoFiXVaultForTrader = artifacts.require("CoFiXVaultForTrader");
 const CoFiXVaultForCNode = artifacts.require("CoFiXVaultForCNode");
 const CoFiStakingRewards = artifacts.require("CoFiStakingRewards");
 const CoFiToken = artifacts.require("CoFiToken");
-const CoFiXNode = artifacts.require("CoFiXNode");
+var CoFiXNode = artifacts.require("CoFiXNode");
 
 const { deployProxy } = require('@openzeppelin/truffle-upgrades');
 
@@ -29,6 +29,7 @@ module.exports = async function (deployer, network) {
         WETH9 = await WETH9.at("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2");
         NestPriceOracle = await NestPriceOracle.at("0x7722891Ee45aD38AE05bDA8349bA4CF23cFd270F");
         CoFiXKTable = await CoFiXKTable.at("0x75E360Be6248Bd46030C6818624a09403EF5eC21");
+        CoFiXNode = await CoFiXNode.at("0x08A70b53B5e8B74a60C870BfE1642219A33462fF");
     } else if (network == "ropsten" || network == "ropsten-fork") {
         USDT = await USDT.at("0x200506568C2980B4943B5EaA8713A5740eb2c98A");
         HBTC = await HBTC.at("0xA674f71ce49CE7F298aea2F23D918d114965eb40");
@@ -36,6 +37,8 @@ module.exports = async function (deployer, network) {
         WETH9 = await WETH9.at("0x59b8881812Ac484Ab78b8fc7c10b2543e079a6C3");
         NestPriceOracle = await NestPriceOracle.at("0x70B9b6F0e1E4073403cF7143b45a862fe73af3B9");
         CoFiXKTable = await CoFiXKTable.at("0xe609B978635c7Bb8D22Ffc4Ec7f7a16615a3b1cA");
+        // CNode Token
+        await deployer.deploy(CoFiXNode);
     } else {
         // USDT Test Token
         await deployer.deploy(USDT);
@@ -49,13 +52,12 @@ module.exports = async function (deployer, network) {
         await deployer.deploy(NestPriceOracle, NEST.address);
         // CoFiXTable
         await deployer.deploy(CoFiXKTable);
+        // CNode Token
+        await deployer.deploy(CoFiXNode);
     }
 
     // CoFi Token
     await deployer.deploy(CoFiToken);
-
-    // CNode Token
-    await deployer.deploy(CoFiXNode);
 
     // CoFiXFactory
     await deployer.deploy(CoFiXFactory, WETH9.address);

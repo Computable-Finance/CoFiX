@@ -16,7 +16,6 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
 
     enum CoFiX_OP { QUERY, MINT, BURN, SWAP_WITH_EXACT, SWAP_FOR_EXACT } // operations in CoFiX
 
-    uint public override constant MINIMUM_LIQUIDITY = 10**3;
     bytes4 private constant SELECTOR = bytes4(keccak256(bytes("transfer(address,uint256)")));
 
     uint256 constant public K_BASE = 1E8; // K

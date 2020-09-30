@@ -34,7 +34,7 @@ contract('CoFiToken', (accounts) => {
     it("should have correct name and symbol", async () => {
         const name = await CoFi.name();
         const symbol = await CoFi.symbol();
-        expect(name).equal("CoFiToken");
+        expect(name).equal("CoFi Token");
         expect(symbol).equal("CoFi");
     });
 

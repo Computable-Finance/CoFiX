@@ -13,7 +13,7 @@ const CoFiXVaultForTrader = artifacts.require("CoFiXVaultForTrader");
 const CoFiXVaultForCNode = artifacts.require("CoFiXVaultForCNode");
 const CoFiStakingRewards = artifacts.require("CoFiStakingRewards");
 const CoFiToken = artifacts.require("CoFiToken");
-const CNodeToken = artifacts.require("CNodeToken");
+const CoFiXNode = artifacts.require("CoFiXNode");
 
 const { deployProxy } = require('@openzeppelin/truffle-upgrades');
 
@@ -55,7 +55,7 @@ module.exports = async function (deployer, network) {
     await deployer.deploy(CoFiToken);
 
     // CNode Token
-    await deployer.deploy(CNodeToken);
+    await deployer.deploy(CoFiXNode);
 
     // CoFiXFactory
     await deployer.deploy(CoFiXFactory, WETH9.address);
@@ -105,7 +105,7 @@ module.exports = async function (deployer, network) {
     console.log(`| CoFiXKTable | ${CoFiXKTable.address} |`);
 
     console.log(`| CoFiToken | ${CoFiToken.address} |`);
-    console.log(`| CNodeToken | ${CNodeToken.address} |`);
+    console.log(`| CoFiXNode | ${CoFiXNode.address} |`);
 
     console.log(`| CoFiXFactory | ${CoFiXFactory.address} |`);
     console.log(`| CoFiXRouter | ${CoFiXRouter.address} |`);

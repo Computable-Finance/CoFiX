@@ -3,7 +3,7 @@ pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract CNodeToken is ERC20("CNodeToken", "CNode") {
+contract CoFiXNode is ERC20("CoFiX Node", "CN") {
 
     constructor() public {
         _mint(msg.sender, 100*1e18);

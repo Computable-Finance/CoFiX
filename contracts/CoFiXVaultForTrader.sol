@@ -73,14 +73,14 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
 
     function allowRouter(address router) external override {
         require(msg.sender == governance, "CVaultForTrader: !governance");
-        require(routerAllowed[router] == false, "CVaultForTrader: router allowed");
+        require(!routerAllowed[router], "CVaultForTrader: router allowed");
         routerAllowed[router] = true;
         emit RouterAllowed(router);
     }
 
     function disallowRouter(address router) external override {
         require(msg.sender == governance, "CVaultForTrader: !governance");
-        require(routerAllowed[router] == true, "CVaultForTrader: router disallowed");
+        require(routerAllowed[router], "CVaultForTrader: router disallowed");
         routerAllowed[router] = false;
         emit RouterDisallowed(router);
     }
@@ -209,7 +209,7 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
         uint256 np,
         address rewardTo
     ) external override nonReentrant {
-        require(routerAllowed[msg.sender] == true, "CVaultForTrader: not allowed router");  // caution: be careful when adding new router
+        require(routerAllowed[msg.sender], "CVaultForTrader: not allowed router");  // caution: be careful when adding new router
 
         uint256 amount;
         {

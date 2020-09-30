@@ -7,6 +7,9 @@ interface ICoFiXVaultForTrader {
     event RouterAllowed(address router);
     event RouterDisallowed(address router);
 
+    event ClearPendingRewardOfCNode(uint256 pendingAmount);
+    event ClearPendingRewardOfLP(uint256 pendingAmount);
+
     function setGovernance(address gov) external;
 
     function allowRouter(address router) external;

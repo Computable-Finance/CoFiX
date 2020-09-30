@@ -246,6 +246,7 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
         address vaultForCNode = ICoFiXFactory(factory).getVaultForCNode();
         require(msg.sender == vaultForCNode, "CVaultForTrader: only vaultForCNode"); // caution
         // uint256 pending = pendingRewardsForCNode;
+        emit ClearPendingRewardOfCNode(pendingRewardsForCNode);
         pendingRewardsForCNode = 0; // take all, set to 0
         // ICoFiToken(cofiToken).mint(msg.sender, pending); // no need to mint from here, we can mint directly in valult
     }
@@ -254,6 +255,7 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
     function clearPendingRewardOfLP(address pair) external override nonReentrant {
         address vaultForLP = ICoFiXFactory(factory).getVaultForLP();
         require(msg.sender == vaultForLP, "CVaultForTrader: only vaultForLP"); // caution 
+        emit ClearPendingRewardOfLP(pendingRewardsForLP[pair]);
         pendingRewardsForLP[pair] = 0; // take all, set to 0
         // ICoFiToken(cofiToken).mint(to, pending); // no need to mint from here, we can mint directly in valult
     }

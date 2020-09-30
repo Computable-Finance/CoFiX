@@ -212,6 +212,8 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
         address rewardTo
     ) external override nonReentrant {
         require(routerAllowed[msg.sender], "CVaultForTrader: not allowed router");  // caution: be careful when adding new router
+        require(pair != address(0), "CVaultForTrader: invalid pair");
+        require(rewardTo != address(0), "CVaultForTrader: invalid rewardTo");
 
         uint256 amount;
         {

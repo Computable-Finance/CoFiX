@@ -77,6 +77,7 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
 
     function addPool(address pool) external override onlyGovernance {
         require(poolInfo[pool].state == POOL_STATE.INVALID, "CVaultForLP: pool added"); // INVALID -> ENABLED
+        require(pool != address(0), "CVaultForTrader: invalid pool");
         poolInfo[pool].state = POOL_STATE.ENABLED;
         // default rate is zero, to ensure safety
         enabledCnt = enabledCnt.add(1);
@@ -90,6 +91,7 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
 
     function enablePool(address pool) external override onlyGovernance {
         require(poolInfo[pool].state == POOL_STATE.DISABLED, "CVaultForLP: pool not disabled"); // DISABLED -> ENABLED
+        require(pool != address(0), "CVaultForTrader: invalid pool");
         poolInfo[pool].state = POOL_STATE.ENABLED;
         enabledCnt = enabledCnt.add(1);
         // set pair to reward pool map
@@ -101,6 +103,7 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
 
     function disablePool(address pool) external override onlyGovernance {
         require(poolInfo[pool].state == POOL_STATE.ENABLED, "CVaultForLP: pool not enabled"); // ENABLED -> DISABLED
+        require(pool != address(0), "CVaultForTrader: invalid pool");
         poolInfo[pool].state = POOL_STATE.DISABLED;
         poolInfo[pool].weight = 0; // set pool weight to zero;
         enabledCnt = enabledCnt.sub(1);
@@ -111,6 +114,7 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
 
     function setPoolWeight(address pool, uint256 weight) public override onlyGovernance {
         require(weight <= WEIGHT_BASE, "CVaultForLP: invalid weight");
+        require(pool != address(0), "CVaultForTrader: invalid pool");
         require(poolInfo[pool].state == POOL_STATE.ENABLED, "CVaultForLP: pool not enabled"); // only set weight if pool is enabled
         poolInfo[pool].weight = weight;
     }
@@ -119,6 +123,7 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
         uint256 cnt = pools.length;
         require(cnt == weights.length, "CVaultForLP: mismatch len");
         for (uint256 i = 0; i < cnt; i++) {
+            require(pools[i] != address(0), "CVaultForTrader: invalid pool");
             require(weights[i] <= WEIGHT_BASE, "CVaultForLP: invalid weight");
             require(poolInfo[pools[i]].state == POOL_STATE.ENABLED, "CVaultForLP: pool not enabled"); // only set weight if pool is enabled
             poolInfo[pools[i]].weight = weights[i];
@@ -146,10 +151,12 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
         if (poolState == POOL_STATE.DISABLED) {
             return; // make sure tx would revert because user still want to withdraw and getReward
         }
+        require(to != address(0), "CVaultForTrader: invalid to");
         // if poolState is enabled, then go on. caution: be careful when adding new pool
         address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
         if (vaultForTrader != address(0)) { // if equal, means vaultForTrader is not set yet
             address pair = ICoFiXStakingRewards(msg.sender).stakingToken();
+            require(pair != address(0), "CVaultForTrader: invalid pair");
             uint256 pending = ICoFiXVaultForTrader(vaultForTrader).getPendingRewardOfLP(pair);
             if (pending > 0) {
                 ICoFiXVaultForTrader(vaultForTrader).clearPendingRewardOfLP(pair);

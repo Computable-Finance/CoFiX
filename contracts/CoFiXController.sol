@@ -7,6 +7,7 @@ import "./interface/INest_3_OfferPrice.sol";
 import "./interface/ICoFiXKTable.sol";
 import "./lib/TransferHelper.sol";
 import "./interface/ICoFiXController.sol";
+import "./interface/INest_3_VoteFactory.sol";
 
 // Controller contract to call NEST Oracle for prices, managed by governance
 // Governance role of this contract should be the `Timelock` contract, which is further managed by a multisig contract
@@ -31,9 +32,10 @@ contract CoFiXController is ICoFiXController {
     mapping(address => uint32[3]) internal KInfoMap; // gas saving, index [0] is k vlaue, index [1] is updatedAt, index [2] is theta
     mapping(address => bool) public callerAllowed;
 
+    INest_3_VoteFactory public voteFactory;
+
     // managed by governance
     address public governance;
-    address public oracle;
     address public nestToken;
     address public factory;
     address public kTable;
@@ -48,9 +50,9 @@ contract CoFiXController is ICoFiXController {
         _;
     }
 
-    constructor(address _priceOracle, address _nest, address _factory, address _kTable) public {
+    constructor(address _voteFactory, address _nest, address _factory, address _kTable) public {
         governance = msg.sender;
-        oracle = _priceOracle;
+        voteFactory = INest_3_VoteFactory(address(_voteFactory));
         nestToken = _nest;
         factory = _factory;
         kTable = _kTable;
@@ -62,11 +64,6 @@ contract CoFiXController is ICoFiXController {
     function setGovernance(address _new) external onlyGovernance {
         governance = _new;
         emit NewGovernance(_new);
-    }
-
-    function setOracle(address _priceOracle) external onlyGovernance {
-        oracle = _priceOracle;
-        emit NewOracle(_priceOracle);
     }
 
     function setKTable(address _kTable) external onlyGovernance {
@@ -107,6 +104,7 @@ contract CoFiXController is ICoFiXController {
     function activate() external onlyGovernance {
         // address token, address from, address to, uint value
         TransferHelper.safeTransferFrom(nestToken, msg.sender, address(this), DESTRUCTION_AMOUNT);
+        address oracle = voteFactory.checkAddress("nest.v3.offerPrice");
         // address token, address to, uint value
         TransferHelper.safeApprove(nestToken, oracle, DESTRUCTION_AMOUNT);
         INest_3_OfferPrice(oracle).activation(); // nest.transferFrom will be called
@@ -265,6 +263,7 @@ contract CoFiXController is ICoFiXController {
 
     function getLatestPrice(address token) internal returns (uint256 _ethAmount, uint256 _erc20Amount, uint256 _blockNum) {
         uint256 _balanceBefore = address(this).balance;
+        address oracle = voteFactory.checkAddress("nest.v3.offerPrice");
         uint256[] memory _rawPriceList = INest_3_OfferPrice(oracle).updateAndCheckPriceList{value: msg.value}(token, 1);
         require(_rawPriceList.length == 3, "CoFiXCtrl: bad price len");
         // validate T
@@ -285,7 +284,7 @@ contract CoFiXController is ICoFiXController {
         uint256 _blockNum
     ) // keep these variables to make return values more clear
     {
-
+        address oracle = voteFactory.checkAddress("nest.v3.offerPrice");
         // query raw price list from nest oracle (newest to oldest)
         uint256[] memory _rawPriceList = INest_3_OfferPrice(oracle).updateAndCheckPriceList{value: msg.value}(token, 50);
         require(_rawPriceList.length == 150, "CoFiXCtrl: bad price len");

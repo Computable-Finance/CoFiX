@@ -22,6 +22,8 @@ const TestUSDT = artifacts.require("test/USDT");
 const TestHBTC = artifacts.require("test/HBTC");
 const TestNEST = artifacts.require("test/NEST");
 
+const NEST3VoteFactoryMock = artifacts.require("NEST3VoteFactoryMock");
+
 const CoFiToken = artifacts.require("CoFiToken");
 const CoFiXVaultForLP = artifacts.require("CoFiXVaultForLP");
 const CoFiXStakingRewards = artifacts.require("CoFiXStakingRewards.sol");
@@ -79,8 +81,9 @@ contract('CoFiX', (accounts) => {
         VaultForLP = await CoFiXVaultForLP.new(CoFi.address, CFactory.address, { from: deployer });
         await CFactory.setVaultForLP(VaultForLP.address);
         PriceOracle = await NEST3PriceOracleMock.new(NEST.address, { from: deployer });
+        NEST3VoteFactory = await NEST3VoteFactoryMock.new(PriceOracle.address);
         KTable = await CoFiXKTable.new({ from: deployer });
-        CoFiXCtrl = await CoFiXController.new(PriceOracle.address, NEST.address, CFactory.address, KTable.address);
+        CoFiXCtrl = await CoFiXController.new(NEST3VoteFactory.address, NEST.address, CFactory.address, KTable.address);
         await CFactory.setController(CoFiXCtrl.address);
         // await CoFiXCtrl.initialize(ConstOracle.address, { from: deployer });
         CRouter = await CoFiXRouter.new(CFactory.address, WETH.address, { from: deployer });

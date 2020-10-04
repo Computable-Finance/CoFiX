@@ -15,6 +15,8 @@ const CoFiStakingRewards = artifacts.require("CoFiStakingRewards");
 const CoFiToken = artifacts.require("CoFiToken");
 var CoFiXNode = artifacts.require("CoFiXNode");
 
+var NEST3VoteFactory = artifacts.require("NEST3VoteFactoryMock");
+
 const { deployProxy } = require('@openzeppelin/truffle-upgrades');
 
 
@@ -27,7 +29,8 @@ module.exports = async function (deployer, network) {
         HBTC = await HBTC.at("0x0316EB71485b0Ab14103307bf65a021042c6d380");
         NEST = await NEST.at("0x04abEdA201850aC0124161F037Efd70c74ddC74C");
         WETH9 = await WETH9.at("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2");
-        NestPriceOracle = await NestPriceOracle.at("0x94F36FAa6bB4f74009637292b09C355CcD3e80Eb");
+        // NestPriceOracle = await NestPriceOracle.at("0x94F36FAa6bB4f74009637292b09C355CcD3e80Eb");
+        NEST3VoteFactory = await NEST3VoteFactoryMock.at("0x6Cd5698E8854Fb6879d6B1C694223b389B465dea");
         CoFiXKTable = await CoFiXKTable.at("0x75E360Be6248Bd46030C6818624a09403EF5eC21");
         CoFiXNode = await CoFiXNode.at("0x558201DC4741efc11031Cdc3BC1bC728C23bF512");
     } else if (network == "ropsten" || network == "ropsten-fork") {
@@ -36,6 +39,8 @@ module.exports = async function (deployer, network) {
         NEST = await NEST.at("0xD287Bc43eCD3D892204aA3792165fe8728636E29");
         WETH9 = await WETH9.at("0x59b8881812Ac484Ab78b8fc7c10b2543e079a6C3");
         NestPriceOracle = await NestPriceOracle.at("0x70B9b6F0e1E4073403cF7143b45a862fe73af3B9");
+        // Vote Factory
+        await deployer.deploy(NEST3VoteFactory, NestPriceOracle.address);
         CoFiXKTable = await CoFiXKTable.at("0xe609B978635c7Bb8D22Ffc4Ec7f7a16615a3b1cA");
         // CNode Token
         await deployer.deploy(CoFiXNode);
@@ -50,6 +55,8 @@ module.exports = async function (deployer, network) {
         await deployer.deploy(WETH9);
         // NEST3 Price Oracle Mock
         await deployer.deploy(NestPriceOracle, NEST.address);
+        // Vote Factory
+        await deployer.deploy(NEST3VoteFactory, NestPriceOracle.address);
         // CoFiXTable
         await deployer.deploy(CoFiXKTable);
         // CNode Token
@@ -66,7 +73,7 @@ module.exports = async function (deployer, network) {
     await deployer.deploy(CoFiXRouter, CoFiXFactory.address, WETH9.address);
 
     // CoFiXController
-    await deployer.deploy(CoFiXController, NestPriceOracle.address, NEST.address, CoFiXFactory.address, CoFiXKTable.address);
+    await deployer.deploy(CoFiXController, NEST3VoteFactory.address, NEST.address, CoFiXFactory.address, CoFiXKTable.address);
 
     // CoFiStakingRewards
     await deployer.deploy(CoFiStakingRewards, WETH9.address, CoFiToken.address);
@@ -112,6 +119,7 @@ module.exports = async function (deployer, network) {
     console.log(`| NEST | ${NEST.address} |`);
     console.log(`| WETH | ${WETH9.address} |`);
     console.log(`| NestPriceOracle | ${NestPriceOracle.address} |`);
+    console.log(`| NEST3VoteFactory | ${NEST3VoteFactory.address} |`);
     console.log(`| CoFiXKTable | ${CoFiXKTable.address} |`);
 
     console.log(`| CoFiToken | ${CoFiToken.address} |`);

@@ -3,7 +3,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_priceOracle",
+        "name": "_voteFactory",
         "type": "address"
       },
       {
@@ -353,12 +353,12 @@
   },
   {
     "inputs": [],
-    "name": "oracle",
+    "name": "timespan",
     "outputs": [
       {
-        "internalType": "address",
+        "internalType": "uint256",
         "name": "",
-        "type": "address"
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -366,12 +366,12 @@
   },
   {
     "inputs": [],
-    "name": "timespan",
+    "name": "voteFactory",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "contract INest_3_VoteFactory",
         "name": "",
-        "type": "uint256"
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -390,19 +390,6 @@
       }
     ],
     "name": "setGovernance",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_priceOracle",
-        "type": "address"
-      }
-    ],
-    "name": "setOracle",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

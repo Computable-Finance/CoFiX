@@ -31,6 +31,8 @@ module.exports = async function (deployer, network) {
         WETH9 = await WETH9.at("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2");
         NestPriceOracle = await NestPriceOracle.at("0x94F36FAa6bB4f74009637292b09C355CcD3e80Eb");
         NEST3VoteFactory = await NEST3VoteFactory.at("0x6Cd5698E8854Fb6879d6B1C694223b389B465dea");
+        const offerPrice = await NEST3VoteFactory.checkAddress("nest.v3.offerPrice");
+        console.log(`NEST3VoteFactory: ${NEST3VoteFactory.address}, NestPriceOracle: ${NestPriceOracle.address}, offerPrice: ${offerPrice}`);
         CoFiXKTable = await CoFiXKTable.at("0x75E360Be6248Bd46030C6818624a09403EF5eC21");
         CoFiXNode = await CoFiXNode.at("0x558201DC4741efc11031Cdc3BC1bC728C23bF512");
     } else if (network == "ropsten" || network == "ropsten-fork") {
@@ -90,8 +92,7 @@ module.exports = async function (deployer, network) {
     // activate oracle
     if (network == "mainnet" || network == "mainnet-fork") {
         let controller = await CoFiXController.deployed();
-        let nest = await NEST.deployed();
-        await nest.approve(CoFiXController.address, "0");
+        await NEST.approve(CoFiXController.address, "0");
         await controller.activate();
     }
 
@@ -112,9 +113,6 @@ module.exports = async function (deployer, network) {
     // allowRouter
     let vaultForTrader = await CoFiXVaultForTrader.deployed();
     await vaultForTrader.allowRouter(CoFiXRouter.address);
-
-    const offerPrice = await NEST3VoteFactory.checkAddress("nest.v3.offerPrice");
-    console.log(`NEST3VoteFactory: ${NEST3VoteFactory.address}, NestPriceOracle: ${NestPriceOracle.address}, offerPrice: ${offerPrice}`);
 
     console.log(`Contract Deployed Summary\n=========================`);
     console.log(`| USDT | ${USDT.address} |`);

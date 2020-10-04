@@ -162,7 +162,6 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
                 ICoFiXVaultForTrader(vaultForTrader).clearPendingRewardOfLP(pair);
             }
         }
-        // TODO: think about add a mint role check, to ensure this call never fail?
         ICoFiToken(cofiToken).mint(to, amount); // allows zero
     }
 

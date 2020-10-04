@@ -119,7 +119,8 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
         if (block.number.sub(updatedBlock) < COFI_RATE_UPDATE_INTERVAL && updatedBlock != 0) {
             return cofiRateCache[pair].cofiRate;
         } 
-        address vaultForLP = ICoFiXFactory(factory).getVaultForLP(); // TODO: handle zero
+        address vaultForLP = ICoFiXFactory(factory).getVaultForLP();
+        require(vaultForLP != address(0), "CVaultForTrader: vaultForLP not set");
         uint256 cofiRateForLP = ICoFiXVaultForLP(vaultForLP).currentCoFiRate();
         uint256 poolCnt = ICoFiXVaultForLP(vaultForLP).getEnabledPoolCnt();
         uint256 totalSupply = ICoFiXPair(pair).totalSupply();
@@ -233,7 +234,6 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
             }
         }
 
-        // TODO: think about add a mint role check, to ensure this call never fail?
         {
             uint256 amountForTrader = amount.mul(SHARE_FOR_TRADER).div(SHARE_BASE);
             uint256 amountForLP = amount.mul(SHARE_FOR_LP).div(SHARE_BASE);

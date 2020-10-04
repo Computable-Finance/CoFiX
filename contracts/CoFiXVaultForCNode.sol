@@ -85,7 +85,6 @@ contract CoFiXVaultForCNode is ICoFiXVaultForCNode, ReentrancyGuard {
                 ICoFiXVaultForTrader(vaultForTrader).clearPendingRewardOfCNode();
             }
         }
-        // TODO: think about add a mint role check, to ensure this call never fail?
         ICoFiToken(cofiToken).mint(to, amount); // allows zero
     }
 

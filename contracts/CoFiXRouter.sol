@@ -102,7 +102,8 @@ contract CoFiXRouter is ICoFiXRouter {
         require(liquidity >= liquidityMin, "CRouter: less liquidity than expected");
 
         // find the staking rewards pool contract for the liquidity token (pair)
-        address pool = ICoFiXVaultForLP(ICoFiXFactory(factory).getVaultForLP()).stakingPoolForPair(pair); // TODO: reduce call
+        address pool = ICoFiXVaultForLP(ICoFiXFactory(factory).getVaultForLP()).stakingPoolForPair(pair);
+        require(pool != address(0), "CRouter: invalid staking pool");
         // approve to staking pool
         ICoFiXPair(pair).approve(pool, liquidity);
         ICoFiXStakingRewards(pool).stakeForOther(to, liquidity);

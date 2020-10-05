@@ -35,6 +35,12 @@
 
 **[https://docs.cofix.io/](https://docs.cofix.io/)**
 
+**[https://github.com/Computable-Finance/Doc](https://github.com/Computable-Finance/Doc)**
+
+## Smart Contract Diagrams
+
+![CoFiX Smart Contract](docs/cofix-smart-contract.svg)
+
 ## Usage
 
 ### Run test

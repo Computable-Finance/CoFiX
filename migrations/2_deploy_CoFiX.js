@@ -113,6 +113,8 @@ module.exports = async function (deployer, network) {
     await factory.createPair(HBTC.address);
     const usdtPair = await factory.getPair(USDT.address);
     const hbtcPair = await factory.getPair(HBTC.address);
+    await factory.setTradeMiningStatus(USDT.address, true);
+    await factory.setTradeMiningStatus(HBTC.address, true);
 
     // allowRouter
     let vaultForTrader = await CoFiXVaultForTrader.deployed();

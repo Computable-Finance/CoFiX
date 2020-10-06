@@ -109,6 +109,10 @@ module.exports = async function (deployer, network) {
     await factory.setVaultForTrader(CoFiXVaultForTrader.address);
     await factory.setVaultForCNode(CoFiXVaultForCNode.address);
     await factory.setFeeReceiver(CoFiStakingRewards.address);
+    await factory.createPair(USDT.address);
+    await factory.createPair(HBTC.address);
+    const usdtPair = await factory.getPair(USDT.address);
+    const hbtcPair = await factory.getPair(HBTC.address);
 
     // allowRouter
     let vaultForTrader = await CoFiXVaultForTrader.deployed();
@@ -134,4 +138,7 @@ module.exports = async function (deployer, network) {
     console.log(`| CoFiXVaultForTrader | ${CoFiXVaultForTrader.address} |`);
     console.log(`| CoFiXVaultForCNode | ${CoFiXVaultForCNode.address} |`);
     console.log(`| CoFiStakingRewards | ${CoFiStakingRewards.address} |`);
+
+    console.log(`| ETH/USDT Pair | ${usdtPair} |`);
+    console.log(`| ETH/HBTC Pair | ${hbtcPair} |`);
 };

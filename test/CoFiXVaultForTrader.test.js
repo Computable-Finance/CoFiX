@@ -4,6 +4,7 @@ const { BN, constants, expectEvent, expectRevert, time } = require('@openzeppeli
 
 const CoFiXVaultForLP = artifacts.require("CoFiXVaultForLP");
 const CoFiXVaultForTrader = artifacts.require("CoFiXVaultForTrader");
+const TestCoFiXStakingRewards = artifacts.require("TestCoFiXStakingRewards.sol");
 const CoFiToken = artifacts.require("CoFiToken");
 const TestXToken = artifacts.require("TestXToken");
 const CoFiXFactory = artifacts.require("CoFiXFactory");
@@ -22,6 +23,10 @@ contract('CoFiXVaultForTrader', (accounts) => {
     const governance = deployer;
     const non_governance = accounts[1];
 
+    // enum POOL_STATE {INVALID, ENABLED, DISABLED}
+    const POOL_STATE_INVALID = "0";
+    const POOL_STATE_ENABLED = "1";
+    const POOL_STATE_DISABLED = "2";
 
     const TotalSupplyOfCoFi = new BN("100000000000000000000000000"); // 1e8 * 1e18
     const HalfSupplyOfCoFi = TotalSupplyOfCoFi.div(new BN(2)); // or the init supply to CoFiXVaultForLP
@@ -45,9 +50,12 @@ contract('CoFiXVaultForTrader', (accounts) => {
         CFactory = await CoFiXFactory.new(WETH.address, { from: deployer });
         CoFi = await CoFiToken.new({ from: deployer });
         VaultForLP = await CoFiXVaultForLP.new(CoFi.address, CFactory.address, { from: deployer });
+        await CFactory.setVaultForLP(VaultForLP.address);
         VaultForTrader = await CoFiXVaultForTrader.new(CoFi.address, CFactory.address, { from: deployer });
         XToken = await TestXToken.new({ from: deployer });
         PAIR = XToken.address;
+        StakingRewards = await TestCoFiXStakingRewards.new(CoFi.address, XToken.address, CFactory.address, { from: deployer });
+        POOL_1 = StakingRewards.address;
         // const mint_amount = web3.utils.toWei('10000', 'ether');
         // await XToken.mint(deployer, mint_amount, { from: deployer });
     });
@@ -82,34 +90,41 @@ contract('CoFiXVaultForTrader', (accounts) => {
         expect(allowed).equal(true);
     });
 
-    it("should revert if not set vaultForLP", async () => {
-        const pair = XToken.address;
-        const navps = web3.utils.toWei('1', 'ether'); // means navps = 1, NAVPS_BASE = 1e18
-        await expectRevert.unspecified(VaultForTrader.currentCoFiRate(pair, navps));
-    });
+    // it("should revert if not set vaultForLP", async () => {
+    //     const pair = XToken.address;
+    //     const navps = web3.utils.toWei('1', 'ether'); // means navps = 1, NAVPS_BASE = 1e18
+    //     await expectRevert.unspecified(VaultForTrader.currentCoFiRate(pair, navps));
+    // });
 
-    it("should set vaultForLP correctly", async () => {
-        await CFactory.setVaultForLP(VaultForLP.address);
-        const vaultForLP = await CFactory.getVaultForLP();
-        expect(vaultForLP).equal(VaultForLP.address);
+    // it("should set vaultForLP correctly", async () => {
+    //     await CFactory.setVaultForLP(VaultForLP.address);
+    //     const vaultForLP = await CFactory.getVaultForLP();
+    //     expect(vaultForLP).equal(VaultForLP.address);
+    // });
+
+    it("should addPool correctly", async () => {
+        await VaultForLP.addPool(POOL_1, {from: governance});
+        const poolInfo = await VaultForLP.getPoolInfo(POOL_1);
+        expect(poolInfo.state).to.bignumber.equal(POOL_STATE_ENABLED);
+        expect(poolInfo.weight).to.bignumber.equal("0");
     });
 
     it("should have correct stats before anything", async () => {
         const cofi = await VaultForTrader.cofiToken();
         expect(CoFi.address).equal(cofi);
 
+        
         const pair = XToken.address;
         const navps = web3.utils.toWei('1', 'ether'); // means navps = 1, NAVPS_BASE = 1e18
         const currentCoFiRate = await VaultForTrader.currentCoFiRate(pair, navps);
 
-        expect(DEFAULT_COFI_RATE).to.bignumber.equal(currentCoFiRate);
+        expect("0").to.bignumber.equal(currentCoFiRate); // pool rate is zero
 
         const thetaFee = web3.utils.toWei('1', 'ether');
         const {cofiRate, stdAmount} = await VaultForTrader.stdMiningRateAndAmount(pair, navps, thetaFee);
         expect(cofiRate).to.bignumber.equal(currentCoFiRate);
         const expectedAmount = (new BN(thetaFee)).mul(new BN(currentCoFiRate)).div(new BN(THETA_FEE_UNIT));
         expect(expectedAmount).to.bignumber.equal(stdAmount);
-
     });
 
     it("should calcLambda correctly", async () => {
@@ -141,29 +156,84 @@ contract('CoFiXVaultForTrader', (accounts) => {
         // const xt = web3.utils.toWei('10000', 'ether');
         // const np = web3.utils.toWei('1', 'ether');
         // const q = 1;
+
+        // const input = [
+        //     {bt: web3.utils.toWei('10', 'ether'), xt: web3.utils.toWei('10000', 'ether'), np: web3.utils.toWei('1', 'ether'), q: 1},
+        //     {bt: web3.utils.toWei('10', 'ether'), xt: web3.utils.toWei('10000', 'ether'), np: web3.utils.toWei('1', 'ether'), q: 0},
+        //     {bt: web3.utils.toWei('10', 'ether'), xt: web3.utils.toWei('20000', 'ether'), np: web3.utils.toWei('1', 'ether'), q: 1},
+        //     {bt: web3.utils.toWei('10', 'ether'), xt: web3.utils.toWei('40000', 'ether'), np: web3.utils.toWei('1', 'ether'), q: 1},
+        //     {bt: web3.utils.toWei('5', 'ether'), xt: web3.utils.toWei('10000', 'ether'), np: web3.utils.toWei('1', 'ether'), q: 0}
+        // ]
+
         const input = [
-            {bt: web3.utils.toWei('10', 'ether'), xt: web3.utils.toWei('10000', 'ether'), np: web3.utils.toWei('1', 'ether'), q: 1},
-            {bt: web3.utils.toWei('10', 'ether'), xt: web3.utils.toWei('10000', 'ether'), np: web3.utils.toWei('1', 'ether'), q: 0},
-            {bt: web3.utils.toWei('10', 'ether'), xt: web3.utils.toWei('20000', 'ether'), np: web3.utils.toWei('1', 'ether'), q: 1},
-            {bt: web3.utils.toWei('10', 'ether'), xt: web3.utils.toWei('40000', 'ether'), np: web3.utils.toWei('1', 'ether'), q: 1},
-            {bt: web3.utils.toWei('5', 'ether'), xt: web3.utils.toWei('10000', 'ether'), np: web3.utils.toWei('1', 'ether'), q: 0}
+            {bt_phi: web3.utils.toWei('10', 'ether'), xt: web3.utils.toWei('10000', 'ether'), np: web3.utils.toWei('1', 'ether')},
+            {bt_phi: web3.utils.toWei('9', 'ether'), xt: web3.utils.toWei('20000', 'ether'), np: web3.utils.toWei('1', 'ether')},
+            {bt_phi: web3.utils.toWei('10', 'ether'), xt: web3.utils.toWei('40000', 'ether'), np: web3.utils.toWei('1', 'ether')},
+            {bt_phi: web3.utils.toWei('5', 'ether'), xt: web3.utils.toWei('10000', 'ether'), np: web3.utils.toWei('1', 'ether')}
         ]
+
         const expectedCoFiRate = [
             web3.utils.toWei('4000', 'ether'),
-            web3.utils.toWei('4000', 'ether'),
-            web3.utils.toWei('4000', 'ether'),
+            web3.utils.toWei('3600', 'ether'),
             web3.utils.toWei('2000', 'ether'),
             web3.utils.toWei('2000', 'ether')
         ]
         expect(input.length).equal(expectedCoFiRate.length);
         for (let i = 0; i < input.length; i++) {
             const param = input[i];
-            const cofiRate = await VaultForTrader.calcCoFiRate(param.bt, param.xt, param.np, param.q);
+            const cofiRate = await VaultForTrader.calcCoFiRate(param.bt_phi, param.xt, param.np);
             if (verbose) {
-                console.log(`bt: ${param.bt}, xt: ${param.xt}, np: ${param.np}, q: ${param.q}, index: ${i}, cofiRate: ${cofiRate}, expectedCoFiRate: ${expectedCoFiRate[i]}`);
+                console.log(`bt_phi: ${param.bt_phi}, xt: ${param.xt}, np: ${param.np}, index: ${i}, cofiRate: ${cofiRate}, expectedCoFiRate: ${expectedCoFiRate[i]}`);
             }
             expect(expectedCoFiRate[i]).to.bignumber.equal(cofiRate);
         }
+    });
+
+    it("should calc currentThreshold correctly for different XToken", async () => {
+        
+        // function currentThreshold(address pair, uint256 np, uint256 cofiRate)
+        // th = L * theta * at
+        // L = xt * np / 1000
+        // - xt is totalSupply of the specific XToken
+        // - np is Net Asset Value Per Share for the specific XToken
+        const pair1 = XToken.address; // totalSupply is zero
+
+        const XToken2 = await TestXToken.new({ from: deployer });
+        await XToken2.mint(deployer, web3.utils.toWei('100000', 'ether'), { from: deployer });
+        const pair2 = XToken2.address;
+
+        const XToken3 = await TestXToken.new({ from: deployer });
+        await XToken3.mint(deployer, web3.utils.toWei('200000', 'ether'), { from: deployer });
+        const pair3 = XToken3.address;
+
+        const input = [
+            {pair: pair1, np: web3.utils.toWei('1', 'ether'), cofiRate: web3.utils.toWei('3600', 'ether')}, // 9/1 * 2400000 / (20000 * 1 * 0.3) = 3600
+            {pair: pair2, np: web3.utils.toWei('1', 'ether'), cofiRate: web3.utils.toWei('3600', 'ether')}, // 9/1 * 2400000 / (20000 * 1 * 0.3) = 3600
+            {pair: pair3, np: web3.utils.toWei('1', 'ether'), cofiRate: web3.utils.toWei('3600', 'ether')}, // 9/1 * 2400000 / (20000 * 1 * 0.3) = 3600
+            {pair: pair2, np: web3.utils.toWei('2', 'ether'), cofiRate: web3.utils.toWei('3600', 'ether')}, // 9/1 * 2400000 / (20000 * 1 * 0.3) = 3600
+        ]
+        const expectedTH = [
+            web3.utils.toWei('720', 'ether'), // 100*1e18*0.002*3600*1e18/1e18=720ether
+            web3.utils.toWei('720', 'ether'), // 100000ether/1000=100ether
+            web3.utils.toWei('1440', 'ether'), // 200000*1e18/1000*0.002*3600*1e18/1e18
+            web3.utils.toWei('1440', 'ether') // np=2
+        ]
+        expect(input.length).equal(expectedTH.length);
+        for (let i = 0; i < input.length; i++) {
+            const param = input[i];
+            const threshold = await VaultForTrader.currentThreshold(param.pair, param.np, param.cofiRate);
+            if (verbose) {
+                console.log(`pair: ${param.pair}, np: ${param.np}, cofiRate: ${param.cofiRate}, threshold: ${threshold}, expectedTH: ${expectedTH[i]}`);
+            }
+            expect(expectedTH[i]).to.bignumber.equal(threshold);
+        }
+    });
+
+    it("should setWeight correctly", async () => {
+        const weight = "100";
+        await VaultForLP.setPoolWeight(POOL_1, weight);
+        const poolInfo = await VaultForLP.getPoolInfo(POOL_1);
+        expect(poolInfo.weight).to.bignumber.equal(weight);
     });
 
     it("should have correct current stats before anything", async () => {
@@ -261,8 +331,8 @@ contract('CoFiXVaultForTrader', (accounts) => {
         }
     });
 
-    it("should distributeReward repeatedly and correctly by ROUTER_1 when thetaFee is 0.1 ether", async () => {
-        const thetaFee = web3.utils.toWei('0.1', 'ether');
+    it("should distributeReward repeatedly and correctly by ROUTER_1 when thetaFee is 0.2 ether", async () => {
+        const thetaFee = web3.utils.toWei('0.2', 'ether');
         const x = web3.utils.toWei('10000', 'ether');
         const y = web3.utils.toWei('10000', 'ether');
         const rewardTo = ROUTER_1;

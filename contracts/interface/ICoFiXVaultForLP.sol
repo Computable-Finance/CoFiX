@@ -25,7 +25,8 @@ interface ICoFiXVaultForLP {
     function getPendingRewardOfLP(address pair) external view returns (uint256);
     function currentPeriod() external view returns (uint256);
     function currentCoFiRate() external view returns (uint256);
-    function currentPoolRate(address pair) external view returns (uint256 poolRate);
+    function currentPoolRate(address pool) external view returns (uint256 poolRate);
+    function currentPoolRateByPair(address pair) external view returns (uint256 poolRate);
 
     /// @dev Get the award staking pool address of pair (XToken)
     /// @param  pair The address of XToken(pair) contract
@@ -33,6 +34,7 @@ interface ICoFiXVaultForLP {
     function stakingPoolForPair(address pair) external view returns (address pool);
 
     function getPoolInfo(address pool) external view returns (POOL_STATE state, uint256 weight);
+    function getPoolInfoByPair(address pair) external view returns (POOL_STATE state, uint256 weight);
 
     function getEnabledPoolCnt() external view returns (uint256);
 

@@ -182,7 +182,7 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
         return cofiRate;
     }
 
-    function currentPoolRate(address pool) external override view returns (uint256 poolRate) {
+    function currentPoolRate(address pool) public override view returns (uint256 poolRate) {
         uint256 cnt = enabledCnt;
         if (cnt == 0) {
             return 0;
@@ -193,14 +193,25 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
         return poolRate;
     }
 
+    function currentPoolRateByPair(address pair) external override view returns (uint256 poolRate) {
+        address pool = pairToStakingPool[pair];
+        poolRate = currentPoolRate(pool);
+        return poolRate;
+    }
+
     function stakingPoolForPair(address pair) external override view returns (address pool) {
         return pairToStakingPool[pair];
     }
 
-    function getPoolInfo(address pool) external override view returns (POOL_STATE state, uint256 weight) {
+    function getPoolInfo(address pool) public override view returns (POOL_STATE state, uint256 weight) {
         state = poolInfo[pool].state;
         weight = poolInfo[pool].weight;
         return (state, weight);
+    }
+
+    function getPoolInfoByPair(address pair) external override view returns (POOL_STATE state, uint256 weight) {
+        address pool = pairToStakingPool[pair];
+        return getPoolInfo(pool);
     }
 
     // pools in enabled state

@@ -37,8 +37,7 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
     // make all of these constant, so we can reduce gas cost for swap features
     uint256 public constant COFI_DECAY_PERIOD = 2400000; // LP pool yield decays for every 2,400,000 blocks
     uint256 public constant THETA_FEE_UINIT = 1 ether;
-    // we may have different theta for different pairs in the future, but just use the constant here for gas reason
-    uint256 public constant SINGLE_LIMIT_K = 100*1e18*1/1000; // K= L*theta, 100 ether * theta, theta is 0.0001, means thetaFee 0.1 ether
+    uint256 public constant L_LIMIT = 100 ether;
     uint256 public constant COFI_RATE_UPDATE_INTERVAL = 1000;
 
     address public cofiToken;
@@ -87,32 +86,30 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
         emit RouterDisallowed(router);
     }
 
-    function calcCoFiRate(uint256 bt, uint256 xt, uint256 np, uint256 q) public override pure returns (uint256 at) {
+    function calcCoFiRate(uint256 bt_phi, uint256 xt, uint256 np) public override pure returns (uint256 at) {
         /*
-        at = (bt/q)*2400000/(xt*np*0.3)
+        at = (bt*phi)*2400000/(xt*np*0.3)
         - at is CoFi yield per unit
         - bt is the current CoFi rate of the specific XToken staking rewards pool
         - xt is totalSupply of the specific XToken
         - np is Net Asset Value Per Share for the specific XToken
-        - q is the total count of the XToken staking rewards pools
-        e.g. 10/1 * 2400000 / (20000 * 1 * 0.3) = 4000
-        take decimal into account: 10*1e18 / 1 * 2400000 /( 20000*1e18 * 1e18/1e18 * 0.3 ) * 1e18 = 4000 * 1e18
+        - phi is the weight of the specific XToken staking rewards pool (x of 100)
+        - bt_phi is bt*phi, pool CoFi rate
+        e.g. (10*100/100) * 2400000 / (20000 * 1 * 0.3) = 4000
+        take decimal into account: (10*1e18 * 100/100) * 2400000 /( 20000*1e18 * 1e18/1e18 * 0.3 ) * 1e18 = 4000 * 1e18
         */
         uint256 tvl = xt.mul(np).div(NAVPS_BASE); // total locked value represent in ETH
         if (tvl < 20000 ether) {
             tvl = 20000 ether; // minimum total locked value requirement
         }
-        uint256 numerator = bt.mul(COFI_DECAY_PERIOD).mul(1e18).mul(10);
-        if (q == 0) {
-            q = 1; // or swap could fail
-        }
-        at = numerator.div(3).div(tvl).div(q);
+        uint256 numerator = bt_phi.mul(COFI_DECAY_PERIOD).mul(1e18).mul(10);
+        at = numerator.div(3).div(tvl);
     }
 
     // np need price, must be a param passing in
     function currentCoFiRate(address pair, uint256 np) public override view returns (uint256) {
         // get np from router
-        // get bt from CoFiXVaultForLP: cofiRateForLP
+        // get bt*phi from CoFiXVaultForLP: poolRate
         // get q from CoFiXVaultForLP: poolCnt
         // get xt from XToken.totalSupply: totalSupply
         uint256 updatedBlock = cofiRateCache[pair].updatedBlock;
@@ -121,14 +118,25 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
         } 
         address vaultForLP = ICoFiXFactory(factory).getVaultForLP();
         require(vaultForLP != address(0), "CVaultForTrader: vaultForLP not set");
-        uint256 cofiRateForLP = ICoFiXVaultForLP(vaultForLP).currentCoFiRate();
-        uint256 poolCnt = ICoFiXVaultForLP(vaultForLP).getEnabledPoolCnt();
+        uint256 poolRate = ICoFiXVaultForLP(vaultForLP).currentPoolRateByPair(pair);
         uint256 totalSupply = ICoFiXPair(pair).totalSupply();
-        return calcCoFiRate(cofiRateForLP, totalSupply, np, poolCnt);
+        return calcCoFiRate(poolRate, totalSupply, np);
     }
 
-    function currentThreshold(uint256 cofiRate) public override view returns (uint256) {
-        return SINGLE_LIMIT_K.mul(cofiRate).div(THETA_FEE_UINIT);
+    // th = L * theta * at
+    function currentThreshold(address pair, uint256 np, uint256 cofiRate) public override view returns (uint256) {
+        // L = xt * np / 1000
+        // - xt is totalSupply of the specific XToken
+        // - np is Net Asset Value Per Share for the specific XToken
+        // could use cache here but would need one more sload
+        uint256 totalSupply = ICoFiXPair(pair).totalSupply(); // nt, introduce one more call here
+        uint256 L = totalSupply.mul(np).div(NAVPS_BASE).div(1000); // L = xt*np/1000
+        // L*theta*at is (L * theta * cofiRate), theta is 0.002, mul(2).div(1000)
+        // we may have different theta for different pairs in the future, but just use the constant here for gas reason
+        if (L < L_LIMIT) { // minimum L
+            L = L_LIMIT; // 100 ether * 0.002 = 0.2 ether 
+        }
+        return L.mul(cofiRate).mul(2).div(1000).div(THETA_FEE_UINIT);
     }
 
     function stdMiningRateAndAmount(
@@ -194,12 +202,12 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
         (cofiRate, stdAmount) = stdMiningRateAndAmount(pair, np, thetaFee);
         density = calcDensity(stdAmount); // ft
         uint256 lambda = calcLambda(x, y);
-        uint256 th = currentThreshold(cofiRate); // threshold of mining rewards amount, k*at
+        uint256 th = currentThreshold(pair, np, cofiRate); // threshold of mining rewards amount, L*theta*at
         if (density <= th) {
             // ft<=k, yt*at * lambda, yt is thetaFee, at is cofiRate
             return (stdAmount.mul(lambda).div(LAMBDA_BASE), density, cofiRate);
         }
-        // ft>=k: yt*at * k*at * (2ft - k*at) * lambda / (ft*ft), yt*at is stdAmount, k*at is threshold
+        // ft>=k: yt*at * L*theta*at * (2ft - L*theta*at) * lambda / (ft*ft), yt*at is stdAmount, L*theta*at is threshold
         uint256 numerator = stdAmount.mul(th).mul(density.mul(2).sub(th)).mul(lambda);
         return (numerator.div(density).div(density).div(LAMBDA_BASE), density, cofiRate);
     }

@@ -108,6 +108,19 @@
   },
   {
     "inputs": [],
+    "name": "L_LIMIT",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "NAVPS_BASE",
     "outputs": [
       {
@@ -187,19 +200,6 @@
   {
     "inputs": [],
     "name": "SHARE_FOR_TRADER",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "SINGLE_LIMIT_K",
     "outputs": [
       {
         "internalType": "uint256",
@@ -395,7 +395,7 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "bt",
+        "name": "bt_phi",
         "type": "uint256"
       },
       {
@@ -406,11 +406,6 @@
       {
         "internalType": "uint256",
         "name": "np",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "q",
         "type": "uint256"
       }
     ],
@@ -451,6 +446,16 @@
   },
   {
     "inputs": [
+      {
+        "internalType": "address",
+        "name": "pair",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "np",
+        "type": "uint256"
+      },
       {
         "internalType": "uint256",
         "name": "cofiRate",

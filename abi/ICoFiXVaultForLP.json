@@ -238,11 +238,30 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "pair",
+        "name": "pool",
         "type": "address"
       }
     ],
     "name": "currentPoolRate",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "poolRate",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "pair",
+        "type": "address"
+      }
+    ],
+    "name": "currentPoolRateByPair",
     "outputs": [
       {
         "internalType": "uint256",
@@ -281,6 +300,30 @@
       }
     ],
     "name": "getPoolInfo",
+    "outputs": [
+      {
+        "internalType": "enum ICoFiXVaultForLP.POOL_STATE",
+        "name": "state",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint256",
+        "name": "weight",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "pair",
+        "type": "address"
+      }
+    ],
+    "name": "getPoolInfoByPair",
     "outputs": [
       {
         "internalType": "enum ICoFiXVaultForLP.POOL_STATE",

@@ -94,7 +94,7 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "bt",
+        "name": "bt_phi",
         "type": "uint256"
       },
       {
@@ -105,11 +105,6 @@
       {
         "internalType": "uint256",
         "name": "np",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "q",
         "type": "uint256"
       }
     ],
@@ -150,6 +145,16 @@
   },
   {
     "inputs": [
+      {
+        "internalType": "address",
+        "name": "pair",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "np",
+        "type": "uint256"
+      },
       {
         "internalType": "uint256",
         "name": "cofiRate",

@@ -77,6 +77,7 @@ interface ICoFiXRouter {
     /// @param  amountIn The exact amount of ETH a trader want to swap into pool
     /// @param  amountOutMin The minimum amount of Token a trader want to swap out of pool
     /// @param  to The target address receiving the Token
+    /// @param  rewardTo The target address receiving the CoFi Token as rewards
     /// @param  deadline The dealine of this request
     /// @return _amountIn The real amount of ETH transferred into pool
     /// @return _amountOut The real amount of Token transferred out of pool
@@ -94,6 +95,7 @@ interface ICoFiXRouter {
     /// @param  amountIn The exact amount of Token a trader want to swap into pool
     /// @param  amountOutMin The mininum amount of ETH a trader want to swap out of pool
     /// @param  to The target address receiving the ETH
+    /// @param  rewardTo The target address receiving the CoFi Token as rewards
     /// @param  deadline The dealine of this request
     /// @return _amountIn The real amount of Token transferred into pool
     /// @return _amountOut The real amount of ETH transferred out of pool
@@ -112,6 +114,7 @@ interface ICoFiXRouter {
     /// @param  amountIn The exact amount of Token a trader want to swap into pool
     /// @param  amountOutMin The mininum amount of ETH a trader want to swap out of pool
     /// @param  to The target address receiving the Token
+    /// @param  rewardTo The target address receiving the CoFi Token as rewards
     /// @param  deadline The dealine of this request
     /// @return _amountIn The real amount of Token transferred into pool
     /// @return _amountOut The real amount of Token transferred out of pool
@@ -130,6 +133,7 @@ interface ICoFiXRouter {
     /// @param  amountInMax The max amount of ETH a trader want to swap into pool
     /// @param  amountOutExact The exact amount of Token a trader want to swap out of pool
     /// @param  to The target address receiving the Token
+    /// @param  rewardTo The target address receiving the CoFi Token as rewards
     /// @param  deadline The dealine of this request
     /// @return _amountIn The real amount of ETH transferred into pool
     /// @return _amountOut The real amount of Token transferred out of pool
@@ -147,6 +151,7 @@ interface ICoFiXRouter {
     /// @param  amountInMax The max amount of Token a trader want to swap into pool
     /// @param  amountOutExact The exact amount of ETH a trader want to swap out of pool
     /// @param  to The target address receiving the ETH
+    /// @param  rewardTo The target address receiving the CoFi Token as rewards
     /// @param  deadline The dealine of this request
     /// @return _amountIn The real amount of Token transferred into pool
     /// @return _amountOut The real amount of ETH transferred out of pool

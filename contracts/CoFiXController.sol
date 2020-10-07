@@ -118,7 +118,7 @@ contract CoFiXController is ICoFiXController {
 
     // Calc variance of price and K in CoFiX is very expensive
     // We use expected value of K based on statistical calculations here to save gas
-    // In the future, NEST could provide the variance of price directly. We can adopt it then.
+    // In the near future, NEST could provide the variance of price directly. We will adopt it then.
     // We can make use of `data` bytes in the future
     function queryOracle(address token, uint8 op, bytes memory data) external override payable returns (uint256 _k, uint256 _ethAmount, uint256 _erc20Amount, uint256 _blockNum, uint256 _theta) {
         require(callerAllowed[msg.sender], "CoFiXCtrl: caller not allowed");

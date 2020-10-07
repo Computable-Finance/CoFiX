@@ -47,7 +47,7 @@ vaultForTrader = await CoFiXVaultForTrader.new(cofi.address, factory.address)
 router = "0x66aa2AC8F6557B956AE144efe85feF860d848851"
 vaultForTrader.allowRouter(router)
 # CoFi set minter
-cofi.addMinter(vaultForLP.address)
+cofi.addMinter(vaultForTrader.address)
 # set vaultForLP in factory
 factory.setVaultForTrader(vaultForTrader.address)
 # remove old vaultForTrader from CoFi minter

@@ -127,7 +127,7 @@ npm run genabi
 
 ## Ropsten Testnet
 
-### Beta-V0.9.1
+### Beta-V0.9.3
 
 |       Contract       |                  Address                   |
 | :------------------: | :----------------------------------------: |
@@ -142,17 +142,18 @@ npm run genabi
 | CoFiXFactory | 0xC85987c73300CFd1838da40F0A4b29bB64EAed8e |
 | CoFiXRouter | 0x66aa2AC8F6557B956AE144efe85feF860d848851 |
 | CoFiXController | 0xff460A541DC7Af7FeA7b98E0Ba5eF64C80B1409B |
-| CoFiXVaultForLP | 0xA4c1FcbB8B2bc0347F2736f78558cF2F1a99BF82 |
-| CoFiXVaultForTrader | 0xCfA46cDdC9142fE1Fa86F780Aeb32799ef008cDA |
+| CoFiXVaultForLP | 0x7e6dCD3581d596fe5F628B77fd6784F10D09b43d |
+| CoFiXVaultForTrader | 0x12Fc8391e7C868e7aa90C69E204C60f18aA0afab |
 | CoFiXVaultForCNode | 0x1a31b517ABF0D2F4f11A797d7b8622859429AA25 |
 | CoFiStakingRewards | 0xDe80d5423569Ea4104d127e14E3fC1BE0486531d |
 
 - ETH/USDT
   - Pair (XToken): 0x5f22a04F81A87a7aBe9191C338fA5Ba092Af4562
-  - XToken StakingRewards Pool: 0xA3904574E4Fbf7592B3A3c1439cAe97D5622FBFD
+  - XToken StakingRewards Pool (CoFiXStakingRewards): 0xA3904574E4Fbf7592B3A3c1439cAe97D5622FBFD
 - ETH/HBTC
   - Pair (XToken): 0x9D90e9e5AFF7545046FF66544B7848C21118Da22
-  - XToken StakingRewards Pool: 0xe6c3bd6D258cE7fc7554723fc2b93F848CEF30E7
+  - XToken StakingRewards Pool (CoFiXStakingRewards): 0xe6c3bd6D258cE7fc7554723fc2b93F848CEF30E7
+- CNode Token StakingRewards Pool (CNodeStakingRewards): 0xC8b8eb1EA4A787e69d96B3eF50176621Ab4bD6C6
 
 <!-- ### Beta-V0.1
 

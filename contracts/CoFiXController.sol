@@ -129,8 +129,23 @@ contract CoFiXController is ICoFiXController {
             impactCost = calcImpactCostFor_SWAP_WITH_EXACT(token, data, _ethAmount, _erc20Amount);
         } else if (cop == CoFiX_OP.SWAP_FOR_EXACT) {
             impactCost = calcImpactCostFor_SWAP_FOR_EXACT(token, data, _ethAmount, _erc20Amount);
+         } else if (cop == CoFiX_OP.BURN) {
+            impactCost = calcImpactCostFor_BURN(token, data);
         }
         return (K_EXPECTED_VALUE.add(impactCost), _ethAmount, _erc20Amount, _blockNum, KInfoMap[token][2]);
+    }
+
+    function calcImpactCostFor_BURN(address token, bytes memory data) public pure returns (uint256 impactCost) {
+        // bytes memory data = abi.encode(msg.sender, outToken, to, liquidity);
+        (, address outToken, , uint256 liquidity) = abi.decode(data, (address, address, address, uint256));
+        // here we treat liquidity amount as volume directly
+        // we can calc real vol by liquidity * np in the future
+        if (outToken != token) {
+            // buy in ETH, outToken is ETH, liquidity is vol
+            return impactCostForBuyInETH(liquidity);
+        }
+        // sell out liquidity, outToken is token, take this as sell out ETH and get token
+        return impactCostForSellOutETH(liquidity);
     }
 
     function calcImpactCostFor_SWAP_WITH_EXACT(address token, bytes memory data, uint256 ethAmount, uint256 erc20Amount) public pure returns (uint256 impactCost) {

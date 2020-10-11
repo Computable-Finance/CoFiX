@@ -32,7 +32,7 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
     uint256 public constant SHARE_FOR_LP = 10;
     uint256 public constant SHARE_FOR_CNODE = 10;
 
-    uint256 constant public NAVPS_BASE = 1E18; // NAVPS (Net Asset Value Per Share), need accuracy
+    uint256 public constant NAVPS_BASE = 1E18; // NAVPS (Net Asset Value Per Share), need accuracy
 
     // make all of these constant, so we can reduce gas cost for swap features
     uint256 public constant COFI_DECAY_PERIOD = 2400000; // LP pool yield decays for every 2,400,000 blocks
@@ -40,13 +40,20 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
     uint256 public constant L_LIMIT = 100 ether;
     uint256 public constant COFI_RATE_UPDATE_INTERVAL = 1000;
 
-    address public cofiToken;
-    address public factory;
+    uint256 public constant EXPECT_YIELD_BASE = 10;
+    uint256 public constant L_BASE = 1000;
+    uint256 public constant THETA_BASE = 1000;
 
-    uint256 public genesisBlock; // TODO: make this constant to reduce gas cost
+    address public immutable cofiToken;
+    address public immutable factory;
+
+    uint256 public immutable genesisBlock; // TODO: make this constant to reduce gas cost
 
     // managed by governance
     address public governance;
+    uint256 public EXPECT_YIELD_RATIO = 3; // r, 0.3
+    uint256 public L_RATIO = 2; // l, 0.002
+    uint256 public THETA = 2; // 0.002
 
     uint256 public pendingRewardsForCNode;
 
@@ -74,6 +81,18 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
         governance = _new;
     }
 
+    function setExpectedYieldRatio(uint256 r) external override onlyGovernance {
+        EXPECT_YIELD_RATIO = r;
+    }
+
+    function setLRatio(uint256 lRatio) external override onlyGovernance {
+        L_RATIO = lRatio;
+    }
+
+    function setTheta(uint256 theta) external override onlyGovernance {
+        THETA = theta;
+    }
+
     function allowRouter(address router) external override onlyGovernance {
         require(!routerAllowed[router], "CVaultForTrader: router allowed");
         routerAllowed[router] = true;
@@ -86,7 +105,7 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
         emit RouterDisallowed(router);
     }
 
-    function calcCoFiRate(uint256 bt_phi, uint256 xt, uint256 np) public override pure returns (uint256 at) {
+    function calcCoFiRate(uint256 bt_phi, uint256 xt, uint256 np) public override view returns (uint256 at) {
         /*
         at = (bt*phi)*2400000/(xt*np*0.3)
         - at is CoFi yield per unit
@@ -102,8 +121,8 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
         if (tvl < 20000 ether) {
             tvl = 20000 ether; // minimum total locked value requirement
         }
-        uint256 numerator = bt_phi.mul(COFI_DECAY_PERIOD).mul(1e18).mul(10);
-        at = numerator.div(3).div(tvl);
+        uint256 numerator = bt_phi.mul(COFI_DECAY_PERIOD).mul(1e18).mul(EXPECT_YIELD_BASE);
+        at = numerator.div(EXPECT_YIELD_RATIO).div(tvl);
     }
 
     // np need price, must be a param passing in
@@ -125,18 +144,18 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
 
     // th = L * theta * at
     function currentThreshold(address pair, uint256 np, uint256 cofiRate) public override view returns (uint256) {
-        // L = xt * np / 1000
+        // L = xt * np * (2/1000)
         // - xt is totalSupply of the specific XToken
         // - np is Net Asset Value Per Share for the specific XToken
         // could use cache here but would need one more sload
         uint256 totalSupply = ICoFiXPair(pair).totalSupply(); // nt, introduce one more call here
-        uint256 L = totalSupply.mul(np).div(NAVPS_BASE).div(1000); // L = xt*np/1000
+        uint256 L = totalSupply.mul(np).mul(L_RATIO).div(L_BASE).div(NAVPS_BASE); // L = xt*np*(2/1000)
         // L*theta*at is (L * theta * cofiRate), theta is 0.002, mul(2).div(1000)
         // we may have different theta for different pairs in the future, but just use the constant here for gas reason
         if (L < L_LIMIT) { // minimum L
             L = L_LIMIT; // 100 ether * 0.002 = 0.2 ether 
         }
-        return L.mul(cofiRate).mul(2).div(1000).div(THETA_FEE_UINIT);
+        return L.mul(cofiRate).mul(THETA).div(THETA_BASE).div(THETA_FEE_UINIT);
     }
 
     function stdMiningRateAndAmount(

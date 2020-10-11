@@ -199,7 +199,7 @@ contract('CoFiXVaultForTrader', (accounts) => {
         const pair1 = XToken.address; // totalSupply is zero
 
         const XToken2 = await TestXToken.new({ from: deployer });
-        await XToken2.mint(deployer, web3.utils.toWei('100000', 'ether'), { from: deployer });
+        await XToken2.mint(deployer, web3.utils.toWei('50000', 'ether'), { from: deployer });
         const pair2 = XToken2.address;
 
         const XToken3 = await TestXToken.new({ from: deployer });
@@ -214,8 +214,8 @@ contract('CoFiXVaultForTrader', (accounts) => {
         ]
         const expectedTH = [
             web3.utils.toWei('720', 'ether'), // 100*1e18*0.002*3600*1e18/1e18=720ether
-            web3.utils.toWei('720', 'ether'), // 100000ether/1000=100ether
-            web3.utils.toWei('1440', 'ether'), // 200000*1e18/1000*0.002*3600*1e18/1e18
+            web3.utils.toWei('720', 'ether'), // 50000ether*2/1000=100ether
+            web3.utils.toWei('2880', 'ether'), // 200000*1e18*2/1000*0.002*3600*1e18/1e18
             web3.utils.toWei('1440', 'ether') // np=2
         ]
         expect(input.length).equal(expectedTH.length);

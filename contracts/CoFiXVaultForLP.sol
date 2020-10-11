@@ -18,11 +18,12 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
     using SafeMath for uint256;
 
     uint256 public constant RATE_BASE = 1e18;
+    uint256 public constant WEIGHT_BASE = 100;
 
-    address public cofiToken;
-    address public factory;
+    address public immutable cofiToken;
+    address public immutable factory;
 
-    uint256 public genesisBlock; // TODO: make this constant to reduce gas cost
+    uint256 public immutable genesisBlock; // TODO: make this constant to reduce gas cost
 
     // managed by governance
     address public governance;
@@ -34,7 +35,6 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
     address[] public allPools; // add every pool addr to record, make it easier to track
 
     uint256 public enabledCnt;
-    uint256 public constant WEIGHT_BASE = 100;
 
     struct PoolInfo {
         POOL_STATE state;

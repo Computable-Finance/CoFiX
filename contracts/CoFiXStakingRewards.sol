@@ -18,10 +18,10 @@ contract CoFiXStakingRewards is ICoFiXStakingRewards, ReentrancyGuard {
 
     /* ========== STATE VARIABLES ========== */
 
-    address public override rewardsToken; // CoFi
-    address public override stakingToken; // XToken or CNode
+    address public override immutable rewardsToken; // CoFi
+    address public override immutable stakingToken; // XToken or CNode
 
-    address public factory;
+    address public immutable factory;
 
     uint256 public lastUpdateBlock;
     uint256 public rewardPerTokenStored;

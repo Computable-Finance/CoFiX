@@ -34,12 +34,12 @@ contract CoFiXController is ICoFiXController {
     mapping(address => uint32[3]) internal KInfoMap; // gas saving, index [0] is k vlaue, index [1] is updatedAt, index [2] is theta
     mapping(address => bool) public callerAllowed;
 
-    INest_3_VoteFactory public voteFactory;
+    INest_3_VoteFactory public immutable voteFactory;
 
     // managed by governance
     address public governance;
-    address public nestToken;
-    address public factory;
+    address public immutable nestToken;
+    address public immutable factory;
     address public kTable;
     uint256 public timespan = 14;
     uint256 public kRefreshInterval = 5 minutes;

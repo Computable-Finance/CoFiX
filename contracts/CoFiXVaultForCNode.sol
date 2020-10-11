@@ -19,10 +19,10 @@ contract CoFiXVaultForCNode is ICoFiXVaultForCNode, ReentrancyGuard {
 
     uint256 public constant RATE_BASE = 1e18;
 
-    address public cofiToken;
-    address public factory;
+    address public immutable cofiToken;
+    address public immutable factory;
 
-    uint256 public genesisBlock; // TODO: make this constant to reduce gas cost
+    uint256 public immutable genesisBlock; // TODO: make this constant to reduce gas cost
 
     // managed by governance
     address public governance;

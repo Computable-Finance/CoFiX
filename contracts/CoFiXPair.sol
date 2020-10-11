@@ -26,7 +26,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
     string public name;
     string public symbol;
 
-    address public override factory;
+    address public override immutable factory;
     address public override token0; // WETH token
     address public override token1; // any ERC20 token
 

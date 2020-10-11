@@ -16,8 +16,8 @@ contract CoFiStakingRewards is ICoFiStakingRewards, ReentrancyGuard {
 
     /* ========== STATE VARIABLES ========== */
 
-    address public override rewardsToken; // WETH, received from CoFiXPair, to reduce gas cost for each swap
-    address public override stakingToken; // CoFi
+    address public override immutable rewardsToken; // WETH, received from CoFiXPair, to reduce gas cost for each swap
+    address public override immutable stakingToken; // CoFi
 
     address public governance;
     uint256 public dividendShare = 50; // 50% to CoFi holders as dividend, 50% to saving for buying back

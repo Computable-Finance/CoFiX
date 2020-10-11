@@ -16,6 +16,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
 
     enum CoFiX_OP { QUERY, MINT, BURN, SWAP_WITH_EXACT, SWAP_FOR_EXACT } // operations in CoFiX
 
+    uint public override constant MINIMUM_LIQUIDITY = 10**9; // it's negligible because we calc liquidity in ETH
     bytes4 private constant SELECTOR = bytes4(keccak256(bytes("transfer(address,uint256)")));
 
     uint256 constant public K_BASE = 1E8; // K
@@ -102,7 +103,12 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             OraclePrice memory _op;
             (_op.K, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.theta) = _queryOracle(_token1, CoFiX_OP.MINT, data);
             uint256 navps = calcNAVPerShareForMint(_reserve0, _reserve1, _op);
-            liquidity = calcLiquidity(amount0, amount1, navps, _op);
+            if (totalSupply == 0) {
+                liquidity = calcLiquidity(amount0, amount1, navps, _op).sub(MINIMUM_LIQUIDITY);
+                _mint(address(0), MINIMUM_LIQUIDITY); // permanently lock the first MINIMUM_LIQUIDITY tokens
+            } else {
+                liquidity = calcLiquidity(amount0, amount1, navps, _op);
+            }
         }
         oracleFeeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
 

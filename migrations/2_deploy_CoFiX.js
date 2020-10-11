@@ -94,6 +94,9 @@ module.exports = async function (deployer, network) {
         let controller = await CoFiXController.deployed();
         await NEST.approve(CoFiXController.address, "0");
         await controller.activate();
+        const theta = "200000";
+        await controller.setTheta(USDT.address, theta);
+        await controller.setTheta(HBTC.address, theta);
     }
 
     // set minter of cofiToken

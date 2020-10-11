@@ -20,7 +20,7 @@ contract CoFiStakingRewards is ICoFiStakingRewards, ReentrancyGuard {
     address public override immutable stakingToken; // CoFi
 
     address public governance;
-    uint256 public dividendShare = 50; // 50% to CoFi holders as dividend, 50% to saving for buying back
+    uint256 public dividendShare = 20; // 20% to CoFi holders as dividend, 80% to saving for buying back
 
     uint256 public pendingSavingAmount;
 
@@ -191,7 +191,7 @@ contract CoFiStakingRewards is ICoFiStakingRewards, ReentrancyGuard {
         (uint256 _rewardPerToken, uint256 _accrued) = _rewardPerTokenAndAccrued();
         rewardPerTokenStored = _rewardPerToken;
         if (_accrued > 0) {
-            uint256 newSaving = _accrued.sub(_accrued.mul(dividendShare).div(100)); // left 50%
+            uint256 newSaving = _accrued.sub(_accrued.mul(dividendShare).div(100)); // left 80%
             pendingSavingAmount = pendingSavingAmount.add(newSaving);
         }
         // means it's the first update

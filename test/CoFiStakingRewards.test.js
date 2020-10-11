@@ -21,7 +21,8 @@ contract('CoFiStakingRewards', (accounts) => {
     const CoFi_User1 = accounts[1];
     const CoFi_User2 = accounts[2];
 
-    const DividendShare = 50;
+    const DividendShare = 20;
+    const DividendShareBase = 100;
 
     before(async () => {
         CoFi = await CoFiToken.new({ from: deployer });
@@ -94,7 +95,7 @@ contract('CoFiStakingRewards', (accounts) => {
         const expectedReward = web3.utils.toWei('1', 'ether');
         expect(accrued).to.bignumber.equal(expectedReward);
         const earned = await StakingRewards.earned(CoFi_User1);
-        const expectedEarned = expectedReward/2;
+        const expectedEarned = expectedReward*DividendShare/DividendShareBase;
         expect(earned).to.bignumber.equal(expectedEarned.toString());
     });
 
@@ -110,7 +111,7 @@ contract('CoFiStakingRewards', (accounts) => {
         const accrued = await StakingRewards.accrued(); // no new reward come in, so the accrued is zero
         expect(accrued).to.bignumber.equal("0");
         const earned = await StakingRewards.earned(CoFi_User1); // no new reward come in, so the earned remains
-        const expectedEarned = expectedReward/2;
+        const expectedEarned = expectedReward*DividendShare/DividendShareBase;
         expect(earned).to.bignumber.equal(expectedEarned.toString());
     });
 
@@ -130,7 +131,7 @@ contract('CoFiStakingRewards', (accounts) => {
             console.log(`after exit, balanceOfCoFiAfter: ${balanceOfCoFiAfter}`);
             console.log(`after exit, balanceOfETHAfter: ${balanceOfETHAfter}`);
         }
-        const expectedReward = web3.utils.toWei('1', 'ether')/2;
+        const expectedReward = web3.utils.toWei('1', 'ether')*DividendShare/DividendShareBase;
         const expectedCoFiBalance = web3.utils.toWei('10000', 'ether');
         const coFiBalance = (new BN(balanceOfCoFiAfter)).sub(new BN(balanceOfCoFiBefore));
         const reward = (new BN(balanceOfETHAfter)).sub(new BN(balanceOfETHBefore));
@@ -143,7 +144,7 @@ contract('CoFiStakingRewards', (accounts) => {
         if (verbose) {
             console.log(`savingAmount: ${savingAmount}`);
         }
-        const expectedSaveAmount = web3.utils.toWei('1', 'ether')/2;
+        const expectedSaveAmount = web3.utils.toWei('1', 'ether')*(1-DividendShare/DividendShareBase);
         expect(savingAmount).to.bignumber.equal(expectedSaveAmount.toString());
 
         await StakingRewards.withdrawSavingByGov(governance, savingAmount, { from: governance });
@@ -197,7 +198,7 @@ contract('CoFiStakingRewards', (accounts) => {
         const expectedReward = web3.utils.toWei('1', 'ether');
         expect(accrued).to.bignumber.equal(expectedReward);
         const earned = await StakingRewards.earned(CoFi_User1);
-        const expectedEarned = expectedReward/2;
+        const expectedEarned = expectedReward*DividendShare/DividendShareBase;
         expect(earned).to.bignumber.equal(expectedEarned.toString());
     });
 });

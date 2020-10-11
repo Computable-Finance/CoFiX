@@ -128,12 +128,15 @@ contract('CoFiXVaultForTrader', (accounts) => {
     });
 
     it("should calcLambda correctly", async () => {
+        // 0.25 0.5 1 2 4
+        // old: 50, 75, 100, 133, 200
+        // new: 25, 50, 100, 200, 400
         const input = [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 10, y: 1 }, { x: 300, y: 30 },
                 { x: 300, y: 100 }, { x: 300, y: 900 }, { x: 300, y: 910 }, { x: 300, y: 3000 },
                 { x: 300, y: 30001 }, { x: 0, y: 1 }];
-        const expectedLambda = ["50", "50", "50", "50",
-                             "75", "100", "133", "133",
-                             "200", "200"];
+        const expectedLambda = ["25", "25", "25", "25",
+                             "50", "100", "200", "200",
+                             "400", "400"];
         expect(input.length).equal(expectedLambda.length);
         for (let i = 0; i < input.length; i++) {
             const xy = input[i];

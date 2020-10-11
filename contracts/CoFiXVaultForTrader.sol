@@ -47,8 +47,6 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
     address public immutable cofiToken;
     address public immutable factory;
 
-    uint256 public immutable genesisBlock; // TODO: make this constant to reduce gas cost
-
     // managed by governance
     address public governance;
     uint256 public EXPECT_YIELD_RATIO = 3; // r, 0.3
@@ -73,7 +71,6 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
         cofiToken = cofi;
         factory = _factory;
         governance = msg.sender;
-        genesisBlock = block.number;
     }
 
     /* setters for protocol governance */

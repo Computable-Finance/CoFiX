@@ -8,6 +8,7 @@ import "./interface/ICoFiXKTable.sol";
 import "./lib/TransferHelper.sol";
 import "./interface/ICoFiXController.sol";
 import "./interface/INest_3_VoteFactory.sol";
+import "./interface/ICoFiXPair.sol";
 
 // Controller contract to call NEST Oracle for prices, managed by governance
 // Governance role of this contract should be the `Timelock` contract, which is further managed by a multisig contract
@@ -19,6 +20,7 @@ contract CoFiXController is ICoFiXController {
 
     uint256 constant public AONE = 1 ether;
     uint256 constant public K_BASE = 1E8;
+    uint256 constant public NAVPS_BASE = 1E18; // NAVPS (Net Asset Value Per Share), need accuracy
     uint256 constant internal TIMESTAMP_MODULUS = 2**32;
     int128 constant internal SIGMA_STEP = 0x346DC5D638865; // (0.00005*2**64).toString(16), 0.00005 as 64.64-bit fixed point
     int128 constant internal ZERO_POINT_FIVE = 0x8000000000000000; // (0.5*2**64).toString(16)
@@ -130,22 +132,23 @@ contract CoFiXController is ICoFiXController {
         } else if (cop == CoFiX_OP.SWAP_FOR_EXACT) {
             impactCost = calcImpactCostFor_SWAP_FOR_EXACT(token, data, _ethAmount, _erc20Amount);
          } else if (cop == CoFiX_OP.BURN) {
-            impactCost = calcImpactCostFor_BURN(token, data);
+            impactCost = calcImpactCostFor_BURN(token, data, _ethAmount, _erc20Amount);
         }
         return (K_EXPECTED_VALUE.add(impactCost), _ethAmount, _erc20Amount, _blockNum, KInfoMap[token][2]);
     }
 
-    function calcImpactCostFor_BURN(address token, bytes memory data) public pure returns (uint256 impactCost) {
+    function calcImpactCostFor_BURN(address token, bytes memory data, uint256 ethAmount, uint256 erc20Amount) public view returns (uint256 impactCost) {
         // bytes memory data = abi.encode(msg.sender, outToken, to, liquidity);
         (, address outToken, , uint256 liquidity) = abi.decode(data, (address, address, address, uint256));
-        // here we treat liquidity amount as volume directly
-        // we can calc real vol by liquidity * np in the future
+        // calc real vol by liquidity * np
+        uint256 navps = ICoFiXPair(msg.sender).getNAVPerShare(ethAmount, erc20Amount); // pair call controller, msg.sender is pair
+        uint256 vol = liquidity.mul(navps).div(NAVPS_BASE);
         if (outToken != token) {
-            // buy in ETH, outToken is ETH, liquidity is vol
-            return impactCostForBuyInETH(liquidity);
+            // buy in ETH, outToken is ETH
+            return impactCostForBuyInETH(vol);
         }
         // sell out liquidity, outToken is token, take this as sell out ETH and get token
-        return impactCostForSellOutETH(liquidity);
+        return impactCostForSellOutETH(vol);
     }
 
     function calcImpactCostFor_SWAP_WITH_EXACT(address token, bytes memory data, uint256 ethAmount, uint256 erc20Amount) public pure returns (uint256 impactCost) {

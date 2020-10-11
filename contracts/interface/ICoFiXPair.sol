@@ -39,4 +39,10 @@ interface ICoFiXPair is ICoFiXERC20 {
     function sync() external;
 
     function initialize(address, address, string memory, string memory) external;
+
+    /// @dev get Net Asset Value Per Share
+    /// @param  ethAmount ETH side of Oracle price {ETH <-> ERC20 Token}
+    /// @param  erc20Amount Token side of Oracle price {ETH <-> ERC20 Token}
+    /// @return navps The Net Asset Value Per Share (liquidity) represents
+    function getNAVPerShare(uint256 ethAmount, uint256 erc20Amount) external view returns (uint256 navps);
 }

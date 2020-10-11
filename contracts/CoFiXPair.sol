@@ -205,7 +205,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
                 tradeInfo[2] = _reserve0; // swap token1 for token0 out
             }
             oracleFeeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
-            tradeInfo[3] = calcNAVPerShare(_reserve0, _reserve1, _op);
+            tradeInfo[3] = calcNAVPerShare(_reserve0, _reserve1, _op.ethAmount, _op.erc20Amount);
         }
         
         require(to != _token0 && to != _token1, "CPair: INVALID_TO");
@@ -267,7 +267,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             } else {
                 revert("CPair: wrong outToken");
             }
-            tradeInfo[3] = calcNAVPerShare(_reserve0, _reserve1, _op);
+            tradeInfo[3] = calcNAVPerShare(_reserve0, _reserve1, _op.ethAmount, _op.erc20Amount);
         }
 
         { // split with branch upbove to make code more clear
@@ -375,7 +375,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
 
     // calc Net Asset Value Per Share (no K)
     // use it in this contract, for optimized gas usage
-    function calcNAVPerShare(uint256 balance0, uint256 balance1, OraclePrice memory _op) public view returns (uint256 navps) {
+    function calcNAVPerShare(uint256 balance0, uint256 balance1, uint256 ethAmount, uint256 erc20Amount) public view returns (uint256 navps) {
         uint _totalSupply = totalSupply;
         if (_totalSupply == 0) {
             navps = NAVPS_BASE;
@@ -388,9 +388,9 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             N_{p}^{'} &= NAVPS_{BASE}*(A_{u}*ethAmount+ A_{e}*erc20Amount) / S / (erc20Amount) \\\\
             // navps = NAVPS_BASE * ( (balance1*_op.ethAmount) + (balance0*_op.erc20Amount) ) / _totalSupply / _op.erc20Amount;
             */
-            uint256 balance1MulEth = balance1.mul(_op.ethAmount);
-            uint256 balance0MulErc = balance0.mul(_op.erc20Amount);
-            navps = NAVPS_BASE.mul( (balance1MulEth).add(balance0MulErc) ).div(_totalSupply).div(_op.erc20Amount);
+            uint256 balance1MulEth = balance1.mul(ethAmount);
+            uint256 balance0MulErc = balance0.mul(erc20Amount);
+            navps = NAVPS_BASE.mul( (balance1MulEth).add(balance0MulErc) ).div(_totalSupply).div(erc20Amount);
         }
     }
 
@@ -414,16 +414,22 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         liquidity = ( amnt0MulNbaseDivN ).add( amnt1MulNbaseEthKbase.div(navps).div(_op.erc20Amount).div(K_BASE.add(_op.K)) );
     }
 
-    // get Net Asset Value Per Share
+    // get Net Asset Value Per Share for mint
     // only for read, could cost more gas if use it directly in contract
     function getNAVPerShareForMint(OraclePrice memory _op) public view returns (uint256 navps) {
         return calcNAVPerShareForMint(reserve0, reserve1, _op);
     }
 
-    // get Net Asset Value Per Share
+    // get Net Asset Value Per Share for burn
     // only for read, could cost more gas if use it directly in contract
     function getNAVPerShareForBurn(OraclePrice memory _op) external view returns (uint256 navps) {
         return calcNAVPerShareForBurn(reserve0, reserve1, _op);
+    }
+
+    // get Net Asset Value Per Share
+    // only for read, could cost more gas if use it directly in contract
+    function getNAVPerShare(uint256 ethAmount, uint256 erc20Amount) external override view returns (uint256 navps) {
+        return calcNAVPerShare(reserve0, reserve1, ethAmount, erc20Amount);
     }
 
     // get estimated liquidity amount (it represents the amount of pool tokens will be minted if someone provide liquidity to the pool)

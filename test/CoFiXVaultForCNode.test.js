@@ -25,7 +25,7 @@ contract('CoFiXVaultForCNode', (accounts) => {
 
     const RATE_BASE = web3.utils.toWei('1', 'ether');
 
-    const DECAY_RATE = 65;
+    const DECAY_RATE = 80;
     const INIT_COFI_RATE = web3.utils.toWei('1', 'ether');
 
     before(async () => {

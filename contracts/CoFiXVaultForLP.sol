@@ -29,7 +29,7 @@ contract CoFiXVaultForLP is ICoFiXVaultForLP, ReentrancyGuard {
 
     uint256 public initCoFiRate = 9*1e18; // yield per block
     uint256 public decayPeriod = 2400000; // yield decays for every 2,400,000 blocks
-    uint256 public decayRate = 65;
+    uint256 public decayRate = 80;
 
     address[] public allPools; // add every pool addr to record, make it easier to track
 

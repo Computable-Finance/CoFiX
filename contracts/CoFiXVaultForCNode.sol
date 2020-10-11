@@ -30,7 +30,7 @@ contract CoFiXVaultForCNode is ICoFiXVaultForCNode, ReentrancyGuard {
 
     uint256 public initCoFiRate = 1*1e18; // yield per block, 9*1e18/9
     uint256 public decayPeriod = 2400000; // yield decays for every 2,400,000 blocks
-    uint256 public decayRate = 65;
+    uint256 public decayRate = 80;
 
     constructor(address cofi, address _factory) public {
         cofiToken = cofi;

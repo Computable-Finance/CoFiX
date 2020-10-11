@@ -8,7 +8,7 @@ const CoFiXFactory = artifacts.require("CoFiXFactory");
 const CoFiXPair = artifacts.require("CoFiXPair");
 const WETH9 = artifacts.require("WETH9");
 // const NEST3PriceOracleMock = artifacts.require("mock/NEST3PriceOracleMock");
-const NEST3PriceOracleConstMock = artifacts.require("NEST3PriceOracleConstMock");
+const NEST3PriceOracleAutoUpdateConstMock = artifacts.require("NEST3PriceOracleAutoUpdateConstMock");
 const NEST3VoteFactoryMock = artifacts.require("NEST3VoteFactoryMock");
 const CoFiXController = artifacts.require("CoFiXController");
 const TestUSDT = artifacts.require("test/USDT");
@@ -32,7 +32,7 @@ contract('CoFiXRouter', (accounts) => {
         HBTC = await TestHBTC.new({ from: deployer });
         NEST = await TestNEST.new({ from: deployer });
         WETH = await WETH9.new();
-        ConstOracle = await NEST3PriceOracleConstMock.new({ from: deployer });
+        ConstOracle = await NEST3PriceOracleAutoUpdateConstMock.new({ from: deployer });
         NEST3VoteFactory = await NEST3VoteFactoryMock.new(ConstOracle.address);
         CFactory = await CoFiXFactory.new(WETH.address, { from: deployer });
         KTable = await CoFiXKTable.new({ from: deployer });
@@ -44,9 +44,9 @@ contract('CoFiXRouter', (accounts) => {
 
     describe('addLiquidity()', function () {
         it("should add liquidity for ETH correctly", async () => {
-            for (let i = 0; i < 50; i++) {
-                await time.advanceBlock();
-            }
+            // for (let i = 0; i < 50; i++) {
+            //     await time.advanceBlock();
+            // }
             await ConstOracle.feedPrice(USDT.address, ethAmount, usdtAmount, { from: deployer });
             let _amountETH = web3.utils.toWei('1', 'ether');
             let _msgValue = web3.utils.toWei('1.1', 'ether');
@@ -99,11 +99,109 @@ contract('CoFiXRouter', (accounts) => {
         });
     });
 
-    describe('template', function () {
-        it("test", async () => {
-        });
-    });
+    describe('new trading pair: HBTC', function () {
+        it("should add liquidity for HBTC correctly", async () => {
+            let hbtcAmount = new BN("339880000000000000");
+            await ConstOracle.feedPrice(HBTC.address, ethAmount, hbtcAmount, { from: deployer });
+            let _amountETH = web3.utils.toWei('0', 'ether');
+            let _amountHBTC = web3.utils.toWei('1', 'ether');
+            let _msgValue = web3.utils.toWei('0.01', 'ether');
 
+            let hbtcPairAddr = "0x0000000000000000000000000000000000000000";
+            let wethInHBTCPoolBefore = await WETH.balanceOf(hbtcPairAddr);
+            let hbtcInHBTCPoolBefore = await HBTC.balanceOf(hbtcPairAddr);
+            let ethUserBalanceBefore = await web3.eth.getBalance(LP);
+            let hbtcUserBalanceBefore = await HBTC.balanceOf(LP);
+            let oracleBalanceBefore = await web3.eth.getBalance(ConstOracle.address);
+
+            await HBTC.approve(CRouter.address, _amountHBTC, { from: LP, gasPrice: 0});
+
+            let result = await CRouter.addLiquidity(HBTC.address, _amountETH, _amountHBTC, 0, LP, "99999999999", { from: LP, value: _msgValue, gasPrice: 0});
+            hbtcPairAddr = await CFactory.getPair(HBTC.address);
+            HBTCPair = await CoFiXPair.at(hbtcPairAddr);
+            console.log("------------addLiquidity for HBTC/ETH Pool with HBTC------------");
+            let liquidityHBTCPair = await HBTCPair.balanceOf(LP);
+            let wethInHBTCPoolAfter = await WETH.balanceOf(hbtcPairAddr);
+            let hbtcInHBTCPoolAfter = await HBTC.balanceOf(hbtcPairAddr);
+            let ethUserBalanceAfter = await web3.eth.getBalance(LP);
+            let hbtcUserBalanceAfter = await HBTC.balanceOf(LP);
+            let oracleBalanceAfter = await web3.eth.getBalance(ConstOracle.address);
+            if (verbose) {
+                console.log(`gasUsed: ${result.receipt.gasUsed}`);
+                console.log(`before>pool balance WETH: ${wethInHBTCPoolBefore.toString()}`);
+                console.log(`before>pool balance HBTC: ${hbtcInHBTCPoolBefore.toString()}`);
+                console.log(`before>user balance ETH: ${ethUserBalanceBefore.toString()}`);
+                console.log(`before>user balance HBTC: ${hbtcUserBalanceBefore.toString()}`);
+                console.log(`before>oracle balance ETH: ${oracleBalanceBefore.toString()}`);
+                console.log(`-------`);
+                console.log(`got liquidity of ETH/HBTC Pool: ${liquidityHBTCPair.toString()}`);
+                console.log(`after>pool balance WETH: ${wethInHBTCPoolAfter.toString()}`);
+                console.log(`after>pool balance HBTC: ${hbtcInHBTCPoolAfter.toString()}`);
+                console.log(`after>user balance ETH: ${ethUserBalanceAfter.toString()}`);
+                console.log(`after>user balance HBTC: ${hbtcUserBalanceAfter.toString()}`);
+                console.log(`after>oracle balance ETH: ${oracleBalanceAfter.toString()}`);
+            }
+            // compare balance
+            let ethSpent = balanceDiff(ethUserBalanceAfter, ethUserBalanceBefore).mul(new BN('-1')); // after <= before
+            let ethToPool = balanceDiff(wethInHBTCPoolAfter, wethInHBTCPoolBefore);
+            let ethToOracle = balanceDiff(oracleBalanceAfter, oracleBalanceBefore);
+            expect(_amountETH).to.bignumber.equal(ethToPool); // pool got the eth amount user want to add
+            expect(_amountHBTC).to.bignumber.equal(balanceDiff(hbtcInHBTCPoolAfter, hbtcInHBTCPoolBefore)); // no change for hbtc balance in pool
+            let hbtcSpent = balanceDiff(hbtcUserBalanceAfter, hbtcUserBalanceBefore).mul(new BN('-1')); // after <= before
+            expect(hbtcSpent).to.bignumber.equal(_amountHBTC); // no change for user hbtc balance
+            expect(ethSpent).to.bignumber.equal(ethToPool.add(ethToOracle)); // eth user spent equals eth into pool plus eth as oracle fee (no gas fee here because gas price zero)
+        });
+
+        it("should remove all liquidity for HBTC correctly", async () => {
+            // remove liquidity
+            let hbtcPairAddr = await CFactory.getPair(HBTC.address);
+            let HBTCPair = await CoFiXPair.at(hbtcPairAddr);
+            let liquidityHBTCPairBefore = await HBTCPair.balanceOf(LP);
+            let _msgValue = web3.utils.toWei('0.01', 'ether');
+            await HBTCPair.approve(CRouter.address, liquidityHBTCPairBefore, { from: LP, gasPrice: 0});
+
+            let wethInHBTCPoolBefore = await WETH.balanceOf(hbtcPairAddr);
+            let hbtcInHBTCPoolBefore = await HBTC.balanceOf(hbtcPairAddr);
+            let ethUserBalanceBefore = await web3.eth.getBalance(LP);
+            let hbtcUserBalanceBefore = await HBTC.balanceOf(LP);
+            let oracleBalanceBefore = await web3.eth.getBalance(ConstOracle.address);
+
+            // setTheta
+            const theta = new BN(200000);
+            await CoFiXCtrl.setTheta(HBTC.address, theta, { from: deployer });
+            let kInfo = await CoFiXCtrl.getKInfo(HBTC.address);
+            expect(kInfo.theta).to.bignumber.equal(theta);
+
+            // setTradeMiningStatus
+            await CFactory.setTradeMiningStatus(HBTC.address, true);
+
+            let result = await CRouter.removeLiquidityGetToken(HBTC.address, liquidityHBTCPairBefore, 0, LP, "99999999999", { from: LP, value: _msgValue, gasPrice: 0 });
+
+            console.log("------------removeLiquidity for HBTC/ETH Pool get HBTC------------");
+            let liquidityHBTCPairAfter = await HBTCPair.balanceOf(LP);
+            let wethInHBTCPoolAfter = await WETH.balanceOf(hbtcPairAddr);
+            let hbtcInHBTCPoolAfter = await HBTC.balanceOf(hbtcPairAddr);
+            let ethUserBalanceAfter = await web3.eth.getBalance(LP);
+            let hbtcUserBalanceAfter = await HBTC.balanceOf(LP);
+            let oracleBalanceAfter = await web3.eth.getBalance(ConstOracle.address);
+            if (verbose) {
+                console.log(`gasUsed: ${result.receipt.gasUsed}`);
+                console.log(`liquidity of ETH/HBTC Pool before remove: ${liquidityHBTCPairBefore.toString()}`);
+                console.log(`before>pool balance WETH: ${wethInHBTCPoolBefore.toString()}`);
+                console.log(`before>pool balance HBTC: ${hbtcInHBTCPoolBefore.toString()}`);
+                console.log(`before>user balance ETH: ${ethUserBalanceBefore.toString()}`);
+                console.log(`before>user balance HBTC: ${hbtcUserBalanceBefore.toString()}`);
+                console.log(`before>oracle balance ETH: ${oracleBalanceBefore.toString()}`);
+                console.log(`-------`);
+                console.log(`liquidity of ETH/HBTC Pool after remove: ${liquidityHBTCPairAfter.toString()}`);
+                console.log(`after>pool balance WETH: ${wethInHBTCPoolAfter.toString()}`);
+                console.log(`after>pool balance HBTC: ${hbtcInHBTCPoolAfter.toString()}`);
+                console.log(`after>user balance ETH: ${ethUserBalanceAfter.toString()}`);
+                console.log(`after>user balance HBTC: ${hbtcUserBalanceAfter.toString()}`);
+                console.log(`after>oracle balance ETH: ${oracleBalanceAfter.toString()}`);
+            }
+        });    
+    });
 });
 
 function balanceDiff(after, before) {

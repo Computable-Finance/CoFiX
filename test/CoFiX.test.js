@@ -353,7 +353,7 @@ contract('CoFiX', (accounts) => {
             console.log("user balance HBTC:", hbtcUserBalance.toString());
 
             // setTheta
-            const theta = new BN(10);
+            const theta = new BN(200000);
             await CoFiXCtrl.setTheta(USDT.address, theta, { from: deployer });
             let kInfo = await CoFiXCtrl.getKInfo(USDT.address);
             expect(kInfo.theta).to.bignumber.equal(theta);

@@ -112,7 +112,7 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         }
         oracleFeeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
 
-        require(liquidity > 0, "CPair: INSUFFICIENT_LIQUIDITY_MINTED");
+        require(liquidity > 0, "CPair: SHORT_LIQUIDITY_MINTED");
         _mint(to, liquidity);
 
         _update(balance0, balance1);
@@ -146,13 +146,13 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         }
         oracleFeeChange = msg.value.sub(_ethBalanceBefore.sub(address(this).balance));
 
-        require(amountOut > 0, "CPair: INSUFFICIENT_LIQUIDITY_BURNED");
+        require(amountOut > 0, "CPair: SHORT_LIQUIDITY_BURNED");
         _burn(address(this), liquidity);
         _safeTransfer(outToken, to, amountOut);
         if (fee > 0) {
             if (ICoFiXFactory(factory).getTradeMiningStatus(_token1)) {
-                // only set fee to protocol feeReceiver when trade mining is enabled for this trading pair
-                _safeTransfer(_token0, ICoFiXFactory(factory).getFeeReceiver(), fee); // transfer fee to protocol feeReceiver
+                // only transfer fee to protocol feeReceiver when trade mining is enabled for this trading pair
+                _safeTransferFee(_token0, fee);
             }
         }
         balance0 = IERC20(_token0).balanceOf(address(this));
@@ -184,13 +184,12 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             // calc amountIn
             if (outToken == _token1) {
                 amountIn = balance0.sub(_reserve0);
-                require(amountIn > 0, "CPair: wrong amount0In");
             } else if (outToken == _token0) {
                 amountIn = balance1.sub(_reserve1);
-                require(amountIn > 0, "CPair: wrong amount1In");
             } else {
                 revert("CPair: wrong outToken");
             }
+            require(amountIn > 0, "CPair: wrong amountIn");
             bytes memory data = abi.encode(msg.sender, outToken, to, amountIn);
             // query price
             OraclePrice memory _op;
@@ -213,8 +212,8 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         _safeTransfer(outToken, to, amountOut); // optimistically transfer tokens
         if (tradeInfo[0] > 0) {
             if (ICoFiXFactory(factory).getTradeMiningStatus(_token1)) {
-                // only set fee to protocol feeReceiver when trade mining is enabled for this trading pair
-                _safeTransfer(_token0, ICoFiXFactory(factory).getFeeReceiver(), tradeInfo[0]); // transfer fee to protocol feeReceiver
+                // only transfer fee to protocol feeReceiver when trade mining is enabled for this trading pair
+                _safeTransferFee(_token0, tradeInfo[0]);
             } else {
                 tradeInfo[0] = 0; // so router won't go into the trade mining logic (reduce one more call gas cost)
             }
@@ -256,17 +255,16 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
      
             if (outToken == _token1) {
                 amountIn = balance0.sub(_reserve0);
-                require(amountIn > 0, "CPair: wrong amount0In"); // for different revert reason
                 tradeInfo[1] = _reserve0; // swap token0 for token1 out
                 tradeInfo[2] = uint256(_reserve1).mul(_op.ethAmount).div(_op.erc20Amount); // _reserve1 value as _reserve0
             } else if (outToken == _token0) {
                 amountIn = balance1.sub(_reserve1);
-                require(amountIn > 0, "CPair: wrong amount1In"); // for different revert reason
                 tradeInfo[1] = uint256(_reserve1).mul(_op.ethAmount).div(_op.erc20Amount); // _reserve1 value as _reserve0
                 tradeInfo[2] = _reserve0; // swap token1 for token0 out
             } else {
                 revert("CPair: wrong outToken");
             }
+            require(amountIn > 0, "CPair: wrong amountIn");
             tradeInfo[3] = calcNAVPerShare(_reserve0, _reserve1, _op.ethAmount, _op.erc20Amount);
         }
 
@@ -275,19 +273,18 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             uint _amountInLeft;
             if (outToken == _token1) {
                 (_amountInNeeded, tradeInfo[0]) = calcInNeededToken0(amountOutExact, _op);
-                require(_amountInNeeded <= amountIn, "CPair: insufficient amount0In"); // for clear revert reason
                 _amountInLeft = amountIn.sub(_amountInNeeded);
                 if (_amountInLeft > 0) {
                     _safeTransfer(_token0, to, _amountInLeft); // send back the amount0 token change
                 }
             } else if (outToken == _token0) {
                 (_amountInNeeded, tradeInfo[0]) = calcInNeededToken1(amountOutExact, _op);
-                require(_amountInNeeded <= amountIn, "CPair: insufficient wrong amount1In"); // for clear revert reason
                 _amountInLeft = amountIn.sub(_amountInNeeded);
                 if (_amountInLeft > 0) {
                     _safeTransfer(_token1, to, _amountInLeft); // send back the amount1 token change
                 }
             }
+            require(_amountInNeeded <= amountIn, "CPair: insufficient amountIn");
             require(_amountInNeeded > 0, "CPair: wrong amountIn needed");
         }
         
@@ -298,8 +295,8 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             _safeTransfer(outToken, to, amountOut); // optimistically transfer tokens
             if (tradeInfo[0] > 0) {
                 if (ICoFiXFactory(factory).getTradeMiningStatus(_token1)) {
-                    // only set fee to protocol feeReceiver when trade mining is enabled for this trading pair
-                    _safeTransfer(_token0, ICoFiXFactory(factory).getFeeReceiver(), tradeInfo[0]); // transfer fee to protocol feeReceiver
+                    // only transfer fee to protocol feeReceiver when trade mining is enabled for this trading pair
+                    _safeTransferFee(_token0, tradeInfo[0]);
                 } else {
                     tradeInfo[0] = 0; // so router won't go into the trade mining logic (reduce one more call gas cost)
                 }
@@ -536,4 +533,16 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         return ICoFiXController(ICoFiXFactory(factory).getController()).queryOracle{value: msg.value}(token, uint8(op), data);
     }
 
+    // Safe WETH transfer function, just in case not having enough WETH.
+    function _safeTransferFee(address _token0, uint256 _fee) internal {
+        address feeReceiver = ICoFiXFactory(factory).getFeeReceiver();
+        if (feeReceiver == address(0)) {
+            return;
+        }
+        uint256 wethBal = IERC20(_token0).balanceOf(address(this));
+        if (_fee > wethBal) {
+            _fee = wethBal;
+        }
+        if (_fee > 0) _safeTransfer(_token0, feeReceiver, _fee); // transfer fee to protocol fee reward pool
+    }
 }

@@ -132,8 +132,8 @@ contract('CoFiXVaultForTrader', (accounts) => {
                 { x: 300, y: 100 }, { x: 300, y: 900 }, { x: 300, y: 910 }, { x: 300, y: 3000 },
                 { x: 300, y: 30001 }, { x: 0, y: 1 }];
         const expectedLambda = ["50", "50", "50", "50",
-                             "75", "100", "125", "125",
-                             "150", "150"];
+                             "75", "100", "133", "133",
+                             "200", "200"];
         expect(input.length).equal(expectedLambda.length);
         for (let i = 0; i < input.length; i++) {
             const xy = input[i];

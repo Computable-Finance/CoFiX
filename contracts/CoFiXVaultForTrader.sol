@@ -180,10 +180,10 @@ contract CoFiXVaultForTrader is ICoFiXVaultForTrader, ReentrancyGuard {
             return 75;
         } else if (ratio >= 33) { // 0.33 <= x/y < 3, lambda = 1
             return 100;
-        } else if (ratio >= 10) { // 0.1 <= x/y < 0.33, lambda = 1.25
-            return 125;
-        } else { // x/y < 0.1, lambda = 1.5
-            return 150;
+        } else if (ratio >= 10) { // 0.1 <= x/y < 0.33, lambda = 1.33
+            return 133;
+        } else { // x/y < 0.1, lambda = 2.0
+            return 200;
         }
     }
 

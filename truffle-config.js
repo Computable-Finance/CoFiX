@@ -69,7 +69,7 @@ module.exports = {
       provider: () => new HDWalletProvider(process.env.mainnetMnemonic, `wss://mainnet.infura.io/ws/v3/`+ process.env.INFURA_PROJECT_ID),
       network_id: 1,
       gas: 6000000,
-      gasPrice: utils.toWei('180', 'gwei'),
+      gasPrice: utils.toWei('50', 'gwei'),
       confirmations: 2,
       timeoutBlocks: 200,
       skipDryRun: false
@@ -134,7 +134,7 @@ Issues: https://github.com/Computable-Finance/CoFiX/issues
       settings: {
         optimizer: {
           enabled: true,
-          runs: 20000
+          runs: 6666
         }
       },
       version: "0.6.12",

@@ -152,7 +152,9 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         if (fee > 0) {
             if (ICoFiXFactory(factory).getTradeMiningStatus(_token1)) {
                 // only transfer fee to protocol feeReceiver when trade mining is enabled for this trading pair
-                _safeTransferFee(_token0, fee);
+                _safeSendFeeForCoFiHolder(_token0, fee);
+            } else {
+                _safeSendFeeForLP(_token0, _token1, fee);
             }
         }
         balance0 = IERC20(_token0).balanceOf(address(this));
@@ -213,8 +215,9 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         if (tradeInfo[0] > 0) {
             if (ICoFiXFactory(factory).getTradeMiningStatus(_token1)) {
                 // only transfer fee to protocol feeReceiver when trade mining is enabled for this trading pair
-                _safeTransferFee(_token0, tradeInfo[0]);
+                _safeSendFeeForCoFiHolder(_token0, tradeInfo[0]);
             } else {
+                _safeSendFeeForLP(_token0, _token1, tradeInfo[0]);
                 tradeInfo[0] = 0; // so router won't go into the trade mining logic (reduce one more call gas cost)
             }
         }
@@ -296,8 +299,9 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
             if (tradeInfo[0] > 0) {
                 if (ICoFiXFactory(factory).getTradeMiningStatus(_token1)) {
                     // only transfer fee to protocol feeReceiver when trade mining is enabled for this trading pair
-                    _safeTransferFee(_token0, tradeInfo[0]);
+                    _safeSendFeeForCoFiHolder(_token0, tradeInfo[0]);
                 } else {
+                    _safeSendFeeForLP(_token0, _token1, tradeInfo[0]);
                     tradeInfo[0] = 0; // so router won't go into the trade mining logic (reduce one more call gas cost)
                 }
             }
@@ -533,16 +537,29 @@ contract CoFiXPair is ICoFiXPair, CoFiXERC20 {
         return ICoFiXController(ICoFiXFactory(factory).getController()).queryOracle{value: msg.value}(token, uint8(op), data);
     }
 
-    // Safe WETH transfer function, just in case not having enough WETH.
-    function _safeTransferFee(address _token0, uint256 _fee) internal {
+    // Safe WETH transfer function, just in case not having enough WETH. CoFi holder will earn these fees.
+    function _safeSendFeeForCoFiHolder(address _token0, uint256 _fee) internal {
         address feeReceiver = ICoFiXFactory(factory).getFeeReceiver();
         if (feeReceiver == address(0)) {
-            return;
+            return; // if feeReceiver not set, theta fee keeps in pair pool
         }
+        _safeSendFee(_token0, feeReceiver, _fee); // transfer fee to protocol fee reward pool for CoFi holders
+    }
+
+    // Safe WETH transfer function, just in case not having enough WETH. LP will earn these fees.
+    function _safeSendFeeForLP(address _token0, address _token1, uint256 _fee) internal {
+        address feeVault = ICoFiXFactory(factory).getFeeVaultForLP(_token1);
+        if (feeVault == address(0)) {
+            return; // if fee vault not set, theta fee keeps in pair pool
+        }
+        _safeSendFee(_token0, feeVault, _fee); // transfer fee to protocol fee reward pool for LP
+    }
+
+    function _safeSendFee(address _token0, address _receiver, uint256 _fee) internal {
         uint256 wethBal = IERC20(_token0).balanceOf(address(this));
         if (_fee > wethBal) {
             _fee = wethBal;
         }
-        if (_fee > 0) _safeTransfer(_token0, feeReceiver, _fee); // transfer fee to protocol fee reward pool
+        if (_fee > 0) _safeTransfer(_token0, _receiver, _fee); 
     }
 }

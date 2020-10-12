@@ -25,6 +25,7 @@ contract CoFiXFactory is ICoFiXFactory {
     address public vaultForCNode;
 
     mapping (address => bool) public override getTradeMiningStatus; // token -> bool
+    mapping (address => address) public override getFeeVaultForLP; // token -> fee vault pool
 
     modifier onlyGovernance() {
         require(msg.sender == governance, "CFactory: !governance");
@@ -86,7 +87,12 @@ contract CoFiXFactory is ICoFiXFactory {
         require(_new != address(0), "CFactory: zero addr");
         require(_new != feeReceiver, "CFactory: same addr");
         feeReceiver = _new;
-        emit NewGovernance(_new);
+        emit NewFeeReceiver(_new);
+    }
+
+    function setFeeVaultForLP(address token, address feeVault) external override onlyGovernance {
+        getFeeVaultForLP[token] = feeVault;
+        emit NewFeeVaultForLP(token, feeVault);
     }
 
     function setVaultForLP(address _new) external override onlyGovernance {

@@ -8,6 +8,7 @@ interface ICoFiXFactory {
     event NewGovernance(address _new);
     event NewController(address _new);
     event NewFeeReceiver(address _new);
+    event NewFeeVaultForLP(address token, address feeVault);
     event NewVaultForLP(address _new);
     event NewVaultForTrader(address _new);
     event NewVaultForCNode(address _new);
@@ -27,6 +28,8 @@ interface ICoFiXFactory {
 
     function getTradeMiningStatus(address token) external view returns (bool status);
     function setTradeMiningStatus(address token, bool status) external;
+    function getFeeVaultForLP(address token) external view returns (address feeVault); // for LPs
+    function setFeeVaultForLP(address token, address feeVault) external;
 
     function setGovernance(address _new) external;
     function setController(address _new) external;
@@ -35,7 +38,7 @@ interface ICoFiXFactory {
     function setVaultForTrader(address _new) external;
     function setVaultForCNode(address _new) external;
     function getController() external view returns (address controller);
-    function getFeeReceiver() external view returns (address feeReceiver);
+    function getFeeReceiver() external view returns (address feeReceiver); // For CoFi Holders
     function getVaultForLP() external view returns (address vaultForLP);
     function getVaultForTrader() external view returns (address vaultForTrader);
     function getVaultForCNode() external view returns (address vaultForCNode);

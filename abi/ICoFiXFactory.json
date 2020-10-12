@@ -31,6 +31,25 @@
       {
         "indexed": false,
         "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "feeVault",
+        "type": "address"
+      }
+    ],
+    "name": "NewFeeVaultForLP",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
         "name": "_new",
         "type": "address"
       }
@@ -205,6 +224,43 @@
       }
     ],
     "name": "setTradeMiningStatus",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "getFeeVaultForLP",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "feeVault",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "feeVault",
+        "type": "address"
+      }
+    ],
+    "name": "setFeeVaultForLP",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

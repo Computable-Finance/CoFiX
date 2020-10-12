@@ -41,6 +41,8 @@
 
 ![CoFiX Smart Contract](docs/cofix-smart-contract.svg)
 
+<p align=center> <i>thanks 🦄 for great contract architecture</i> </p>
+
 ## Usage
 
 ### Run test

@@ -14,6 +14,10 @@ const CoFiXVaultForCNode = artifacts.require("CoFiXVaultForCNode");
 const CoFiStakingRewards = artifacts.require("CoFiStakingRewards");
 const CoFiToken = artifacts.require("CoFiToken");
 var CoFiXNode = artifacts.require("CoFiXNode");
+const CoFiXStakingRewards = artifacts.require("CoFiXStakingRewards.sol");
+// const CoFiXStakingRewardsForHBTC = artifacts.require("CoFiXStakingRewards.sol");
+const CNodeStakingRewards = artifacts.require("CNodeStakingRewards.sol");
+
 
 var NEST3VoteFactory = artifacts.require("NEST3VoteFactoryMock");
 
@@ -123,6 +127,30 @@ module.exports = async function (deployer, network) {
     let vaultForTrader = await CoFiXVaultForTrader.deployed();
     await vaultForTrader.allowRouter(CoFiXRouter.address);
 
+    // deploy USDT and HBTC LP Token Rewards Pool (deployCoFiXStakingRewards)
+    let CoFiXStakingRewardsForUSDT = await CoFiXStakingRewards.new(CoFiToken.address, usdtPair, CoFiXFactory.address);
+    let CoFiXStakingRewardsForHBTC = await CoFiXStakingRewards.new(CoFiToken.address, hbtcPair, CoFiXFactory.address);
+
+    // add pool and set pool weight
+    let vaultForLP = await CoFiXVaultForLP.deployed();
+    console.log(`CoFiXStakingRewardsForUSDT.address: ${CoFiXStakingRewardsForUSDT.address}, CoFiXStakingRewardsForHBTC: ${CoFiXStakingRewardsForHBTC.address}`);
+    await vaultForLP.addPool(CoFiXStakingRewardsForUSDT.address);
+    await vaultForLP.addPool(CoFiXStakingRewardsForHBTC.address);
+    await vaultForLP.batchSetPoolWeight([CoFiXStakingRewardsForUSDT.address, CoFiXStakingRewardsForHBTC.address], ["67", "33"]);
+    const usdtPoolInfo = await vaultForLP.getPoolInfo(CoFiXStakingRewardsForUSDT.address);
+    console.log(`getPoolInfo, CoFiXStakingRewardsForUSDT.address: ${CoFiXStakingRewardsForUSDT.address}, state: ${usdtPoolInfo.state}, weight: ${usdtPoolInfo.weight}`);
+    const hbtcPoolInfo = await vaultForLP.getPoolInfo(CoFiXStakingRewardsForHBTC.address);
+    console.log(`getPoolInfo, CoFiXStakingRewardsForHBTC.address: ${CoFiXStakingRewardsForHBTC.address}, state: ${hbtcPoolInfo.state}, weight: ${hbtcPoolInfo.weight}`);
+
+    // deploy CNode Rewards Pool (deployCNodeStakingRewards)
+    // await CNodeStakingRewards.new(CoFi.address, CNode.address, CFactory.address);
+    await deployer.deploy(CNodeStakingRewards, CoFiToken.address, CoFiXNode.address, CoFiXFactory.address);
+    // set cnode pool
+    let vaultForCNode = await CoFiXVaultForCNode.deployed();
+    await vaultForCNode.setCNodePool(CNodeStakingRewards.address);
+    const cnodePool = await vaultForCNode.cnodePool();
+    console.log(`setCNodePool, CNodeStakingRewards.address: ${CNodeStakingRewards.address}, cnodePool: ${cnodePool}`);
+
     console.log(`Contract Deployed Summary\n=========================`);
     console.log(`| USDT | ${USDT.address} |`);
     console.log(`| HBTC | ${HBTC.address} |`);
@@ -146,4 +174,9 @@ module.exports = async function (deployer, network) {
 
     console.log(`| ETH/USDT Pair | ${usdtPair} |`);
     console.log(`| ETH/HBTC Pair | ${hbtcPair} |`);
+
+    console.log(`| CoFiXStakingRewards ETH/USDT Pair | ${CoFiXStakingRewardsForUSDT.address} |`);
+    console.log(`| CoFiXStakingRewards ETH/HBTC Pair | ${CoFiXStakingRewardsForHBTC.address} |`);
+    console.log(`| CNodeStakingRewards CNode | ${CNodeStakingRewards.address} |`);
+
 };

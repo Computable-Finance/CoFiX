@@ -81,6 +81,12 @@ npm run genabi
 
 ## Mainnet
 
+### Governance
+
+CoFiX Governance (Multi-Sig) https://gnosis-safe.io/app/#/safes/0xF51d8FdF98286e1EA846c79f1526ECC95b93AbB8/balances
+
+*Governance ownership will be transferred to the CoFiX DAO in the next stage when the CoFi token is widely distributed.*
+
 ### 🎉 Release 🎉
 
 |       Contract       |                  Address                   |

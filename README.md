@@ -87,6 +87,8 @@ npm run genabi
 
 CoFiX Governance (Multi-Sig) https://gnosis-safe.io/app/#/safes/0xF51d8FdF98286e1EA846c79f1526ECC95b93AbB8/balances
 
+Check *Record of Governance Authority Transfer to Multi-Sig Wallet* and *Details on CoFiX Multi-Sig Governance Contract* [here](docs/transfer_governance_record.md).
+
 *Governance ownership will be transferred to the CoFiX DAO in the next stage when the CoFi token is widely distributed.*
 
 ### 🎉 Release 🎉

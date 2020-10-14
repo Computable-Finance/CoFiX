@@ -91,8 +91,8 @@ contract CoFiToken is ERC20("CoFi Token", "CoFi") {
         _moveDelegates(address(0), _delegates[_to], _amount);
     }
 
-    /// @notice coped from SUSHI, override original transfer to fix vote issue
-    /// check https://blog.peckshield.com/2020/09/08/sushi/
+    /// @notice SUSHI has a vote governance bug in its token implementation, CoFi fixed it here
+    /// read https://blog.peckshield.com/2020/09/08/sushi/
     function transfer(address _recipient, uint256 _amount) public override returns (bool) {
         super.transfer(_recipient, _amount);
         _moveDelegates(_delegates[msg.sender], _delegates[_recipient], _amount);

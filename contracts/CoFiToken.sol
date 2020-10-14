@@ -91,7 +91,7 @@ contract CoFiToken is ERC20("CoFi Token", "CoFi") {
         _moveDelegates(address(0), _delegates[_to], _amount);
     }
 
-    /// @notice override original transfer to fix SUSHI's vote issue
+    /// @notice coped from SUSHI, override original transfer to fix vote issue
     /// check https://blog.peckshield.com/2020/09/08/sushi/
     function transfer(address _recipient, uint256 _amount) public override returns (bool) {
         super.transfer(_recipient, _amount);
@@ -99,7 +99,7 @@ contract CoFiToken is ERC20("CoFi Token", "CoFi") {
         return true;
     }
 
-    /// @notice override original transferFrom to fix SUSHI's vote issue
+    /// @notice override original transferFrom to fix vote issue
     function transferFrom(address _sender, address _recipient, uint256 _amount) public override returns (bool) {
         super.transferFrom(_sender, _recipient, _amount);
         _moveDelegates(_delegates[_sender], _delegates[_recipient], _amount);
@@ -241,7 +241,7 @@ contract CoFiToken is ERC20("CoFi Token", "CoFi") {
         internal
     {
         address currentDelegate = _delegates[delegator];
-        uint256 delegatorBalance = balanceOf(delegator); // balance of underlying SUSHIs (not scaled);
+        uint256 delegatorBalance = balanceOf(delegator); // balance of underlying CoFis (not scaled);
         _delegates[delegator] = delegatee;
 
         emit DelegateChanged(delegator, currentDelegate, delegatee);

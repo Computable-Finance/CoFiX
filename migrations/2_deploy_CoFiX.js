@@ -93,15 +93,18 @@ module.exports = async function (deployer, network) {
     // VaultForCNode
     await deployer.deploy(CoFiXVaultForCNode, CoFiToken.address, CoFiXFactory.address);
 
+    let controller = await CoFiXController.deployed();
+
     // activate oracle
     if (network == "mainnet" || network == "mainnet-fork") {
-        let controller = await CoFiXController.deployed();
         await NEST.approve(CoFiXController.address, "0");
         await controller.activate();
-        const theta = "200000";
-        await controller.setTheta(USDT.address, theta);
-        await controller.setTheta(HBTC.address, theta);
     }
+
+    // set theta
+    const theta = "200000";
+    await controller.setTheta(USDT.address, theta);
+    await controller.setTheta(HBTC.address, theta);
 
     // set minter of cofiToken
     let cofiToken = await CoFiToken.deployed();

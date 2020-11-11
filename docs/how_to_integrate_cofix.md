@@ -130,7 +130,7 @@ The current impact cost is 0 for trading volumes less than 500 ETH. Otherwise, i
 function calcImpactCostFor_SWAP_WITH_EXACT(address token, bytes memory data, uint256 ethAmount, uint256 erc20Amount) public pure returns (uint256 impactCost)
 ```
 
-:
+*Examples*:
 
 ```js
 const token = USDT; // or HBTC
@@ -196,6 +196,8 @@ await usdtPair.calcOutToken1(amountInETH, p); // swap ETH for USDT
 ### Execute Swaps
 
 The CoFiXRouter contract provides interfaces [to execute swaps](https://github.com/Computable-Finance/CoFiX/blob/master/contracts/interface/ICoFiXRouter.sol).
+
+*Smart Contract Interface*:
 
 ```solidity
 /// @dev Trader swap exact amount of ETH for ERC20 Tokens (notice: msg.value = amountIn + oracle fee)
@@ -278,6 +280,8 @@ await CRouter.swapExactETHForTokens(USDT.address, _amountIn, 0, trader, trader, 
 
 The maximum trading volume for each pair is limited by the number of target assets remaining in the pool. This can be accessed through the [`getReserves` interface](https://github.com/Computable-Finance/CoFiX/blob/master/contracts/CoFiXPair.sol#L71) of the CoFiXPair contract.
 
+*Smart Contract Interface*:
+
 ```solidity
 function getReserves() public override view returns (uint112 _reserve0, uint112 _reserve1)
 ```
@@ -297,6 +301,8 @@ ETH is currently included in all trading pairs.
 ### Querying the Address of a Supported Trading Pair
 
 The `getPair` interface of the CoFiXFactory can be used to query the pair's address to which a token corresponds.
+
+*Examples*:
 
 ```js
 const token = USDT;

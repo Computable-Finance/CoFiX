@@ -37,6 +37,8 @@
 
 **[https://github.com/Computable-Finance/Doc](https://github.com/Computable-Finance/Doc)**
 
+**[Guide: How to Integrate with CoFiX](./docs/how_to_integrate_cofix.md)**
+
 ## Smart Contract Diagrams
 
 ![CoFiX Smart Contract](docs/cofix-smart-contract.svg)

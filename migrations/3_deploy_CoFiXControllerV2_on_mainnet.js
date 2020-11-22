@@ -65,7 +65,7 @@ module.exports = async function (deployer, network) {
 
     // set from multi sig gov for mainnet release
     // // set controller in factory
-    if (network == "ropsten-fork") {
+    if (network == "ropsten" || network == "ropsten-fork") {
         console.log(`setting controller of CoFiXFactory`);
         await CoFiXFactory.setController(CoFiXController.address);
     }

@@ -10,7 +10,7 @@ const WETH9 = artifacts.require("WETH9");
 // const NEST3PriceOracleMock = artifacts.require("mock/NEST3PriceOracleMock");
 const NEST3PriceOracleAutoUpdateConstMock = artifacts.require("NEST3PriceOracleAutoUpdateConstMock");
 const NEST3VoteFactoryMock = artifacts.require("NEST3VoteFactoryMock");
-const CoFiXController = artifacts.require("CoFiXController");
+const CoFiXController = artifacts.require("CoFiXControllerV2");
 const TestUSDT = artifacts.require("test/USDT");
 const TestHBTC = artifacts.require("test/HBTC");
 const TestNEST = artifacts.require("test/NEST");
@@ -283,7 +283,8 @@ contract('CoFiXRouter', (accounts) => {
             let hbtcUserBalanceBefore = await HBTC.balanceOf(LP);
             let oracleBalanceBefore = await web3.eth.getBalance(ConstOracle.address);
             let wethInFeeVaultBefore = await WETH.balanceOf(FEE_VAULT);
-            let liquidity = liquidityHBTCPairBefore/2;
+            console.log("liquidityHBTCPairBefore:", liquidityHBTCPairBefore.toString())
+            let liquidity = Math.round(liquidityHBTCPairBefore/2);
 
             let result = await CRouter.removeLiquidityGetToken(HBTC.address, liquidity, 0, LP, "99999999999", { from: LP, value: _msgValue, gasPrice: 0 });
 

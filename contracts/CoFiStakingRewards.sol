@@ -76,7 +76,7 @@ contract CoFiStakingRewards is ICoFiStakingRewards, ReentrancyGuard {
         }
         uint256 _accrued = accrued();
         uint256 _rewardPerToken = rewardPerTokenStored.add(
-                _accrued.mul(1e18).mul(dividendShare).div(_totalSupply).div(100) // 50% of accrued to CoFi holders as dividend
+                _accrued.mul(1e18).mul(dividendShare).div(_totalSupply).div(100) // 20% of accrued to CoFi holders as dividend, adjustable
             );
         return (_rewardPerToken, _accrued);
     }

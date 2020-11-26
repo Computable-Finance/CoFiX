@@ -16,7 +16,7 @@ const CoFiXFactory = artifacts.require("CoFiXFactory");
 const CoFiXPair = artifacts.require("CoFiXPair");
 const WETH9 = artifacts.require("WETH9");
 const NEST3PriceOracleMock = artifacts.require("mock/NEST3PriceOracleMock");
-const CoFiXController = artifacts.require("CoFiXController");
+const CoFiXController = artifacts.require("CoFiXControllerV2");
 const CoFiXKTable = artifacts.require("CoFiXKTable");
 const TestUSDT = artifacts.require("test/USDT");
 const TestHBTC = artifacts.require("test/HBTC");
@@ -206,6 +206,10 @@ contract('CoFiX', (accounts) => {
             }
             for (let i = 0; i < 50; i++) {
                 await PriceOracle.addPriceToList(HBTC.address, ethAmount, hbtcAmount, "0", { from: deployer });
+            }
+
+            for (let i = 0; i < 1; i++) {
+                await PriceOracle.addPriceToList(USDT.address, ethAmount, usdtAmount, "0", { from: deployer });
             }
 
             // addLiquidity (create pair included)

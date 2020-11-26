@@ -13,6 +13,7 @@ interface ICoFiXController {
     event NewKLimit(int128 maxK0);
     event NewGamma(int128 _gamma);
     event NewTheta(address token, uint32 theta);
+    event NewK(address token, uint32 k);
 
     function addCaller(address caller) external;
 

@@ -266,6 +266,90 @@ contract CoFiXRouter02 is ICoFiXRouter02 {
         if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
     }
 
+    function hybridSwapExactTokensForTokens(
+        uint amountIn,
+        uint amountOutMin,
+        address[] calldata path,
+        DEX_TYPE[] calldata dexes,
+        address to,
+        uint deadline
+    ) external payable ensure(deadline) returns (uint[] memory amounts) {
+        require(path.length >= 2, "CRouter: invalid path");
+        require(dexes.length == path.length - 1, "CRouter: invalid dexes");
+        _checkOracleFee(dexes, msg.value);
+        TransferHelper.safeTransferFrom(
+            path[0], msg.sender,  getPairForDEX(path[0], path[1], dexes[0]), amountIn
+        );
+        amounts = new uint[](path.length);
+        amounts[0] = amountIn;
+        _hybridSwap(path, dexes, amounts, to);
+        // check amountOutMin in the last
+        require(amounts[amounts.length - 1] >= amountOutMin, "CRouter: insufficient output amount ");
+    }
+
+    function _checkOracleFee(DEX_TYPE[] memory dexes, uint256 actual) internal {
+        uint cofixCnt;
+        for (uint i; i < dexes.length; i++) {
+            if (dexes[i] == DEX_TYPE.COFIX) {
+                cofixCnt++;
+            }
+        }
+        // strict check here
+        // to simplify the verify logic for oracle fee and prevent user from locking oracle fee by mistake
+        // if NEST_ORACLE_FEE value changed, this router would not work as expected
+        // TODO: refund the oracle fee?
+        require(actual == NEST_ORACLE_FEE.mul(cofixCnt), "CRouter: wrong oracle fee");
+    }
+
+    function _hybridSwap(address[] memory path, DEX_TYPE[] memory dexes, uint[] memory amounts, address _to) internal {
+        for (uint i; i < path.length - 1; i++) {
+            if (dexes[i] == DEX_TYPE.COFIX) {
+                _swapOnCoFiX(i, path, dexes, amounts, _to);
+            } else if (dexes[i] == DEX_TYPE.UNISWAP) {
+                _swapOnUniswap(i, path, dexes, amounts, _to);
+            } else {
+                revert("CRouter: unknown dex");
+            }
+        }
+    }
+
+    function _swapOnUniswap(uint i, address[] memory path, DEX_TYPE[] memory dexes, uint[] memory amounts, address _to) internal {
+        address pair = getPairForDEX(path[i], path[i + 1], DEX_TYPE.UNISWAP);
+
+        (address token0,) = UniswapV2Library.sortTokens(path[i], path[i + 1]);
+        {
+            (uint reserveIn, uint reserveOut) = UniswapV2Library.getReserves(uniFactory, path[i], path[i + 1]);
+            amounts[i + 1] = UniswapV2Library.getAmountOut(amounts[i], reserveIn, reserveOut);
+        }
+        uint amountOut = amounts[i + 1];
+        (uint amount0Out, uint amount1Out) = path[i] == token0 ? (uint(0), amountOut) : (amountOut, uint(0));
+
+        address to;
+        {
+            if (i < path.length - 2) {
+                to = getPairForDEX(path[i + 1], path[i + 2], dexes[i + 1]);
+            } else {
+                to = _to;
+            }
+        }
+
+        IUniswapV2Pair(pair).swap(
+            amount0Out, amount1Out, to, new bytes(0)
+        );
+    }
+    
+    function _swapOnCoFiX(uint i, address[] memory path, DEX_TYPE[] memory dexes, uint[] memory amounts, address _to) internal {
+            address pair = getPairForDEX(path[i], path[i + 1], DEX_TYPE.COFIX);
+            address to;
+            if (i < path.length - 2) {
+                to = getPairForDEX(path[i + 1], path[i + 2], dexes[i + 1]);
+            } else {
+                to = _to;
+            }
+            // TODO: dynamic oracle fee
+            (,amounts[i+1],,) = ICoFiXPair(pair).swapWithExact{value: NEST_ORACLE_FEE}(path[i + 1], to);
+    } 
+
     function isCoFiXNativeSupported(address input, address output) public view returns (bool supported, address pair) {
         // NO WETH included
         if (input != WETH && output != WETH)
@@ -281,80 +365,26 @@ contract CoFiXRouter02 is ICoFiXRouter02 {
         return (supported, pair);
     }
 
-    function hybridSwapExactTokensForTokens(
-        uint amountIn,
-        uint amountOutMin,
-        address[] calldata path,
-        address to,
-        uint deadline
-    ) external payable ensure(deadline) returns (uint[] memory amounts) {
-        TransferHelper.safeTransferFrom(
-            path[0], msg.sender,  hybridPairWithType(path[0], path[1]).pair, amountIn
-        );
-        _hybridSwap(amountIn, path, to);
-        // TODO: validate amountOutMin
-    }
-
-    function _hybridSwap(uint amountIn, address[] memory path, address _to) internal {
-        uint[] memory amounts = new uint[](path.length);
-        amounts[0] = amountIn;
-        for (uint i; i < path.length - 1; i++) {
-            (bool useCoFiX, address pair) = hybridPair(path[i], path[i + 1]);
-            if (useCoFiX) {
-                _swapOnCoFiX(i, pair, path, amounts, _to);
-            } else {
-                _swapOnUni(i, pair, path, amounts, _to);
+    function getPairForDEX(address input, address output, DEX_TYPE dex) public view returns (address pair) {
+        if (dex == DEX_TYPE.COFIX) {
+            bool supported;
+            (supported, pair) = isCoFiXNativeSupported(input, output);
+            if (!supported) {
+                revert("CRouter: not available on CoFiX");
             }
+        } else if (dex == DEX_TYPE.UNISWAP) {
+            pair = UniswapV2Library.pairFor(uniFactory, input, output);
+        } else {
+            revert("CRouter: unknown dex");
         }
     }
 
-    function _swapOnUni(uint i, address pair, address[] memory path, uint[] memory amounts, address _to) internal {
-        (address input, address output) = (path[i], path[i + 1]);
-        (address token0,) = UniswapV2Library.sortTokens(input, output);
-        (uint reserveIn, uint reserveOut) = UniswapV2Library.getReserves(uniFactory, path[i], path[i + 1]);
-        amounts[i + 1] = UniswapV2Library.getAmountOut(amounts[i], reserveIn, reserveOut);
-        uint amountOut = amounts[i + 1];
-        (uint amount0Out, uint amount1Out) = input == token0 ? (uint(0), amountOut) : (amountOut, uint(0));
-        // address to = i < path.length - 2 ? UniswapV2Library.pairFor(uniFactory, output, path[i + 2]) : _to;
-        // address to = i < path.length - 2 ? hybridPairWithType(output, path[i + 2]).pair : _to;
-        address to;
-        {
-            if (i < path.length - 2) {
-                address nextOutput = path[i + 2];
-                to = hybridPairWithType(output, nextOutput).pair;
-            } else {
-                to = _to;
-            }
-        }
-        IUniswapV2Pair(pair).swap(
-            amount0Out, amount1Out, to, new bytes(0)
-        );
-    }
-    
-    function _swapOnCoFiX(uint i,  address pair, address[] memory path, uint[] memory amounts, address _to) internal {
-            address to = i < path.length - 2 ? hybridPairWithType(path[i + 1], path[i + 2]).pair : _to;
-            // TODO: dynamic oracle fee
-            (,amounts[i+1],,) = ICoFiXPair(pair).swapWithExact{value: NEST_ORACLE_FEE}(path[i + 1], to);
-    } 
-
-    // TODO: merge two hybridPair*
+    // TODO: not used currently
     function hybridPair(address input, address output) public view returns (bool useCoFiX, address pair) {
         (useCoFiX, pair) = isCoFiXNativeSupported(input, output);
         if (useCoFiX) {
             return (useCoFiX, pair);
         }
         return (false, UniswapV2Library.pairFor(uniFactory, input, output));
-    }
-
-    function hybridPairWithType(address input, address output) public view returns (PairWithType memory pairT) {
-        (bool useCoFiX, address pair) = isCoFiXNativeSupported(input, output);
-        if (useCoFiX) {
-            pairT.dex = DEX_TYPE.COFIX;
-            pairT.pair = pair;
-            return pairT;
-        }
-        pairT.dex = DEX_TYPE.UNISWAP;
-        pairT.pair = UniswapV2Library.pairFor(uniFactory, input, output);
-        return pairT;
     }
 }

@@ -41,6 +41,9 @@ contract('CoFiXRouter', (accounts) => {
     UniswapV2Pair.setProvider(web3.currentProvider);
     UniswapV2Router02.setProvider(web3.currentProvider);
 
+    const DEX_TYPE_COFIX = 0;
+    const DEX_TYPE_UNISWAP = 1;
+
     before(async () => {
         USDT = await TestUSDT.new({ from: deployer });
         HBTC = await TestHBTC.new({ from: deployer });
@@ -441,6 +444,7 @@ contract('CoFiXRouter', (accounts) => {
             const deadline = "999999999999999";
             const to = deployer;
             const oracleFee = web3.utils.toWei('0.01', 'ether'); // 0.01 ETH
+            const dexes = [DEX_TYPE_UNISWAP, DEX_TYPE_COFIX];
 
             // approve to router
             await NEST.approve(CRouter.address, amountIn, { from: deployer });
@@ -450,6 +454,7 @@ contract('CoFiXRouter', (accounts) => {
                 amountIn,
                 amountOutMin,
                 path,
+                dexes,
                 to,
                 deadline,
                 {value: oracleFee, from: deployer}
@@ -472,6 +477,7 @@ contract('CoFiXRouter', (accounts) => {
             const deadline = "999999999999999";
             const to = deployer;
             const oracleFee = web3.utils.toWei('0.01', 'ether'); // 0.01 ETH
+            const dexes = [DEX_TYPE_COFIX, DEX_TYPE_UNISWAP];
 
             // approve to router
             await USDT.approve(CRouter.address, amountIn, { from: deployer });
@@ -481,6 +487,7 @@ contract('CoFiXRouter', (accounts) => {
                 amountIn,
                 amountOutMin,
                 path,
+                dexes,
                 to,
                 deadline,
                 {value: oracleFee, from: deployer}
@@ -502,6 +509,7 @@ contract('CoFiXRouter', (accounts) => {
             const deadline = "999999999999999";
             const to = deployer;
             const oracleFee = web3.utils.toWei('0.01', 'ether'); // 0.01 ETH
+            const dexes = [DEX_TYPE_COFIX];
 
             // approve to router
             await USDT.approve(CRouter.address, amountIn, { from: deployer });
@@ -511,6 +519,7 @@ contract('CoFiXRouter', (accounts) => {
                 amountIn,
                 amountOutMin,
                 path,
+                dexes,
                 to,
                 deadline,
                 {value: oracleFee, from: deployer}
@@ -532,6 +541,7 @@ contract('CoFiXRouter', (accounts) => {
             const deadline = "999999999999999";
             const to = deployer;
             const oracleFee = web3.utils.toWei('0.01', 'ether'); // 0.01 ETH
+            const dexes = [DEX_TYPE_COFIX];
 
             // approve to router
             await WETH.approve(CRouter.address, amountIn, { from: deployer });
@@ -541,6 +551,7 @@ contract('CoFiXRouter', (accounts) => {
                 amountIn,
                 amountOutMin,
                 path,
+                dexes,
                 to,
                 deadline,
                 {value: oracleFee, from: deployer}
@@ -561,7 +572,8 @@ contract('CoFiXRouter', (accounts) => {
             const path = [nest, weth];
             const deadline = "999999999999999";
             const to = deployer;
-            const oracleFee = web3.utils.toWei('0.01', 'ether'); // 0.01 ETH
+            // const oracleFee = web3.utils.toWei('0.01', 'ether'); // 0.01 ETH
+            const dexes = [DEX_TYPE_UNISWAP];
 
             // approve to router
             await NEST.approve(CRouter.address, amountIn, { from: deployer });
@@ -571,9 +583,10 @@ contract('CoFiXRouter', (accounts) => {
                 amountIn,
                 amountOutMin,
                 path,
+                dexes,
                 to,
                 deadline,
-                {value: oracleFee, from: deployer}
+                {value: 0, from: deployer}
             );
             const pair = await UFactory.getPair(WETH.address, NEST.address);
             const cPair = await UniswapV2Pair.at(pair);
@@ -591,7 +604,8 @@ contract('CoFiXRouter', (accounts) => {
             const path = [weth, nest];
             const deadline = "999999999999999";
             const to = deployer;
-            const oracleFee = web3.utils.toWei('0.01', 'ether'); // 0.01 ETH
+            // const oracleFee = web3.utils.toWei('0.01', 'ether'); // 0.01 ETH
+            const dexes = [DEX_TYPE_UNISWAP];
 
             // approve to router
             await WETH.approve(CRouter.address, amountIn, { from: deployer });
@@ -601,9 +615,10 @@ contract('CoFiXRouter', (accounts) => {
                 amountIn,
                 amountOutMin,
                 path,
+                dexes,
                 to,
                 deadline,
-                {value: oracleFee, from: deployer}
+                {value: 0, from: deployer}
             );
             const pair = await UFactory.getPair(WETH.address, NEST.address);
             const cPair = await UniswapV2Pair.at(pair);
@@ -623,6 +638,7 @@ contract('CoFiXRouter', (accounts) => {
             const deadline = "999999999999999";
             const to = deployer;
             const oracleFee = web3.utils.toWei('0.02', 'ether'); // 0.02 ETH
+            const dexes = [DEX_TYPE_COFIX, DEX_TYPE_COFIX];
 
             // approve to router
             await USDT.approve(CRouter.address, amountIn, { from: deployer });
@@ -632,6 +648,7 @@ contract('CoFiXRouter', (accounts) => {
                 amountIn,
                 amountOutMin,
                 path,
+                dexes,
                 to,
                 deadline,
                 {value: oracleFee, from: deployer}
@@ -654,6 +671,7 @@ contract('CoFiXRouter', (accounts) => {
             const deadline = "999999999999999";
             const to = deployer;
             const oracleFee = web3.utils.toWei('0.02', 'ether'); // 0.02 ETH
+            const dexes = [DEX_TYPE_COFIX, DEX_TYPE_COFIX];
 
             // approve to router
             await HBTC.approve(CRouter.address, amountIn, { from: deployer });
@@ -663,6 +681,7 @@ contract('CoFiXRouter', (accounts) => {
                 amountIn,
                 amountOutMin,
                 path,
+                dexes,
                 to,
                 deadline,
                 {value: oracleFee, from: deployer}

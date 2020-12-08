@@ -16,7 +16,10 @@
     "genabi": "rm -rf build ABI && truffle compile --all && truffle-abi -d build/contracts/ -o abi"
   },
   "dependencies": {
+    "@truffle/contract": "^4.3.1",
     "@truffle/hdwallet-provider": "^1.0.40",
+    "@uniswap/v2-core": "^1.0.1",
+    "@uniswap/v2-periphery": "^1.1.0-beta.0",
     "decimal.js": "^10.2.0",
     "ethlint": "^1.2.5",
     "ganache-cli": "^6.9.1",

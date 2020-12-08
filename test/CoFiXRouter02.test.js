@@ -613,6 +613,68 @@ contract('CoFiXRouter', (accounts) => {
             }
         });
 
+        it ("should swap USDT for HBTC (USDT -> WETH -> HBTC) correctly (CoFiXRouter02)", async () => {
+            const hbtc = HBTC.address;
+            const weth = WETH.address;
+            const usdt = USDT.address;
+            const amountIn = "100000000"; // 100 USDT
+            const amountOutMin = "0";
+            const path = [usdt, weth, hbtc];
+            const deadline = "999999999999999";
+            const to = deployer;
+            const oracleFee = web3.utils.toWei('0.02', 'ether'); // 0.02 ETH
+
+            // approve to router
+            await USDT.approve(CRouter.address, amountIn, { from: deployer });
+        
+            // hybrid swap (CoFiX: USDT -> WETH, CoFiX: WETH -> HBTC)
+            await CRouter.hybridSwapExactTokensForTokens(
+                amountIn,
+                amountOutMin,
+                path,
+                to,
+                deadline,
+                {value: oracleFee, from: deployer}
+            );
+            const pair = await UFactory.getPair(WETH.address, NEST.address);
+            const cPair = await UniswapV2Pair.at(pair);
+            const res = await cPair.getReserves();
+            if (verbose) {
+                console.log(`reserve0: ${res[0]}, reserve1: ${res[1]}`);
+            }
+        });
+
+        it ("should swap HBTC for USDT (HBTC-> WETH -> USDT) correctly (CoFiXRouter02)", async () => {
+            const hbtc = HBTC.address;
+            const weth = WETH.address;
+            const usdt = USDT.address;
+            const amountIn = "100000000"; // 100 USDT
+            const amountOutMin = "0";
+            const path = [hbtc, weth, usdt];
+            const deadline = "999999999999999";
+            const to = deployer;
+            const oracleFee = web3.utils.toWei('0.02', 'ether'); // 0.02 ETH
+
+            // approve to router
+            await HBTC.approve(CRouter.address, amountIn, { from: deployer });
+        
+            // hybrid swap (CoFiX: HBTC -> WETH, CoFiX: WETH -> USDT)
+            await CRouter.hybridSwapExactTokensForTokens(
+                amountIn,
+                amountOutMin,
+                path,
+                to,
+                deadline,
+                {value: oracleFee, from: deployer}
+            );
+            const pair = await UFactory.getPair(WETH.address, NEST.address);
+            const cPair = await UniswapV2Pair.at(pair);
+            const res = await cPair.getReserves();
+            if (verbose) {
+                console.log(`reserve0: ${res[0]}, reserve1: ${res[1]}`);
+            }
+        });
+
     });
 });
 

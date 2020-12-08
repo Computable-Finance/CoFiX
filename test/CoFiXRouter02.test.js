@@ -350,7 +350,7 @@ contract('CoFiXRouter', (accounts) => {
         });
 
         it ("should add liquidity for NEST & WETH pair correctly (UniswapV2Router02)", async () => {
-            const ethValue = web3.utils.toWei('100', 'ether');
+            const ethValue = web3.utils.toWei('50', 'ether');
             await WETH.deposit({value: ethValue, from: deployer})
             // function addLiquidity(
             //     address tokenA,

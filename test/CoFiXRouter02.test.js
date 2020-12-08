@@ -532,10 +532,42 @@ contract('CoFiXRouter', (accounts) => {
             }
         });
 
+        it ("should swap USDT for ETH (USDT -> WETH) correctly (CoFiXRouter02/hybridSwapExactTokensForETH)", async () => {
+            const weth = WETH.address;
+            const usdt = USDT.address;
+            const amountIn = "10000000"; // 10 USDT
+            const amountOutMin = "0";
+            const path = [usdt, weth];
+            const deadline = "999999999999999";
+            const to = deployer;
+            const oracleFee = web3.utils.toWei('0.01', 'ether'); // 0.01 ETH
+            const dexes = [DEX_TYPE_COFIX];
+
+            // approve to router
+            await USDT.approve(CRouter.address, amountIn, { from: deployer });
+        
+            // hybrid swap (CoFiX: USDT -> ETH)
+            await CRouter.hybridSwapExactTokensForETH(
+                amountIn,
+                amountOutMin,
+                path,
+                dexes,
+                to,
+                deadline,
+                {value: oracleFee, from: deployer}
+            );
+            const pair = await UFactory.getPair(WETH.address, NEST.address);
+            const cPair = await UniswapV2Pair.at(pair);
+            const res = await cPair.getReserves();
+            if (verbose) {
+                console.log(`reserve0: ${res[0]}, reserve1: ${res[1]}`);
+            }
+        });
+
         it ("should swap WETH for USDT (WETH -> USDT) correctly (CoFiXRouter02)", async () => {
             const weth = WETH.address;
             const usdt = USDT.address;
-            const amountIn = web3.utils.toWei('0.1', 'ether'); // 0.1 WETH
+            const amountIn = web3.utils.toWei('1', 'ether'); // 0.1 WETH
             const amountOutMin = "0";
             const path = [weth, usdt];
             const deadline = "999999999999999";
@@ -596,6 +628,38 @@ contract('CoFiXRouter', (accounts) => {
             }
         });
 
+        it ("should swap NEST for ETH (NEST -> WETH) correctly (CoFiXRouter02/hybridSwapExactTokensForETH)", async () => {
+            const nest = NEST.address;
+            const weth = WETH.address;
+            const amountIn = web3.utils.toWei('100', 'ether'); // 100 NEST
+            const amountOutMin = "0";
+            const path = [nest, weth];
+            const deadline = "999999999999999";
+            const to = deployer;
+            // const oracleFee = web3.utils.toWei('0.01', 'ether'); // 0.01 ETH
+            const dexes = [DEX_TYPE_UNISWAP];
+
+            // approve to router
+            await NEST.approve(CRouter.address, amountIn, { from: deployer });
+        
+            // hybrid swap (Uniswap: NEST -> WETH)
+            await CRouter.hybridSwapExactTokensForETH(
+                amountIn,
+                amountOutMin,
+                path,
+                dexes,
+                to,
+                deadline,
+                {value: 0, from: deployer}
+            );
+            const pair = await UFactory.getPair(WETH.address, NEST.address);
+            const cPair = await UniswapV2Pair.at(pair);
+            const res = await cPair.getReserves();
+            if (verbose) {
+                console.log(`reserve0: ${res[0]}, reserve1: ${res[1]}`);
+            }
+        });
+
         it ("should swap WETH for NEST (WETH -> NEST) correctly (CoFiXRouter02)", async () => {
             const nest = NEST.address;
             const weth = WETH.address;
@@ -619,6 +683,38 @@ contract('CoFiXRouter', (accounts) => {
                 to,
                 deadline,
                 {value: 0, from: deployer}
+            );
+            const pair = await UFactory.getPair(WETH.address, NEST.address);
+            const cPair = await UniswapV2Pair.at(pair);
+            const res = await cPair.getReserves();
+            if (verbose) {
+                console.log(`reserve0: ${res[0]}, reserve1: ${res[1]}`);
+            }
+        });
+
+        it ("should swap ETH for NEST (WETH -> NEST) correctly (CoFiXRouter02/hybridSwapExactETHForTokens)", async () => {
+            const nest = NEST.address;
+            const weth = WETH.address;
+            const amountIn = web3.utils.toWei('0.1', 'ether'); // 0.1 ETH
+            const amountOutMin = "0";
+            const path = [weth, nest];
+            const deadline = "999999999999999";
+            const to = deployer;
+            // const oracleFee = web3.utils.toWei('0.01', 'ether'); // 0.01 ETH
+            const dexes = [DEX_TYPE_UNISWAP];
+
+            // approve to router
+            await WETH.approve(CRouter.address, amountIn, { from: deployer });
+        
+            // hybrid swap (Uniswap: WETH -> NEST)
+            await CRouter.hybridSwapExactETHForTokens(
+                amountIn,
+                amountOutMin,
+                path,
+                dexes,
+                to,
+                deadline,
+                {value: amountIn, from: deployer} // here: value is amountIn
             );
             const pair = await UFactory.getPair(WETH.address, NEST.address);
             const cPair = await UniswapV2Pair.at(pair);

@@ -274,20 +274,84 @@ contract CoFiXRouter02 is ICoFiXRouter02 {
         address to,
         uint deadline
     ) external payable ensure(deadline) returns (uint[] memory amounts) {
+        // fast check
         require(path.length >= 2, "CRouter: invalid path");
         require(dexes.length == path.length - 1, "CRouter: invalid dexes");
         _checkOracleFee(dexes, msg.value);
+
+        // send amountIn to the first pair
         TransferHelper.safeTransferFrom(
             path[0], msg.sender,  getPairForDEX(path[0], path[1], dexes[0]), amountIn
         );
+
+        // exec hybridSwap
         amounts = new uint[](path.length);
         amounts[0] = amountIn;
         _hybridSwap(path, dexes, amounts, to);
+
         // check amountOutMin in the last
         require(amounts[amounts.length - 1] >= amountOutMin, "CRouter: insufficient output amount ");
     }
 
-    function _checkOracleFee(DEX_TYPE[] memory dexes, uint256 actual) internal {
+    function hybridSwapExactETHForTokens(
+        uint amountIn,
+        uint amountOutMin,
+        address[] calldata path,
+        DEX_TYPE[] calldata dexes,
+        address to,
+        uint deadline
+    ) external payable ensure(deadline) returns (uint[] memory amounts) {
+        // fast check
+        require(path.length >= 2 && path[0] == WETH, "CRouter: invalid path");
+        require(dexes.length == path.length - 1, "CRouter: invalid dexes");
+        _checkOracleFee(dexes, msg.value.sub(amountIn)); // would revert if msg.value is less than amountIn
+
+        // convert ETH and send amountIn to the first pair
+        IWETH(WETH).deposit{value: amountIn}();
+        assert(IWETH(WETH).transfer(getPairForDEX(path[0], path[1], dexes[0]), amountIn));
+
+        // exec hybridSwap
+        amounts = new uint[](path.length);
+        amounts[0] = amountIn;
+        _hybridSwap(path, dexes, amounts, to);
+
+        // check amountOutMin in the last
+        require(amounts[amounts.length - 1] >= amountOutMin, "CRouter: insufficient output amount ");
+    }
+
+    function hybridSwapExactTokensForETH(
+        uint amountIn,
+        uint amountOutMin,
+        address[] calldata path,
+        DEX_TYPE[] calldata dexes,
+        address to,
+        uint deadline
+    ) external payable ensure(deadline) returns (uint[] memory amounts) {
+        // fast check
+        require(path.length >= 2 && path[path.length - 1] == WETH, "CRouter: invalid path");
+        require(dexes.length == path.length - 1, "CRouter: invalid dexes");
+        _checkOracleFee(dexes, msg.value);
+
+        // send amountIn to the first pair
+        TransferHelper.safeTransferFrom(
+            path[0], msg.sender, getPairForDEX(path[0], path[1], dexes[0]), amountIn
+        );
+
+        // exec hybridSwap
+        amounts = new uint[](path.length);
+        amounts[0] = amountIn;
+        _hybridSwap(path, dexes, amounts, address(this));
+
+        // check amountOutMin in the last
+        require(amounts[amounts.length - 1] >= amountOutMin, "CRouter: insufficient output amount ");
+
+        // convert WETH
+        IWETH(WETH).withdraw(amounts[amounts.length - 1]);
+        TransferHelper.safeTransferETH(to, amounts[amounts.length - 1]);
+    }
+
+
+    function _checkOracleFee(DEX_TYPE[] memory dexes, uint256 oracleFee) internal pure {
         uint cofixCnt;
         for (uint i; i < dexes.length; i++) {
             if (dexes[i] == DEX_TYPE.COFIX) {
@@ -298,7 +362,7 @@ contract CoFiXRouter02 is ICoFiXRouter02 {
         // to simplify the verify logic for oracle fee and prevent user from locking oracle fee by mistake
         // if NEST_ORACLE_FEE value changed, this router would not work as expected
         // TODO: refund the oracle fee?
-        require(actual == NEST_ORACLE_FEE.mul(cofixCnt), "CRouter: wrong oracle fee");
+        require(oracleFee == NEST_ORACLE_FEE.mul(cofixCnt), "CRouter: wrong oracle fee");
     }
 
     function _hybridSwap(address[] memory path, DEX_TYPE[] memory dexes, uint[] memory amounts, address _to) internal {

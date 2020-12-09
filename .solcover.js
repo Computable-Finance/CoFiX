@@ -2,6 +2,7 @@ module.exports = {
     skipFiles: [
         'Migrations.sol',
         'Timelock.sol',
+        'CoFiXRouter02.sol',
         'CoFiXERC20.sol',
         'test/',
         'lib/ABDKMath64x64.sol',

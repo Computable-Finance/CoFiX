@@ -184,11 +184,11 @@ contract CoFiXRouter02 is ICoFiXRouter02 {
             value: msg.value.sub(amountIn)}(token, to);
         require(_amountOut >= amountOutMin, "CRouter: got less than expected");
 
-        // distribute trading rewards - CoFi!
-        address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
-        if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
-            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pair, tradeInfo[0], tradeInfo[1], tradeInfo[2], tradeInfo[3], rewardTo);
-        }
+        // // distribute trading rewards - CoFi!
+        // address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
+        // if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
+        //     ICoFiXVaultForTrader(vaultForTrader).distributeReward(pair, tradeInfo[0], tradeInfo[1], tradeInfo[2], tradeInfo[3], rewardTo);
+        // }
 
         // refund oracle fee to msg.sender, if any
         if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
@@ -215,11 +215,11 @@ contract CoFiXRouter02 is ICoFiXRouter02 {
         uint256[4] memory tradeInfo;
         (_amountIn, _amountOut, oracleFeeChange, tradeInfo) = ICoFiXPair(pairs[0]).swapWithExact{value: msg.value}(WETH, address(this));
 
-        // distribute trading rewards - CoFi!
-        address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
-        if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
-            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pairs[0], tradeInfo[0], tradeInfo[1], tradeInfo[2], tradeInfo[3], rewardTo);
-        }
+        // // distribute trading rewards - CoFi!
+        // address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
+        // if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
+        //     ICoFiXVaultForTrader(vaultForTrader).distributeReward(pairs[0], tradeInfo[0], tradeInfo[1], tradeInfo[2], tradeInfo[3], rewardTo);
+        // }
 
         // swapExactETHForTokens
         pairs[1] = pairFor(factory, tokenOut);
@@ -227,10 +227,10 @@ contract CoFiXRouter02 is ICoFiXRouter02 {
         (, _amountOut, oracleFeeChange, tradeInfo) = ICoFiXPair(pairs[1]).swapWithExact{value: oracleFeeChange}(tokenOut, to);
         require(_amountOut >= amountOutMin, "CRouter: got less than expected");
 
-        // distribute trading rewards - CoFi!
-        if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
-            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pairs[1], tradeInfo[0], tradeInfo[1], tradeInfo[2], tradeInfo[3], rewardTo);
-        }
+        // // distribute trading rewards - CoFi!
+        // if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
+        //     ICoFiXVaultForTrader(vaultForTrader).distributeReward(pairs[1], tradeInfo[0], tradeInfo[1], tradeInfo[2], tradeInfo[3], rewardTo);
+        // }
 
         // refund oracle fee to msg.sender, if any
         if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
@@ -256,11 +256,11 @@ contract CoFiXRouter02 is ICoFiXRouter02 {
         IWETH(WETH).withdraw(_amountOut);
         TransferHelper.safeTransferETH(to, _amountOut);
 
-        // distribute trading rewards - CoFi!
-        address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
-        if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
-            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pair, tradeInfo[0], tradeInfo[1], tradeInfo[2], tradeInfo[3], rewardTo);
-        }
+        // // distribute trading rewards - CoFi!
+        // address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
+        // if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
+        //     ICoFiXVaultForTrader(vaultForTrader).distributeReward(pair, tradeInfo[0], tradeInfo[1], tradeInfo[2], tradeInfo[3], rewardTo);
+        // }
 
         // refund oracle fee to msg.sender, if any
         if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);

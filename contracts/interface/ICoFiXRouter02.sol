@@ -6,6 +6,8 @@ interface ICoFiXRouter02 {
     function factory() external pure returns (address);
     function WETH() external pure returns (address);
 
+    enum DEX_TYPE { COFIX, UNISWAP }
+
     // All pairs: {ETH <-> ERC20 Token}
 
     /// @dev Maker add liquidity to pool, get pool token (mint XToken to maker) (notice: msg.value = amountETH + oracle fee)
@@ -127,5 +129,56 @@ interface ICoFiXRouter02 {
         address rewardTo,
         uint deadline
     ) external payable returns (uint _amountIn, uint _amountOut);
+
+    // @dev Swaps an exact amount of input tokens for as many output tokens as possible, along the route determined by the path. The first element of path is the input token, the last is the output token, and any intermediate elements represent intermediate pairs to trade through (if, for example, a direct pair does not exist). `msg.sender` should have already given the router an allowance of at least amountIn on the input token. The swap execution can be done via cofix or uniswap. That's why it's called hybrid.
+    // @param amountIn The amount of input tokens to send.
+    // @param amountOutMin The minimum amount of output tokens that must be received for the transaction not to revert.
+    // @param path An array of token addresses. path.length must be >= 2. Pools for each consecutive pair of addresses must exist and have liquidity.
+    // @param dexes An array of dex type values, specifying the exchanges to be used, e.g. CoFiX, Uniswap.
+    // @param to Recipient of the output tokens.
+    // @param deadline Unix timestamp after which the transaction will revert.
+    // @return amounts The input token amount and all subsequent output token amounts.
+    function hybridSwapExactTokensForTokens(
+        uint amountIn,
+        uint amountOutMin,
+        address[] calldata path,
+        DEX_TYPE[] calldata dexes,
+        address to,
+        uint deadline
+    ) external payable returns (uint[] memory amounts);
+
+    // @dev Swaps an exact amount of ETH for as many output tokens as possible, along the route determined by the path. The first element of path must be WETH, the last is the output token, and any intermediate elements represent intermediate pairs to trade through (if, for example, a direct pair does not exist).
+    // @param amountIn The amount of input tokens to send.
+    // @param amountOutMin The minimum amount of output tokens that must be received for the transaction not to revert.
+    // @param path An array of token addresses. path.length must be >= 2. Pools for each consecutive pair of addresses must exist and have liquidity.
+    // @param dexes An array of dex type values, specifying the exchanges to be used, e.g. CoFiX, Uniswap.
+    // @param to Recipient of the output tokens.
+    // @param deadline Unix timestamp after which the transaction will revert.
+    // @return amounts The input token amount and all subsequent output token amounts.
+    function hybridSwapExactETHForTokens(
+        uint amountIn,
+        uint amountOutMin,
+        address[] calldata path,
+        DEX_TYPE[] calldata dexes,
+        address to,
+        uint deadline
+    ) external payable returns (uint[] memory amounts);
+
+    // @dev Swaps an exact amount of tokens for as much ETH as possible, along the route determined by the path. The first element of path is the input token, the last must be WETH, and any intermediate elements represent intermediate pairs to trade through (if, for example, a direct pair does not exist). If the to address is a smart contract, it must have the ability to receive ETH.
+    // @param amountIn The amount of input tokens to send.
+    // @param amountOutMin The minimum amount of output tokens that must be received for the transaction not to revert.
+    // @param path An array of token addresses. path.length must be >= 2. Pools for each consecutive pair of addresses must exist and have liquidity.
+    // @param dexes An array of dex type values, specifying the exchanges to be used, e.g. CoFiX, Uniswap.
+    // @param to Recipient of the output tokens.
+    // @param deadline Unix timestamp after which the transaction will revert.
+    // @return amounts The input token amount and all subsequent output token amounts.
+    function hybridSwapExactTokensForETH(
+        uint amountIn,
+        uint amountOutMin,
+        address[] calldata path,
+        DEX_TYPE[] calldata dexes,
+        address to,
+        uint deadline
+    ) external payable returns (uint[] memory amounts);
 
 }

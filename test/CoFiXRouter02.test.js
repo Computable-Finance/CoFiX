@@ -394,71 +394,71 @@ contract('CoFiXRouter', (accounts) => {
             }
         });
 
-        it ("should swap NEST for WETH correctly (UniswapV2Router02)", async () => {
-            // function swapExactTokensForTokens(
-            //     uint amountIn,
-            //     uint amountOutMin,
-            //     address[] calldata path,
-            //     address to,
-            //     uint deadline
-            // )
-            const weth = WETH.address;
-            const nest = NEST.address;
-            const amountIn = web3.utils.toWei('1', 'ether'); // 1 NEST
-            const amountOutMin = "0";
-            const path = [nest, weth];
-            const deadline = "999999999999999";
-            const to = deployer;
-            // approve to router
-            await NEST.approve(URouter.address, amountIn, { from: deployer });
-            await URouter.swapExactTokensForTokens(
-                amountIn,
-                amountOutMin,
-                path,
-                to,
-                deadline,
-                {from: deployer}
-            );
-            const pair = await UFactory.getPair(WETH.address, NEST.address);
-            const cPair = await UniswapV2Pair.at(pair);
-            const res = await cPair.getReserves();
-            if (verbose) {
-                console.log(`reserve0: ${res[0]}, reserve1: ${res[1]}`);
-            }
-        });
+        // it ("should swap NEST for WETH correctly (UniswapV2Router02)", async () => {
+        //     // function swapExactTokensForTokens(
+        //     //     uint amountIn,
+        //     //     uint amountOutMin,
+        //     //     address[] calldata path,
+        //     //     address to,
+        //     //     uint deadline
+        //     // )
+        //     const weth = WETH.address;
+        //     const nest = NEST.address;
+        //     const amountIn = web3.utils.toWei('1', 'ether'); // 1 NEST
+        //     const amountOutMin = "0";
+        //     const path = [nest, weth];
+        //     const deadline = "999999999999999";
+        //     const to = deployer;
+        //     // approve to router
+        //     await NEST.approve(URouter.address, amountIn, { from: deployer });
+        //     await URouter.swapExactTokensForTokens(
+        //         amountIn,
+        //         amountOutMin,
+        //         path,
+        //         to,
+        //         deadline,
+        //         {from: deployer}
+        //     );
+        //     const pair = await UFactory.getPair(WETH.address, NEST.address);
+        //     const cPair = await UniswapV2Pair.at(pair);
+        //     const res = await cPair.getReserves();
+        //     if (verbose) {
+        //         console.log(`reserve0: ${res[0]}, reserve1: ${res[1]}`);
+        //     }
+        // });
 
-        it ("should swap WETH for NEST correctly (UniswapV2Router02)", async () => {
-            // function swapExactTokensForTokens(
-            //     uint amountIn,
-            //     uint amountOutMin,
-            //     address[] calldata path,
-            //     address to,
-            //     uint deadline
-            // )
-            const weth = WETH.address;
-            const nest = NEST.address;
-            const amountIn = web3.utils.toWei('0.01', 'ether'); // 0.01 ETH
-            const amountOutMin = "0";
-            const path = [weth, nest];
-            const deadline = "999999999999999";
-            const to = deployer;
-            // approve to router
-            await WETH.approve(URouter.address, amountIn, { from: deployer });
-            await URouter.swapExactTokensForTokens(
-                amountIn,
-                amountOutMin,
-                path,
-                to,
-                deadline,
-                {from: deployer}
-            );
-            const pair = await UFactory.getPair(WETH.address, NEST.address);
-            const cPair = await UniswapV2Pair.at(pair);
-            const res = await cPair.getReserves();
-            if (verbose) {
-                console.log(`reserve0: ${res[0]}, reserve1: ${res[1]}`);
-            }
-        });
+        // it ("should swap WETH for NEST correctly (UniswapV2Router02)", async () => {
+        //     // function swapExactTokensForTokens(
+        //     //     uint amountIn,
+        //     //     uint amountOutMin,
+        //     //     address[] calldata path,
+        //     //     address to,
+        //     //     uint deadline
+        //     // )
+        //     const weth = WETH.address;
+        //     const nest = NEST.address;
+        //     const amountIn = web3.utils.toWei('0.01', 'ether'); // 0.01 ETH
+        //     const amountOutMin = "0";
+        //     const path = [weth, nest];
+        //     const deadline = "999999999999999";
+        //     const to = deployer;
+        //     // approve to router
+        //     await WETH.approve(URouter.address, amountIn, { from: deployer });
+        //     await URouter.swapExactTokensForTokens(
+        //         amountIn,
+        //         amountOutMin,
+        //         path,
+        //         to,
+        //         deadline,
+        //         {from: deployer}
+        //     );
+        //     const pair = await UFactory.getPair(WETH.address, NEST.address);
+        //     const cPair = await UniswapV2Pair.at(pair);
+        //     const res = await cPair.getReserves();
+        //     if (verbose) {
+        //         console.log(`reserve0: ${res[0]}, reserve1: ${res[1]}`);
+        //     }
+        // });
 
         it ("should swap NEST for USDT (NEST -> WETH -> USDT) correctly (CoFiXRouter02)", async () => {
             // function hybridSwapExactTokensForTokens(

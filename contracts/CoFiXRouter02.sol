@@ -25,13 +25,6 @@ contract CoFiXRouter02 is ICoFiXRouter02 {
 
     uint256 internal constant NEST_ORACLE_FEE = 0.01 ether;
 
-    enum DEX_TYPE { COFIX, UNISWAP }
-
-    struct PairWithType {
-        address pair;
-        DEX_TYPE dex;
-    }
-
     modifier ensure(uint deadline) {
         require(deadline >= block.timestamp, 'CRouter: EXPIRED');
         _;
@@ -273,7 +266,7 @@ contract CoFiXRouter02 is ICoFiXRouter02 {
         DEX_TYPE[] calldata dexes,
         address to,
         uint deadline
-    ) external payable ensure(deadline) returns (uint[] memory amounts) {
+    ) external override payable ensure(deadline) returns (uint[] memory amounts) {
         // fast check
         require(path.length >= 2, "CRouter: invalid path");
         require(dexes.length == path.length - 1, "CRouter: invalid dexes");
@@ -300,7 +293,7 @@ contract CoFiXRouter02 is ICoFiXRouter02 {
         DEX_TYPE[] calldata dexes,
         address to,
         uint deadline
-    ) external payable ensure(deadline) returns (uint[] memory amounts) {
+    ) external override payable ensure(deadline) returns (uint[] memory amounts) {
         // fast check
         require(path.length >= 2 && path[0] == WETH, "CRouter: invalid path");
         require(dexes.length == path.length - 1, "CRouter: invalid dexes");
@@ -326,7 +319,7 @@ contract CoFiXRouter02 is ICoFiXRouter02 {
         DEX_TYPE[] calldata dexes,
         address to,
         uint deadline
-    ) external payable ensure(deadline) returns (uint[] memory amounts) {
+    ) external override payable ensure(deadline) returns (uint[] memory amounts) {
         // fast check
         require(path.length >= 2 && path[path.length - 1] == WETH, "CRouter: invalid path");
         require(dexes.length == path.length - 1, "CRouter: invalid dexes");

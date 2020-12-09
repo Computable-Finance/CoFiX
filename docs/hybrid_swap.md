@@ -72,7 +72,7 @@ If we wish to exchange USDT for NEST, we can first exchange USDT for ETH via CoF
 ```js
     // hybrid swap (CoFiX: USDT -> ETH, Uniswap: ETH -> NEST)
     const path = [usdt, weth, nest];
-    const dexes = [DEX_TYPE_COFIX, DEX_TYPE_UNISWAP];
+    const dexes = [DEX_TYPE_COFIX, DEX_TYPE_UNISWAP]; // [0, 1]
     await CRouter.hybridSwapExactTokensForTokens(
         amountIn,
         amountOutMin,
@@ -112,3 +112,41 @@ More examples can be found in the [test cases](../test/CoFiXRouter02.test.js).
     ```
 
 4. The `amountOutMin` parameter needs to be calculated in conjunction with the specific path, the price of the token in the nest price oracle, and Uniswap pool state.
+
+## Example Transactions
+
+### CoFiX: USDT -> WETH, Uniswap: WETH -> NEST
+
+```js
+router.hybridSwapExactTokensForTokens(100000000, 0, [usdt.address, weth.address, nest.address], [0, 1], to, 99999999999, {value: web3.utils.toWei("0.01", "ether")})
+```
+
+[0xb15231f5260765224c9e6bd640f92f386ec2969a7895eb98f0e1156ba85e1dc3](https://ropsten.etherscan.io/tx/0xb15231f5260765224c9e6bd640f92f386ec2969a7895eb98f0e1156ba85e1dc3)
+
+### Uniswap: NEST -> WETH, CoFiX: WETH -> USDT
+
+```js
+router.hybridSwapExactTokensForTokens("3000000000000000000000", 0, [nest.address, weth.address, usdt.address], [1, 0], to, 99999999999, {value: web3.utils.toWei("0.01", "ether")})
+```
+
+[0xce550eaf6f050cf62b1430d53758f11a81f7ab5fe7824b394ed790bacb34f5dd](https://ropsten.etherscan.io/tx/0xce550eaf6f050cf62b1430d53758f11a81f7ab5fe7824b394ed790bacb34f5dd)
+
+### Uniswap: NEST -> WETH
+
+```js
+router.hybridSwapExactTokensForTokens("3000000000000000000000", 0, [nest.address, weth.address], [1], to, 99999999999, {value: 0})
+```
+
+[0x87a50d39ee97a376e6def19024ad39e492a270a4a14518b946f1b25f7fa748cc](https://ropsten.etherscan.io/tx/0x87a50d39ee97a376e6def19024ad39e492a270a4a14518b946f1b25f7fa748cc)
+
+### CoFiX: USDT -> WETH, Uniswap: WETH -> MPH
+
+```js
+router.hybridSwapExactTokensForTokens(500000000, 0, [usdt.address, weth.address, mph], [0, 1], to, 99999999999, {value: web3.utils.toWei("0.01", "ether")})
+```
+
+[0xa3c956a29b5a7ce299116a46534db4f11df1e37e7d8514026d3ad3bcb1de1d38](https://etherscan.io/tx/0xa3c956a29b5a7ce299116a46534db4f11df1e37e7d8514026d3ad3bcb1de1d38)
+## Deployment (for testing)
+
+- mainnet 0xE57130499e7f3e7fE53B1D26154850889603823e
+- ropsten 0xeFe1cfeC4c99c06c0277996b85Ae0b11D27449C4

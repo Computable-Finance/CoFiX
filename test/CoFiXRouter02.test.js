@@ -736,9 +736,6 @@ contract('CoFiXRouter', (accounts) => {
             const to = deployer;
             // const oracleFee = web3.utils.toWei('0.01', 'ether'); // 0.01 ETH
             const dexes = [DEX_TYPE_UNISWAP];
-
-            // approve to router
-            await WETH.approve(CRouter.address, amountIn, { from: deployer });
         
             // hybrid swap (Uniswap: WETH -> NEST)
             await CRouter.hybridSwapExactETHForTokens(

@@ -176,11 +176,11 @@ contract CoFiXRouter02 is ICoFiXRouter02 {
             value: msg.value.sub(amountIn)}(token, to);
         require(_amountOut >= amountOutMin, "CRouter: got less than expected");
 
-        // // distribute trading rewards - CoFi!
-        // address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
-        // if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
-        //     ICoFiXVaultForTrader(vaultForTrader).distributeReward(pair, tradeInfo[0], tradeInfo[1], tradeInfo[2], tradeInfo[3], rewardTo);
-        // }
+        // distribute trading rewards - CoFi!
+        address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
+        if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
+            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pair, tradeInfo[0], tradeInfo[1], tradeInfo[2], tradeInfo[3], rewardTo);
+        }
 
         // refund oracle fee to msg.sender, if any
         if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
@@ -207,11 +207,11 @@ contract CoFiXRouter02 is ICoFiXRouter02 {
         uint256[4] memory tradeInfo;
         (_amountIn, _amountOut, oracleFeeChange, tradeInfo) = ICoFiXPair(pairs[0]).swapWithExact{value: msg.value}(WETH, address(this));
 
-        // // distribute trading rewards - CoFi!
-        // address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
-        // if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
-        //     ICoFiXVaultForTrader(vaultForTrader).distributeReward(pairs[0], tradeInfo[0], tradeInfo[1], tradeInfo[2], tradeInfo[3], rewardTo);
-        // }
+        // distribute trading rewards - CoFi!
+        address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
+        if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
+            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pairs[0], tradeInfo[0], tradeInfo[1], tradeInfo[2], tradeInfo[3], rewardTo);
+        }
 
         // swapExactETHForTokens
         pairs[1] = pairFor(factory, tokenOut);
@@ -219,10 +219,10 @@ contract CoFiXRouter02 is ICoFiXRouter02 {
         (, _amountOut, oracleFeeChange, tradeInfo) = ICoFiXPair(pairs[1]).swapWithExact{value: oracleFeeChange}(tokenOut, to);
         require(_amountOut >= amountOutMin, "CRouter: got less than expected");
 
-        // // distribute trading rewards - CoFi!
-        // if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
-        //     ICoFiXVaultForTrader(vaultForTrader).distributeReward(pairs[1], tradeInfo[0], tradeInfo[1], tradeInfo[2], tradeInfo[3], rewardTo);
-        // }
+        // distribute trading rewards - CoFi!
+        if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
+            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pairs[1], tradeInfo[0], tradeInfo[1], tradeInfo[2], tradeInfo[3], rewardTo);
+        }
 
         // refund oracle fee to msg.sender, if any
         if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
@@ -248,11 +248,11 @@ contract CoFiXRouter02 is ICoFiXRouter02 {
         IWETH(WETH).withdraw(_amountOut);
         TransferHelper.safeTransferETH(to, _amountOut);
 
-        // // distribute trading rewards - CoFi!
-        // address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
-        // if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
-        //     ICoFiXVaultForTrader(vaultForTrader).distributeReward(pair, tradeInfo[0], tradeInfo[1], tradeInfo[2], tradeInfo[3], rewardTo);
-        // }
+        // distribute trading rewards - CoFi!
+        address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
+        if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
+            ICoFiXVaultForTrader(vaultForTrader).distributeReward(pair, tradeInfo[0], tradeInfo[1], tradeInfo[2], tradeInfo[3], rewardTo);
+        }
 
         // refund oracle fee to msg.sender, if any
         if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
@@ -264,6 +264,7 @@ contract CoFiXRouter02 is ICoFiXRouter02 {
         address[] calldata path,
         DEX_TYPE[] calldata dexes,
         address to,
+        address rewardTo,
         uint deadline
     ) external override payable ensure(deadline) returns (uint[] memory amounts) {
         // fast check
@@ -279,7 +280,7 @@ contract CoFiXRouter02 is ICoFiXRouter02 {
         // exec hybridSwap
         amounts = new uint[](path.length);
         amounts[0] = amountIn;
-        _hybridSwap(path, dexes, amounts, to);
+        _hybridSwap(path, dexes, amounts, to, rewardTo);
 
         // check amountOutMin in the last
         require(amounts[amounts.length - 1] >= amountOutMin, "CRouter: insufficient output amount ");
@@ -291,6 +292,7 @@ contract CoFiXRouter02 is ICoFiXRouter02 {
         address[] calldata path,
         DEX_TYPE[] calldata dexes,
         address to,
+        address rewardTo,
         uint deadline
     ) external override payable ensure(deadline) returns (uint[] memory amounts) {
         // fast check
@@ -305,7 +307,7 @@ contract CoFiXRouter02 is ICoFiXRouter02 {
         // exec hybridSwap
         amounts = new uint[](path.length);
         amounts[0] = amountIn;
-        _hybridSwap(path, dexes, amounts, to);
+        _hybridSwap(path, dexes, amounts, to, rewardTo);
 
         // check amountOutMin in the last
         require(amounts[amounts.length - 1] >= amountOutMin, "CRouter: insufficient output amount ");
@@ -317,6 +319,7 @@ contract CoFiXRouter02 is ICoFiXRouter02 {
         address[] calldata path,
         DEX_TYPE[] calldata dexes,
         address to,
+        address rewardTo,
         uint deadline
     ) external override payable ensure(deadline) returns (uint[] memory amounts) {
         // fast check
@@ -332,7 +335,7 @@ contract CoFiXRouter02 is ICoFiXRouter02 {
         // exec hybridSwap
         amounts = new uint[](path.length);
         amounts[0] = amountIn;
-        _hybridSwap(path, dexes, amounts, address(this));
+        _hybridSwap(path, dexes, amounts, address(this), rewardTo);
 
         // check amountOutMin in the last
         require(amounts[amounts.length - 1] >= amountOutMin, "CRouter: insufficient output amount ");
@@ -357,10 +360,10 @@ contract CoFiXRouter02 is ICoFiXRouter02 {
         require(oracleFee == NEST_ORACLE_FEE.mul(cofixCnt), "CRouter: wrong oracle fee");
     }
 
-    function _hybridSwap(address[] memory path, DEX_TYPE[] memory dexes, uint[] memory amounts, address _to) internal {
+    function _hybridSwap(address[] memory path, DEX_TYPE[] memory dexes, uint[] memory amounts, address _to, address rewardTo) internal {
         for (uint i; i < path.length - 1; i++) {
             if (dexes[i] == DEX_TYPE.COFIX) {
-                _swapOnCoFiX(i, path, dexes, amounts, _to);
+                _swapOnCoFiX(i, path, dexes, amounts, _to, rewardTo);
             } else if (dexes[i] == DEX_TYPE.UNISWAP) {
                 _swapOnUniswap(i, path, dexes, amounts, _to);
             } else {
@@ -394,7 +397,7 @@ contract CoFiXRouter02 is ICoFiXRouter02 {
         );
     }
     
-    function _swapOnCoFiX(uint i, address[] memory path, DEX_TYPE[] memory dexes, uint[] memory amounts, address _to) internal {
+    function _swapOnCoFiX(uint i, address[] memory path, DEX_TYPE[] memory dexes, uint[] memory amounts, address _to, address rewardTo) internal {
             address pair = getPairForDEX(path[i], path[i + 1], DEX_TYPE.COFIX);
             address to;
             if (i < path.length - 2) {
@@ -403,7 +406,16 @@ contract CoFiXRouter02 is ICoFiXRouter02 {
                 to = _to;
             }
             // TODO: dynamic oracle fee
-            (,amounts[i+1],,) = ICoFiXPair(pair).swapWithExact{value: NEST_ORACLE_FEE}(path[i + 1], to);
+            {
+                uint256[4] memory tradeInfo;
+                (,amounts[i+1],,tradeInfo) = ICoFiXPair(pair).swapWithExact{value: NEST_ORACLE_FEE}(path[i + 1], to);
+
+                // distribute trading rewards - CoFi!
+                address vaultForTrader = ICoFiXFactory(factory).getVaultForTrader();
+                if (tradeInfo[0] > 0 && rewardTo != address(0) && vaultForTrader != address(0)) {
+                    ICoFiXVaultForTrader(vaultForTrader).distributeReward(pair, tradeInfo[0], tradeInfo[1], tradeInfo[2], tradeInfo[3], rewardTo);
+                }
+            }
     } 
 
     function isCoFiXNativeSupported(address input, address output) public view returns (bool supported, address pair) {

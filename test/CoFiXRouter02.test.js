@@ -477,6 +477,7 @@ contract('CoFiXRouter', (accounts) => {
             const path = [nest, weth, usdt];
             const deadline = "999999999999999";
             const to = deployer;
+            const rewardTo = to;
             const oracleFee = web3.utils.toWei('0.01', 'ether'); // 0.01 ETH
             const dexes = [DEX_TYPE_UNISWAP, DEX_TYPE_COFIX];
 
@@ -490,6 +491,7 @@ contract('CoFiXRouter', (accounts) => {
                 path,
                 dexes,
                 to,
+                rewardTo,
                 deadline,
                 {value: oracleFee, from: deployer}
             );
@@ -510,6 +512,7 @@ contract('CoFiXRouter', (accounts) => {
             const path = [usdt, weth, nest];
             const deadline = "999999999999999";
             const to = deployer;
+            const rewardTo = to;
             const oracleFee = web3.utils.toWei('0.01', 'ether'); // 0.01 ETH
             const dexes = [DEX_TYPE_COFIX, DEX_TYPE_UNISWAP];
 
@@ -523,6 +526,7 @@ contract('CoFiXRouter', (accounts) => {
                 path,
                 dexes,
                 to,
+                rewardTo,
                 deadline,
                 {value: oracleFee, from: deployer}
             );
@@ -542,6 +546,7 @@ contract('CoFiXRouter', (accounts) => {
             const path = [usdt, weth];
             const deadline = "999999999999999";
             const to = deployer;
+            const rewardTo = to;
             const oracleFee = web3.utils.toWei('0.01', 'ether'); // 0.01 ETH
             const dexes = [DEX_TYPE_COFIX];
 
@@ -555,6 +560,7 @@ contract('CoFiXRouter', (accounts) => {
                 path,
                 dexes,
                 to,
+                rewardTo,
                 deadline,
                 {value: oracleFee, from: deployer}
             );
@@ -574,6 +580,7 @@ contract('CoFiXRouter', (accounts) => {
             const path = [usdt, weth];
             const deadline = "999999999999999";
             const to = deployer;
+            const rewardTo = to;
             const oracleFee = web3.utils.toWei('0.01', 'ether'); // 0.01 ETH
             const dexes = [DEX_TYPE_COFIX];
 
@@ -587,6 +594,7 @@ contract('CoFiXRouter', (accounts) => {
                 path,
                 dexes,
                 to,
+                rewardTo,
                 deadline,
                 {value: oracleFee, from: deployer}
             );
@@ -606,6 +614,7 @@ contract('CoFiXRouter', (accounts) => {
             const path = [weth, usdt];
             const deadline = "999999999999999";
             const to = deployer;
+            const rewardTo = to;
             const oracleFee = web3.utils.toWei('0.01', 'ether'); // 0.01 ETH
             const dexes = [DEX_TYPE_COFIX];
 
@@ -619,6 +628,7 @@ contract('CoFiXRouter', (accounts) => {
                 path,
                 dexes,
                 to,
+                rewardTo,
                 deadline,
                 {value: oracleFee, from: deployer}
             );
@@ -638,6 +648,7 @@ contract('CoFiXRouter', (accounts) => {
             const path = [nest, weth];
             const deadline = "999999999999999";
             const to = deployer;
+            const rewardTo = to;
             // const oracleFee = web3.utils.toWei('0.01', 'ether'); // 0.01 ETH
             const dexes = [DEX_TYPE_UNISWAP];
 
@@ -651,6 +662,7 @@ contract('CoFiXRouter', (accounts) => {
                 path,
                 dexes,
                 to,
+                rewardTo,
                 deadline,
                 {value: 0, from: deployer}
             );
@@ -670,6 +682,7 @@ contract('CoFiXRouter', (accounts) => {
             const path = [nest, weth];
             const deadline = "999999999999999";
             const to = deployer;
+            const rewardTo = to;
             // const oracleFee = web3.utils.toWei('0.01', 'ether'); // 0.01 ETH
             const dexes = [DEX_TYPE_UNISWAP];
 
@@ -683,6 +696,7 @@ contract('CoFiXRouter', (accounts) => {
                 path,
                 dexes,
                 to,
+                rewardTo,
                 deadline,
                 {value: 0, from: deployer}
             );
@@ -702,6 +716,7 @@ contract('CoFiXRouter', (accounts) => {
             const path = [weth, nest];
             const deadline = "999999999999999";
             const to = deployer;
+            const rewardTo = to;
             // const oracleFee = web3.utils.toWei('0.01', 'ether'); // 0.01 ETH
             const dexes = [DEX_TYPE_UNISWAP];
 
@@ -715,6 +730,7 @@ contract('CoFiXRouter', (accounts) => {
                 path,
                 dexes,
                 to,
+                rewardTo,
                 deadline,
                 {value: 0, from: deployer}
             );
@@ -734,6 +750,7 @@ contract('CoFiXRouter', (accounts) => {
             const path = [weth, nest];
             const deadline = "999999999999999";
             const to = deployer;
+            const rewardTo = to;
             // const oracleFee = web3.utils.toWei('0.01', 'ether'); // 0.01 ETH
             const dexes = [DEX_TYPE_UNISWAP];
         
@@ -744,6 +761,7 @@ contract('CoFiXRouter', (accounts) => {
                 path,
                 dexes,
                 to,
+                rewardTo,
                 deadline,
                 {value: amountIn, from: deployer} // here: value is amountIn
             );
@@ -764,6 +782,7 @@ contract('CoFiXRouter', (accounts) => {
             const path = [usdt, weth, hbtc];
             const deadline = "999999999999999";
             const to = deployer;
+            const rewardTo = to;
             const oracleFee = web3.utils.toWei('0.02', 'ether'); // 0.02 ETH
             const dexes = [DEX_TYPE_COFIX, DEX_TYPE_COFIX];
 
@@ -777,6 +796,7 @@ contract('CoFiXRouter', (accounts) => {
                 path,
                 dexes,
                 to,
+                rewardTo,
                 deadline,
                 {value: oracleFee, from: deployer}
             );
@@ -797,6 +817,7 @@ contract('CoFiXRouter', (accounts) => {
             const path = [hbtc, weth, usdt];
             const deadline = "999999999999999";
             const to = deployer;
+            const rewardTo = to;
             const oracleFee = web3.utils.toWei('0.02', 'ether'); // 0.02 ETH
             const dexes = [DEX_TYPE_COFIX, DEX_TYPE_COFIX];
 
@@ -810,6 +831,7 @@ contract('CoFiXRouter', (accounts) => {
                 path,
                 dexes,
                 to,
+                rewardTo,
                 deadline,
                 {value: oracleFee, from: deployer}
             );

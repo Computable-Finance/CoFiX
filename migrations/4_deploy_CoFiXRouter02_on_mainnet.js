@@ -1,6 +1,8 @@
 var WETH9 = artifacts.require("test/WETH9");
 var CoFiXFactory = artifacts.require("CoFiXFactory");
 const CoFiXRouter = artifacts.require("CoFiXRouter02");
+var CoFiXVaultForTrader = artifacts.require("CoFiXVaultForTrader");
+
 
 // truffle migrate -f 4 -to 4 --network ropsten
 module.exports = async function (deployer, network) {
@@ -23,8 +25,18 @@ module.exports = async function (deployer, network) {
         WETH9 = await WETH9.at("0x59b8881812Ac484Ab78b8fc7c10b2543e079a6C3");
         CoFiXFactory = await CoFiXFactory.at("0x8E636BDB79752BFa2C41285535852bbBDd50b2ca");
         UniswapFactory = "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f";
+        CoFiXVaultForTrader = await CoFiXVaultForTrader.at("0xe901e7f88a377D01028aE947cFA3192b3c5f7587");
     }
 
     // CoFiXRouter
     await deployer.deploy(CoFiXRouter, CoFiXFactory.address, UniswapFactory, WETH9.address);
+
+    console.log("CoFiXRouter02 deployed successfully, address is", CoFiXRouter.address);
+
+    if (network == "ropsten" || network == "ropsten-fork") {
+        // allowRouter
+        console.log(`start allowRouter`);
+        await CoFiXVaultForTrader.allowRouter(CoFiXRouter.address);
+        console.log("allowRouter successfully for CoFiXRouter02");
+    }
 };

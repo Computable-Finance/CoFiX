@@ -153,7 +153,7 @@ router.hybridSwapExactTokensForTokens(500000000, 0, [usdt.address, weth.address,
 ```
 
 [0xa3c956a29b5a7ce299116a46534db4f11df1e37e7d8514026d3ad3bcb1de1d38](https://etherscan.io/tx/0xa3c956a29b5a7ce299116a46534db4f11df1e37e7d8514026d3ad3bcb1de1d38)
-## Deployment (for testing)
+## Deployment
 
-- mainnet 0xE57130499e7f3e7fE53B1D26154850889603823e
-- ropsten 0xeFe1cfeC4c99c06c0277996b85Ae0b11D27449C4
+- mainnet 0x5C35BaDebD40308e409df891aC56d17C8625c2bC
+- ropsten 0xAdD27c75b7B003cc791E4062e20f9Eb872FafC65

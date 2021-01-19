@@ -3,10 +3,10 @@ pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./lib/ABDKMath64x64.sol";
-import "./interface/INest_3_OfferPrice.sol";
 import "./interface/ICoFiXKTable.sol";
 import "./lib/TransferHelper.sol";
 import "./interface/ICoFiXController.sol";
+import "./interface/INestQuery.sol";
 import "./interface/INest_3_VoteFactory.sol";
 import "./interface/ICoFiXPair.sol";
 import "./interface/ICoFiXFactory.sol";
@@ -30,13 +30,16 @@ contract CoFiXController03 is ICoFiXController {  // ctrl-03: change contract na
     uint256 constant internal C_SELLOUT_ALPHA = 117100000000000; // α=-1.171e-04*1e18
     uint256 constant internal C_SELLOUT_BETA = 838600000000; // β=8.386e-07*1e18
 
+    int128 constant internal SIGMA_STEP = 0x346DC5D638865; // (0.00005*2**64).toString(16), 0.00005 as 64.64-bit fixed point
+    int128 constant internal ZERO_POINT_FIVE = 0x8000000000000000; // (0.5*2**64).toString(16)
+    uint256 constant PRICE_DEVIATION = 10;  // price deviation < 10%
+
     mapping(address => uint32[3]) internal KInfoMap; // gas saving, index [0] is k vlaue, index [1] is updatedAt, index [2] is theta
     mapping(address => bool) public callerAllowed;
 
-    INest_3_VoteFactory public immutable voteFactory;
-
     // managed by governance
     address public governance;
+    address public immutable oracle;
     address public immutable nestToken;
     address public immutable factory;
     address public kTable;
@@ -46,14 +49,27 @@ contract CoFiXController03 is ICoFiXController {  // ctrl-03: change contract na
     int128 public MAX_K0 = 0xCCCCCCCCCCCCD00; // (0.05*2**64).toString(16)
     int128 public GAMMA = 0x8000000000000000; // (0.5*2**64).toString(16)
 
+    struct OracleParams {
+        uint256 ethAmount;
+        uint256 erc20Amount;
+        uint256 blockNum;
+        uint256 K;
+        uint256 T; // time offset
+        uint256 avgPrice; // average price
+        uint256 theta;
+        int128 sigma;
+        uint256 tIdx;
+        uint256 sigmaIdx;
+    }
+
     modifier onlyGovernance() {
         require(msg.sender == governance, "CoFiXCtrl: !governance");
         _;
     }
 
-    constructor(address _voteFactory, address _nest, address _factory, address _kTable) public {
+    constructor(address _oracle, address _nest, address _factory, address _kTable) public {
         governance = msg.sender;
-        voteFactory = INest_3_VoteFactory(address(_voteFactory));
+        oracle = _oracle;
         nestToken = _nest;
         factory = _factory;
         kTable = _kTable;
@@ -108,17 +124,6 @@ contract CoFiXController03 is ICoFiXController {  // ctrl-03: change contract na
         emit NewTheta(token, theta);
     }
 
-    // Activate on NEST Oracle, should not be called twice for the same nest oracle
-    function activate() external onlyGovernance {
-        // address token, address from, address to, uint value
-        TransferHelper.safeTransferFrom(nestToken, msg.sender, address(this), DESTRUCTION_AMOUNT);
-        address oracle = voteFactory.checkAddress("nest.v3.offerPrice");
-        // address token, address to, uint value
-        TransferHelper.safeApprove(nestToken, oracle, DESTRUCTION_AMOUNT);
-        INest_3_OfferPrice(oracle).activation(); // nest.transferFrom will be called
-        TransferHelper.safeApprove(nestToken, oracle, 0); // ensure safety
-    }
-
     function addCaller(address caller) external override {
         require(msg.sender == factory || msg.sender == governance, "CoFiXCtrl: only factory or gov");
         callerAllowed[caller] = true;
@@ -130,7 +135,7 @@ contract CoFiXController03 is ICoFiXController {  // ctrl-03: change contract na
     // We can make use of `data` bytes in the future
     function queryOracle(address token, uint8 op, bytes memory data) external override payable returns (uint256 _k, uint256 _ethAmount, uint256 _erc20Amount, uint256 _blockNum, uint256 _theta) {
         require(callerAllowed[msg.sender], "CoFiXCtrl: caller not allowed");
-        (_ethAmount, _erc20Amount, _blockNum) = getLatestPrice(token);
+        (_k, _ethAmount, _erc20Amount, _blockNum) = getLatestPrice(token);
         CoFiX_OP cop = CoFiX_OP(op);
         uint256 impactCost;
         if (cop == CoFiX_OP.SWAP_WITH_EXACT) {
@@ -140,7 +145,7 @@ contract CoFiXController03 is ICoFiXController {  // ctrl-03: change contract na
          } else if (cop == CoFiX_OP.BURN) {
             impactCost = calcImpactCostFor_BURN(token, data, _ethAmount, _erc20Amount);
         }
-        _k = K_EXPECTED_VALUE.add(impactCost); // ctrl-v2: adjustable K + impactCost is the final K
+        _k = _k.add(impactCost); // ctrl-v2: adjustable K + impactCost is the final K
         _theta = KInfoMap[token][2];
         return (_k, _ethAmount, _erc20Amount, _blockNum, _theta);
     }
@@ -206,23 +211,86 @@ contract CoFiXController03 is ICoFiXController {  // ctrl-03: change contract na
     }
 
     function getKInfo(address token) external view returns (uint32 k, uint32 updatedAt, uint32 theta) {
-        k = uint32(K_EXPECTED_VALUE); // ctrl-v2: load from storage instead of constant value
-        updatedAt = uint32(block.timestamp);
+        // ctrl-v3: load from storage instead of constant value
+        uint32 kStored = KInfoMap[token][0];
+        if (kStored != 0) {
+            k = kStored;
+        } else {
+            k = uint32(K_EXPECTED_VALUE);
+        }
+        updatedAt = KInfoMap[token][1];
         theta = KInfoMap[token][2];
     }
 
-    function getLatestPrice(address token) internal returns (uint256 _ethAmount, uint256 _erc20Amount, uint256 _blockNum) {
+    function getLatestPrice(address token) internal returns (uint256 _k, uint256 _ethAmount, uint256 _erc20Amount, uint256 _blockNum) {
         uint256 _balanceBefore = address(this).balance;
-        address oracle = voteFactory.checkAddress("nest.v3.offerPrice");
-        uint256[] memory _rawPriceList = INest_3_OfferPrice(oracle).updateAndCheckPriceList{value: msg.value}(token, 1);
-        require(_rawPriceList.length == 3, "CoFiXCtrl: bad price len");
+        OracleParams memory _op;
+        // query oracle
+        /// ethAmount The amount of ETH in pair (ETH, TOKEN)
+        /// tokenAmount The amount of TOKEN in pair (ETH, TOKEN)
+        /// avgPrice The average of last 50 prices 
+        /// vola The volatility of prices 
+        /// bn The block number when (ETH, TOKEN) takes into effective
+        (_op.ethAmount, _op.erc20Amount, _op.avgPrice, _op.sigma, _op.blockNum) = INestQuery(oracle).queryPriceAvgVola{value: msg.value}(token, address(this));
+
         // validate T
-        uint256 _T = block.number.sub(_rawPriceList[2]).mul(timespan);
-        require(_T < T, "CoFiXCtrl: oralce price outdated"); // ctrl-v2: adjustable T
-        uint256 oracleFeeChange = msg.value.sub(_balanceBefore.sub(address(this).balance));
-        if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
-        return (_rawPriceList[0], _rawPriceList[1], _rawPriceList[2]);
-        // return (K_EXPECTED_VALUE, _rawPriceList[0], _rawPriceList[1], _rawPriceList[2], KInfoMap[token][2]);
+        _op.T = block.number.sub(_op.blockNum).mul(timespan);
+        require(_op.T < T, "CoFiXCtrl: oralce price outdated"); // ctrl-v2: adjustable T
+        
+        {
+            // check if the price is steady
+            uint256 price;
+            bool isDeviated;
+            price = _op.erc20Amount.mul(1e18).div(_op.ethAmount);
+            uint256 diff = price > _op.avgPrice? (price - _op.avgPrice) : (_op.avgPrice - price);
+            isDeviated = (diff.mul(100) < _op.avgPrice.mul(PRICE_DEVIATION))? false : true;
+            require(isDeviated == false, "CoFiXCtrl: price deviation"); // validate
+        }
+
+        // calc K
+        // int128 K0; // K0AndK[0]
+        // int128 K; // K0AndK[1]
+        int128[2] memory K0AndK;
+
+        {
+            _op.tIdx = (_op.T.add(5)).div(10); // rounding to the nearest
+            _op.sigmaIdx = ABDKMath64x64.toUInt(
+                        ABDKMath64x64.add(
+                            ABDKMath64x64.div(_op.sigma, SIGMA_STEP), // _sigma / 0.00005, e.g. (0.00098/0.00005)=9.799 => 9
+                            ZERO_POINT_FIVE // e.g. (0.00098/0.00005)+0.5=20.0999 => 20
+                        )
+                    );
+            if (_op.sigmaIdx > 0) {
+                _op.sigmaIdx = _op.sigmaIdx.sub(1);
+            }
+
+            // getK0(uint256 tIdx, uint256 sigmaIdx)
+            // K0 is K0AndK[0]
+            K0AndK[0] = ICoFiXKTable(kTable).getK0(
+                _op.tIdx, 
+                _op.sigmaIdx
+            );
+
+            // K = gamma * K0
+            K0AndK[1] = ABDKMath64x64.mul(GAMMA, K0AndK[0]);
+
+            emit NewK(token, K0AndK[1], _op.sigma, _op.T, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.tIdx, _op.sigmaIdx, K0AndK[0]);
+        }
+
+        require(K0AndK[0] <= MAX_K0, "CoFiXCtrl: K0");
+
+        {
+            // return oracle fee change
+            // we could decode data in the future to pay the fee change and mining award token directly to reduce call cost
+            // TransferHelper.safeTransferETH(payback, msg.value.sub(_balanceBefore.sub(address(this).balance)));
+            uint256 oracleFeeChange = msg.value.sub(_balanceBefore.sub(address(this).balance));
+            if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
+            _k = ABDKMath64x64.toUInt(ABDKMath64x64.mul(K0AndK[1], ABDKMath64x64.fromUInt(K_BASE)));
+
+            KInfoMap[token][0] = uint32(_k); // k < MAX_K << uint32(-1)
+            KInfoMap[token][1] = uint32(block.timestamp); // 2106
+            return (_k, _op.ethAmount, _op.erc20Amount, _op.blockNum);
+        }
     }
     
     // ctrl-v2: remove unused code bellow according to PeckShield's advice

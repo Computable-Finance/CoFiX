@@ -5,13 +5,13 @@ var WETH9 = artifacts.require("test/WETH9");
 var NestPriceOracle = artifacts.require("mock/NEST3PriceOracleAutoUpdateConstMock");
 var CoFiXKTable = artifacts.require("CoFiXKTable");
 var CoFiXFactory = artifacts.require("CoFiXFactory");
-var CoFiXController = artifacts.require("CoFiXControllerV2");
+var CoFiXController = artifacts.require("CoFiXController02");
 var NEST3VoteFactory = artifacts.require("NEST3VoteFactoryMock");
 const CoFiXPair = artifacts.require("CoFiXPair");
 
 module.exports = async function (deployer, network) {
 
-    console.log(`truffle deploy CoFiXControllerV2 to ${network} network`);
+    console.log(`truffle deploy CoFiXController02 to ${network} network`);
 
     const supportedNetwork = [ "mainnet", "mainnet-fork", "ropsten", "ropsten-fork"];
 
@@ -71,7 +71,7 @@ module.exports = async function (deployer, network) {
     }
 
     console.log(`Contract Deployed Summary\n=========================`);
-    console.log(`| CoFiXControllerV2 | ${CoFiXController.address} |`);
+    console.log(`| CoFiXController02 | ${CoFiXController.address} |`);
 
     // check deploying results
     const pairCnt = await CoFiXFactory.allPairsLength();

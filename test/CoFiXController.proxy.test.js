@@ -5,7 +5,7 @@
 
 // const ERC20 = artifacts.require("TestERC20");
 // const CoFiXController = artifacts.require("CoFiXController");
-// const CoFiXControllerV2 = artifacts.require('CoFiXControllerV2Test');
+// const CoFiXController02 = artifacts.require('CoFiXController02Test');
 
 // const NEST3PriceOracleMock = artifacts.require("mock/NEST3PriceOracleMock");
 // const TestUSDT = artifacts.require("test/USDT");
@@ -55,7 +55,7 @@
 
 //   it('should upgrade correctly', async function () {
 //     // must deployProxy here, could not use the one create in before setup
-//     await upgrades.upgradeProxy(this.controller.address, CoFiXControllerV2, [this.oracle.address]);
+//     await upgrades.upgradeProxy(this.controller.address, CoFiXController02, [this.oracle.address]);
 //     let alpha = await this.controller.ALPHA();
 //     let k_base = await this.controller.K_BASE();
 //     console.log(`alpha:${alpha.toString()}, k_base:${k_base.toString()}`);

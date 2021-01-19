@@ -13,7 +13,7 @@ import "./interface/ICoFiXFactory.sol";
 
 // Controller contract to call NEST Oracle for prices, managed by governance
 // Governance role of this contract should be the `Timelock` contract, which is further managed by a multisig contract
-contract CoFiXControllerV2 is ICoFiXController {  // ctrl-v2: change contract name to avoid truffle complaint
+contract CoFiXController02 is ICoFiXController {  // ctrl-v2: change contract name to avoid truffle complaint
 
     using SafeMath for uint256;
 

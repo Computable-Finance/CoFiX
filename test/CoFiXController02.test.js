@@ -5,7 +5,7 @@ const { calcK, convert_from_fixed_point, convert_into_fixed_point, calcRelativeD
 const { printKInfoEvent } = require('../lib/print');
 
 const ERC20 = artifacts.require("TestERC20");
-const CoFiXControllerV2 = artifacts.require("CoFiXControllerV2");
+const CoFiXController02 = artifacts.require("CoFiXController02");
 const NEST3PriceOracleMock = artifacts.require("mock/NEST3PriceOracleMock");
 const NEST3PriceOracleConstMock = artifacts.require("NEST3PriceOracleConstMock");
 const NEST3VoteFactoryMock = artifacts.require("NEST3VoteFactoryMock");
@@ -19,7 +19,7 @@ const verbose = process.env.VERBOSE;
 const errorDelta = 10 ** -15;
 const ERROR_DELTA_FOR_IMPACT_COST = 10 ** -5;
 
-contract('CoFiXControllerV2', (accounts) => {
+contract('CoFiXController02', (accounts) => {
 
   const deployer = accounts[0];
   const callerNotAllowed = accounts[1];
@@ -48,7 +48,7 @@ contract('CoFiXControllerV2', (accounts) => {
     Oracle = await NEST3PriceOracleMock.new(NEST.address, { from: deployer });
     NEST3VoteFactory = await NEST3VoteFactoryMock.new(Oracle.address);
     KTable = await CoFiXKTable.new({ from: deployer });
-    CoFiXCtrl = await CoFiXControllerV2.new(NEST3VoteFactory.address, NEST.address, CFactory.address, KTable.address, { from: deployer });
+    CoFiXCtrl = await CoFiXController02.new(NEST3VoteFactory.address, NEST.address, CFactory.address, KTable.address, { from: deployer });
   });
 
   describe('activate', function () {
@@ -88,7 +88,7 @@ contract('CoFiXControllerV2', (accounts) => {
       tmpCFactory = await CoFiXFactory.new(WETH.address, { from: deployer });
       constOracle = await NEST3PriceOracleConstMock.new(NEST.address, { from: deployer });
       tmpVoteFactory = await NEST3VoteFactoryMock.new(constOracle.address);
-      tmpController = await CoFiXControllerV2.new(tmpVoteFactory.address, NEST.address, tmpCFactory.address, KTable.address, { from: deployer });
+      tmpController = await CoFiXController02.new(tmpVoteFactory.address, NEST.address, tmpCFactory.address, KTable.address, { from: deployer });
       // tmpController.initialize(constOracle.address, { from: deployer });
     });
 
@@ -296,7 +296,7 @@ contract('CoFiXControllerV2', (accounts) => {
       let tmpCFactory = await CoFiXFactory.new(WETH.address, { from: deployer });
       let constOracle = await NEST3PriceOracleConstMock.new(NEST.address, { from: deployer });
       let tmpVoteFactory = await NEST3VoteFactoryMock.new(constOracle.address);
-      tmpCtrl = await CoFiXControllerV2.new(tmpVoteFactory.address, NEST.address, tmpCFactory.address, KTable.address, { from: deployer });
+      tmpCtrl = await CoFiXController02.new(tmpVoteFactory.address, NEST.address, tmpCFactory.address, KTable.address, { from: deployer });
     });
 
 

@@ -112,7 +112,7 @@ Check *Record of Governance Authority Transfer to Multi-Sig Wallet* and *Details
 | CoFiXRouter02 (Beta) | 0x5C35BaDebD40308e409df891aC56d17C8625c2bC |
 | CoFiXController (deprecated) | 0xd694eF4C82E50F3f184877572dCD6A45B8FEae87 |
 | CoFiXController02 (deprecated) | 0x7e497Be7532CC4954D73c6dF93F016c53CC0C29a |
-| CoFiXController03 | 0xf222deF61e55164788CCc2aB14C243bF2Fb27E4D |
+| CoFiXController03 | 0xc6f45eB40609c9CD30c8750A95042De1b8B1DBFf |
 | CoFiXVaultForLP | 0x6903b1C17A5A0A9484c7346E5c0956027A713fCF |
 | CoFiXVaultForTrader | 0xE6183d3094a9e360B123Ec1330afAE76A74d1cbF |
 | CoFiXVaultForCNode | 0x7eDa8251aC08E7898E986DbeC4Ba97B421d545DD |

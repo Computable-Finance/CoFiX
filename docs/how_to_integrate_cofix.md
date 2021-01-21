@@ -1,5 +1,8 @@
 # How to Integrate with CoFiX
 
+***Note: Some of the Nest-related content may be out of date, as NEST v3.5 has changed some interfaces compared to NEST v3.0.***
+
+
 CoFiX uses the NEST Protocol as the price oracle. The unique design of the NEST makes integrating CoFiX a little different from regular DeFi projects. Here's how to integrate CoFiX Smart Contracts in detail.
 
 ## Main Contracts
@@ -39,6 +42,8 @@ ABI files:
 ## How to Calculate Prices and Execute Swaps
 
 ### Get Prices from NEST Oracle
+
+*Note: CoFiX integrates NEST v3.5 currently. Check the next section [Get Latest Price and Calculate Accurate K Value (Updates on NEST v3.5)] to get latest price of some token.*
 
 CoFiX uses paid NEST price oracle as a price source for trading.
 
@@ -94,7 +99,7 @@ Compensation factor K is the coefficient related to the volatility rate δ and d
 
 K and theta values are used to calculate the final price. More details can be found at [https://github.com/Computable-Finance/Doc/blob/master/README.md#32-price-compensation-coefficient-k](https://github.com/Computable-Finance/Doc/blob/master/README.md#32-price-compensation-coefficient-k).
 
-The [`getKInfo()`](https://github.com/Computable-Finance/CoFiX/blob/9306e6ea157358dbcd1493d72e8720a8ef62748b/contracts/CoFiXController.sol#L276) function in the CoFiXController contract can be used to query the latest K and theta for a specific token.
+The [`getKInfo()`](https://github.com/Computable-Finance/CoFiX/blob/9306e6ea157358dbcd1493d72e8720a8ef62748b/contracts/CoFiXController.sol#L276) function in the CoFiXController contract can be used to query the latest cached K and theta for a specific token.
 
 *Smart Contract Interface*:
 
@@ -112,7 +117,80 @@ const kInfo = CoFiXController.getKInfo(token)
 // e.g. (k=250000, updatedAt=1604927915, theta=200000)
 ```
 
-The result is multiplied by a factor `1e8` o support decimal representation.  So`k=250000` `theta=200000`, representing K as 0.0025 and theta as 0.002. They are also the current default value for all pairs. These values may be dynamically calculated and adjusted in the future, so it is recommended to query them using the method above.
+*Note: CoFiX integrates NEST v3.5 currently. Check the next section [Get Latest Price and Calculate Accurate K Value (Updates on NEST v3.5)] to calculate accurate K value.*
+
+The result is multiplied by a factor `1e8` o support decimal representation. So`k=250000` `theta=200000`, representing K as 0.0025 and theta as 0.002. They are also the current default value for all pairs. These values may be dynamically calculated and adjusted in the future, so it is recommended to query them using the method above.
+
+### Get Latest Price and Calculate Accurate K Value (Updates on NEST v3.5)
+
+#### Get latestPrice and volatility
+
+*Query Price from NEST Oracle 3.5 For Free (web/non-contract).*
+
+NEST v3.5 provides new API for querying the latest price and volatility of recent prices.
+
+Check [INestQuery](https://github.com/NEST-Protocol/NEST-Oracle-V3.5/blob/c3272bae356f9904bcf426bb8a5e394768b48d12/contracts/iface/INestQuery.sol#L63-L66) interface.
+
+*INestQuery::latestPrice interface*:
+
+```js
+    /// @notice A view function returning the latestPrice
+    /// @param token  The address of the token contract
+    function latestPrice(address token)
+    external view returns (uint256 ethAmount, uint256 tokenAmount, uint128 avgPrice, int128 vola, uint256 bn);
+```
+
+- *ethAmount*: The amount of ETH in pair (ETH, TOKEN)
+- *tokenAmount*: The amount of TOKEN in pair (ETH, TOKEN)
+- *avgPrice*: The average of last 50 prices
+- *vola*: The volatility of prices
+- *bn*: The block number when (ETH, TOKEN) takes into effective
+
+NestQuery Contract on mainnet [0x3bf046c114385357838D9cAE9509C6fBBfE306d2](https://etherscan.io/address/0x3bf046c114385357838D9cAE9509C6fBBfE306d2)
+
+#### Calculate accurate K value
+
+The original `getKInfo` interface is used to get the constant K value or the cached K value. NEST v3.5 provides the latest volatility of recent prices for each token. So we can calculate the accurate K value directly according to the volatility value.
+
+However, due to the design of the nest, there is no way to read price and volatility information directly into the contract for free.
+
+To simplify the external calculation, CoFiXController03 provides a query interface for the front-end to calculate K value. One can get the volatility `vola` and effective block number `bn` from `NestQuery::latestPrice()` and pass them to the `CoFiXController03::calcK()` interface to calculate latest accurate K value.
+
+*CoFiXController03::calcK interface*:
+
+```js
+   /**
+    * @notice Calc K value
+    * @param vola The volatility of prices
+    * @param bn The block number when (ETH, TOKEN) price takes into effective
+    * @return k The K value
+    */
+    function calcK(int128 vola, uint256 bn) external view returns (uint32 k)
+```
+
+*Examples*:
+
+```js
+const token = USDT; // or HBTC
+const p = await NestQuery.latestPrice(token);
+// [ latestPrice method Response ]
+//   ethAmount   uint256 :  30000000000000000000
+//   tokenAmount   uint256 :  39714300000
+//   avgPrice   uint128 :  1334454001
+//   vola   int128 :  8618535544881214
+//   bn   uint256 :  11696577
+const K = await CoFiXController03.calcK(p.vola, p.bn);
+// [ calcK method Response ]
+//   k   uint32 :  848824
+// k: 848824, means 848824/1e8=0.00848824
+```
+
+The result is multiplied by a factor `1e8` o support decimal representation. So`k=250000`, representing K as 0.0025.
+
+Note: Due to the use of dynamic K values, a protection condition can be triggered [in some cases](https://github.com/Computable-Finance/Doc#62-circuit-breakers). In this case, swap cannot be executed. The calcK interface may report the following errors.
+
+- `CKTable: sigmaIdx must < 20`
+- `CKTable: tIdx must < 91`
 
 ### Impact Costs
 

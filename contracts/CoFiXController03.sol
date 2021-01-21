@@ -293,5 +293,41 @@ contract CoFiXController03 is ICoFiXController {  // ctrl-03: change contract na
         }
     }
     
+   /**
+    * @notice Calc K value
+    * @param vola The volatility of prices
+    * @param bn The block number when (ETH, TOKEN) price takes into effective
+    * @return k The K value
+    */
+    function calcK(int128 vola, uint256 bn) external view returns (uint32 k) {
+        // int128 K0; // K0AndK[0]
+        // int128 K; // K0AndK[1]
+        int128[2] memory K0AndK;
+        uint256 _T = block.number.sub(bn).mul(timespan);
+
+        uint256 tIdx = (_T.add(5)).div(10); // rounding to the nearest
+        uint256 sigmaIdx = ABDKMath64x64.toUInt(
+                    ABDKMath64x64.add(
+                        ABDKMath64x64.div(vola, SIGMA_STEP), // _sigma / 0.00005, e.g. (0.00098/0.00005)=9.799 => 9
+                        ZERO_POINT_FIVE // e.g. (0.00098/0.00005)+0.5=20.0999 => 20
+                    )
+                );
+        if (sigmaIdx > 0) {
+            sigmaIdx = sigmaIdx.sub(1);
+        }
+
+        // getK0(uint256 tIdx, uint256 sigmaIdx)
+        // K0 is K0AndK[0]
+        K0AndK[0] = ICoFiXKTable(kTable).getK0(
+            tIdx, 
+            sigmaIdx
+        );
+
+        // K = gamma * K0
+        K0AndK[1] = ABDKMath64x64.mul(GAMMA, K0AndK[0]);
+
+        k = uint32(ABDKMath64x64.toUInt(ABDKMath64x64.mul(K0AndK[1], ABDKMath64x64.fromUInt(K_BASE))));
+    }
+
     // ctrl-v2: remove unused code bellow according to PeckShield's advice
 }

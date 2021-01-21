@@ -132,7 +132,7 @@ Check *Record of Governance Authority Transfer to Multi-Sig Wallet* and *Details
 - CNode Token StakingRewards Pool (CNodeStakingRewards): 0xb697A2528D57a2BA8E75E2F33eD56B594cf9F308
 
 ---
-
+<!-- 
 ### Beta-V0.9.4
 
 |       Contract       |                  Address                   |
@@ -162,9 +162,9 @@ Check *Record of Governance Authority Transfer to Multi-Sig Wallet* and *Details
 - ETH/HBTC
   - Pair (XToken): 0xE9Ba64C0315B9fF5c29ddf5BDaEEeC46fc3DC22E
   - XToken StakingRewards Pool: 0xb13E3e7E3461D9c40C3Faa736CC852B6d61900E7
-- CNode Token (Test) StakingRewards Pool (CNodeStakingRewards): 0x939B66CfFc1eD066A43bc2E0a075F93Bd9f8852E
+- CNode Token (Test) StakingRewards Pool (CNodeStakingRewards): 0x939B66CfFc1eD066A43bc2E0a075F93Bd9f8852E -->
 
-### Beta-V0.9.3
+<!-- ### Beta-V0.9.3
 
 |       Contract       |                  Address                   |
 | :------------------: | :----------------------------------------: |
@@ -191,10 +191,10 @@ Check *Record of Governance Authority Transfer to Multi-Sig Wallet* and *Details
 - ETH/HBTC
   - Pair (XToken): 0x5455064a184b41a8229E359b481c58F9CfEbc991
   - XToken StakingRewards Pool: 0x12114849048B43cB57282027f574A8B92a01eaC7
-- CNode Token (Test) StakingRewards Pool (CNodeStakingRewards): 0x64d96c347e4E860Af4624276c65F0B8Db0789b4e
+- CNode Token (Test) StakingRewards Pool (CNodeStakingRewards): 0x64d96c347e4E860Af4624276c65F0B8Db0789b4e -->
 
 
-### Beta-V0.6
+<!-- ### Beta-V0.6
 
 |       Contract       |                  Address                   |
 | :------------------: | :----------------------------------------: |
@@ -206,11 +206,11 @@ Check *Record of Governance Authority Transfer to Multi-Sig Wallet* and *Details
 | CoFiXController | 0xC16E5eECc0948604eb326296c71311aC8D9BC786 |
 | CoFiXFactory | 0xD5a19E1ADb5592921dcC42E48623d75c4C91e405 |
 | CoFiXKTable | 0x75E360Be6248Bd46030C6818624a09403EF5eC21 |
-| CoFiXRouter | 0x2878469c466638E8c0878bB86898073CA6C91b45 |
+| CoFiXRouter | 0x2878469c466638E8c0878bB86898073CA6C91b45 | -->
 
 ## Ropsten Testnet
 
-### Beta-V0.9.5
+### Beta-V0.9.5 (Latest)
 
 |       Contract       |                  Address                   |
 | :------------------: | :----------------------------------------: |
@@ -227,7 +227,8 @@ Check *Record of Governance Authority Transfer to Multi-Sig Wallet* and *Details
 | CoFiXRouter | 0xbeE8674291328D09831cAf96eFceaCDf53066B86 |
 | CoFiXRouter02 (Beta) | 0xAdD27c75b7B003cc791E4062e20f9Eb872FafC65 |
 | CoFiXController (deprecated) | 0xEB95E090b27A67f574005F41eea83794D5ac1650 |
-| CoFiXController02 | 0x36f99d8500CB288c924B50cf4A081F4C3E6d48DD |
+| CoFiXController02 (deprecated) | 0x36f99d8500CB288c924B50cf4A081F4C3E6d48DD |
+| CoFiXController03 | 0x8a814Da4d9Dfdebf6080BbE2d8C7bb238272507B |
 | CoFiXVaultForLP | 0x2494853258c33A99581Abddc7b85b11D1D1885DF |
 | CoFiXVaultForTrader | 0xe901e7f88a377D01028aE947cFA3192b3c5f7587 |
 | CoFiXVaultForCNode | 0x159894c1e9712bF2EeDB4b2B84dFDA154893088B |
@@ -246,7 +247,7 @@ Check *Record of Governance Authority Transfer to Multi-Sig Wallet* and *Details
   - XToken StakingRewards Pool: 0xfdFc41f8b9D8b667b7DE8a976F446C557c697981
 - CNode Token StakingRewards Pool (CNodeStakingRewards): 0x3ECD22524CDdC3E3AC2f52a595A9C7FA3b677ec1
 
-### Beta-V0.9.3
+<!-- ### Beta-V0.9.3
 
 |       Contract       |                  Address                   |
 | :------------------: | :----------------------------------------: |
@@ -272,7 +273,7 @@ Check *Record of Governance Authority Transfer to Multi-Sig Wallet* and *Details
 - ETH/HBTC
   - Pair (XToken): 0x9D90e9e5AFF7545046FF66544B7848C21118Da22
   - XToken StakingRewards Pool (CoFiXStakingRewards): 0xe6c3bd6D258cE7fc7554723fc2b93F848CEF30E7
-- CNode Token StakingRewards Pool (CNodeStakingRewards): 0x6c62b1ed1c2Aa3C9F51C9D7657E6d73dBE4607C0
+- CNode Token StakingRewards Pool (CNodeStakingRewards): 0x6c62b1ed1c2Aa3C9F51C9D7657E6d73dBE4607C0 -->
 
 <!-- ### Beta-V0.1
 

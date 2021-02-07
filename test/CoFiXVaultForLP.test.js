@@ -2,10 +2,10 @@ const { expect } = require('chai');
 require('chai').should();
 const { BN, constants, expectEvent, expectRevert, time } = require('@openzeppelin/test-helpers');
 
-const CoFiXVaultForLP = artifacts.require("CoFiXVaultForLP");
+const CoFiXVaultForLP = artifacts.require("CoFiXVaultForLP02");
 const CoFiToken = artifacts.require("CoFiToken");
 const TestCoFiXStakingRewards = artifacts.require("TestCoFiXStakingRewards.sol");
-const CoFiXFactory = artifacts.require("CoFiXFactory");
+const CoFiXFactory = artifacts.require("CoFiXFactory02");
 const WETH9 = artifacts.require("WETH9");
 const TestXToken = artifacts.require("TestXToken");
 
@@ -35,7 +35,7 @@ contract('CoFiXVaultForLP', (accounts) => {
     const RATE_BASE = web3.utils.toWei('1', 'ether');
 
     const DECAY_RATE = 80;
-    const INIT_COFI_RATE = web3.utils.toWei('9', 'ether');
+    const INIT_COFI_RATE = web3.utils.toWei('4.5', 'ether');
 
     before(async () => {
         WETH = await WETH9.new();

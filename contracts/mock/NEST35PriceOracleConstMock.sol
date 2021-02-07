@@ -3,7 +3,7 @@
 pragma solidity 0.6.12;
 // import "../interface/INest_3_OfferPrice.sol";
 
-contract NEST35PriceOracleAutoUpdateConstMock {
+contract NEST35PriceOracleConstMock {
     
     mapping (address => PriceInfo) public priceInfoMap;
 
@@ -30,10 +30,6 @@ contract NEST35PriceOracleAutoUpdateConstMock {
 
     // 11,364.6 USDT/BTC
 
-    function activate(address defi) external {
-        // todo
-    }
-
     function queryPriceAvgVola(address token, address payback)
         external payable
         returns (uint256 ethAmount, uint256 tokenAmount, uint128 avgPrice, int128 vola, uint256 bn)
@@ -48,7 +44,7 @@ contract NEST35PriceOracleAutoUpdateConstMock {
         view
         returns (uint256 ethAmount, uint256 tokenAmount, uint128 avgPrice, int128 vola, uint256 bn)
     {
-        return (priceInfoMap[token].ethAmount, priceInfoMap[token].erc20Amount, priceInfoMap[token].avgPrice, priceInfoMap[token].vola, block.number - 5);
+        return (priceInfoMap[token].ethAmount, priceInfoMap[token].erc20Amount, priceInfoMap[token].avgPrice, priceInfoMap[token].vola, priceInfoMap[token].lastUpdateBlock);
     }
 
     function feedPrice(address token, uint256 ethAmount, uint256 erc20Amount, uint128 avgPrice, int128 vola) external {
@@ -57,18 +53,6 @@ contract NEST35PriceOracleAutoUpdateConstMock {
         priceInfoMap[token].avgPrice = avgPrice;
         priceInfoMap[token].vola = vola;
         priceInfoMap[token].lastUpdateBlock = block.number;
-    }
-
-    function checkPriceNow(address token)
-        public view
-        returns (uint256 ethAmount, uint256 erc20Amount, uint128 avgPrice, int128 vola, uint256 blockNum)
-    {
-        // return the newest price
-        ethAmount = priceInfoMap[token].ethAmount;
-        erc20Amount = priceInfoMap[token].erc20Amount;
-        avgPrice = priceInfoMap[token].avgPrice;
-        vola = priceInfoMap[token].vola;
-        blockNum = priceInfoMap[token].lastUpdateBlock;
     }
 
     function make_payable(address x) internal pure returns (address payable) {

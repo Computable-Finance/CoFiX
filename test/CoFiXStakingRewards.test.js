@@ -2,11 +2,11 @@ const { expect } = require('chai');
 require('chai').should();
 const { BN, constants, expectEvent, expectRevert, time } = require('@openzeppelin/test-helpers');
 
-const CoFiXVaultForLP = artifacts.require("CoFiXVaultForLP");
+const CoFiXVaultForLP = artifacts.require("CoFiXVaultForLP02");
 const CoFiToken = artifacts.require("CoFiToken");
-const CoFiXStakingRewards = artifacts.require("CoFiXStakingRewards.sol");
+const CoFiXStakingRewards = artifacts.require("CoFiXStakingRewards02.sol");
 const TestXToken = artifacts.require("TestXToken");
-const CoFiXFactory = artifacts.require("CoFiXFactory");
+const CoFiXFactory = artifacts.require("CoFiXFactory02");
 const WETH9 = artifacts.require("WETH9");
 
 const verbose = process.env.VERBOSE;
@@ -20,7 +20,7 @@ contract('CoFiXStakingRewards', (accounts) => {
     const LP_1 = accounts[1];
     const LP_2 = accounts[2];
 
-    const INIT_COFI_RATE = web3.utils.toWei('9', 'ether');
+    const INIT_COFI_RATE = web3.utils.toWei('4.5', 'ether');
 
     const POOL_STATE_INVALID = "0";
     const POOL_STATE_ENABLED = "1";

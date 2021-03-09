@@ -1,7 +1,6 @@
 const NEST3PriceOracleMock = artifacts.require("NEST3PriceOracleConstMock");
-const CoFiXController = artifacts.require("CoFiXController");
-const CoFiXFactory = artifacts.require("CoFiXFactory");
-const CoFiXKTable = artifacts.require("CoFiXKTable");
+const CoFiXController = artifacts.require("CoFiXController04");
+const CoFiXFactory = artifacts.require("CoFiXFactory02");
 const ERC20 = artifacts.require("TestERC20");
 const { BN } = require('@openzeppelin/test-helpers');
 const { web3 } = require('@openzeppelin/test-environment');

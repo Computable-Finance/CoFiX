@@ -1,4 +1,4 @@
-const NEST3PriceOracleMock = artifacts.require("NEST3PriceOracleAutoUpdateConstMock");
+const NEST35PriceOracleMock = artifacts.require("NEST35PriceOracleAutoUpdateConstMock");
 const ERC20 = artifacts.require("TestERC20");
 const { BN } = require('@openzeppelin/test-helpers');
 const { web3 } = require('@openzeppelin/test-environment');
@@ -13,13 +13,15 @@ module.exports = async function (callback) {
         var Token;
         var ethAmount;
         var tokenAmount;
+        var avg;
+        var vola;
 
-        console.log(`argv> oracle=${argv.oracle}, token=${argv.token}, ethAmount=${argv.ethAmount}, tokenAmount=${argv.tokenAmount}`);
+        console.log(`argv> oracle=${argv.oracle}, token=${argv.token}, ethAmount=${argv.ethAmount}, tokenAmount=${argv.tokenAmount}, avg=${argv.avg}, vola=${argv.vola}`);
 
         if (argv.oracle === "" || argv.oracle === undefined) {
-            PriceOracle = await NEST3PriceOracleMock.deployed();
+            PriceOracle = await NEST35PriceOracleMock.deployed();
         } else {
-            PriceOracle = await NEST3PriceOracleMock.at(argv.oracle);
+            PriceOracle = await NEST35PriceOracleMock.at(argv.oracle);
         }
 
         Token = await ERC20.at(argv.token);
@@ -34,11 +36,21 @@ module.exports = async function (callback) {
         } else {
             tokenAmount = new BN(argv.tokenAmount);
         }
+        if (argv.avg === "" || argv.avg === undefined) {
+            avg = new BN("1320675549");
+        } else {
+            avg = new BN(argv.avg);
+        }
+        if (argv.vola === "" || argv.vola === undefined) {
+            vola = new BN("7511686039347830");
+        } else {
+            vola = new BN(argv.vola);
+        }
 
         let symbol = await Token.symbol();
-        console.log(`token symbol=${symbol}, address=${Token.address}, ethAmount=${ethAmount}, tokenAmount=${tokenAmount}`);
+        console.log(`token symbol=${symbol}, address=${Token.address}, ethAmount=${ethAmount}, tokenAmount=${tokenAmount}, avg=${argv.avg}, vola=${argv.vola}`);
 
-        await PriceOracle.feedPrice(Token.address, ethAmount, tokenAmount);
+        await PriceOracle.feedPrice(Token.address, ethAmount, tokenAmount, avg, vola);
 
         // get price now from NEST3PriceOracleMock Contract
         let p = await PriceOracle.checkPriceNow(Token.address);

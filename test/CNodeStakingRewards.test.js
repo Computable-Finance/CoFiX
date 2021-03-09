@@ -2,13 +2,13 @@ const { expect } = require('chai');
 require('chai').should();
 const { BN, constants, expectEvent, expectRevert, time } = require('@openzeppelin/test-helpers');
 
-const CoFiXVaultForCNode = artifacts.require("CoFiXVaultForCNode");
+const CoFiXVaultForCNode = artifacts.require("CoFiXVaultForCNode02");
 const CoFiToken = artifacts.require("CoFiToken");
-const CNodeStakingRewards = artifacts.require("CNodeStakingRewards.sol");
-const CoFiXVaultForLP = artifacts.require("CoFiXVaultForLP");
+const CNodeStakingRewards = artifacts.require("CNodeStakingRewards02.sol");
+const CoFiXVaultForLP = artifacts.require("CoFiXVaultForLP02");
 // const TestXToken = artifacts.require("TestXToken");
 const CoFiXNode = artifacts.require("CoFiXNode");
-const CoFiXFactory = artifacts.require("CoFiXFactory");
+const CoFiXFactory = artifacts.require("CoFiXFactory02");
 const WETH9 = artifacts.require("WETH9");
 
 const verbose = process.env.VERBOSE;
@@ -22,7 +22,7 @@ contract('CNodeStakingRewards', (accounts) => {
     const CN_HOLDER_1 = accounts[1];
     const CN_HOLDER_2 = accounts[2];
 
-    const INIT_COFI_RATE = web3.utils.toWei('1', 'ether');
+    const INIT_COFI_RATE = web3.utils.toWei('0.5', 'ether');
 
     const CNODE_TOTAL_SUPPLY = "100";
 

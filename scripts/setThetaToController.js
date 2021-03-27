@@ -2,7 +2,7 @@ const ERC20 = artifacts.require("TestERC20");
 const { BN } = require('@openzeppelin/test-helpers');
 const { web3 } = require('@openzeppelin/test-environment');
 const Decimal = require('decimal.js');
-const CoFiXController = artifacts.require("CoFiXController04");
+const CoFiXController = artifacts.require("CoFiXV2Controller");
 
 const argv = require('yargs').argv;
 

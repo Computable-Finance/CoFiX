@@ -7,10 +7,10 @@ const { expect } = require('chai');
 require('chai').should();
 
 const CoFiToken = artifacts.require("CoFiToken");
-const CoFiXPair = artifacts.require("CoFiXPair02");
-const CoFiXVaultForLP = artifacts.require("CoFiXVaultForLP02");
-const CoFiXFactory = artifacts.require("CoFiXFactory02");
-const CoFiXStakingRewards = artifacts.require("CoFiXStakingRewards02.sol");
+const CoFiXPair = artifacts.require("CoFiXV2Pair");
+const CoFiXVaultForLP = artifacts.require("CoFiXV2VaultForLP");
+const CoFiXFactory = artifacts.require("CoFiXV2Factory");
+const CoFiXStakingRewards = artifacts.require("CoFiXV2StakingRewards.sol");
 
 
 const argv = require('yargs').argv;

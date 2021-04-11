@@ -14,8 +14,11 @@ interface ICoFiXV2Controller {
     event NewGamma(int128 _gamma);
     event NewTheta(address token, uint32 theta);
     event NewK(address token, uint32 k);
+    event NewCGamma(address token, uint32 gamma);
 
     function addCaller(address caller) external;
+
+    function setCGamma(address token, uint32 gamma) external;
 
     function queryOracle(address token, uint8 op, bytes memory data) external payable returns (uint256 k, uint256 ethAmount, uint256 erc20Amount, uint256 blockNum, uint256 theta);
 

@@ -36,6 +36,8 @@ contract('CoFiXV2Controller', (accounts) => {
   const min_k = 0.005;
   const max_k0 = 0.05;
   const block_time = 14;
+  const usdt_cgamma = 1;
+  const nest_cgamma = 20;
   // const vola = new BN("10393072026373223");
   const vola = new BN("300000000000000");
 
@@ -185,37 +187,57 @@ contract('CoFiXV2Controller', (accounts) => {
 
   describe('impact cost', function () {
 
+    it("should set cgamma correctly for usdt", async () => {
+        expect(await CoFiXCtrl.CGammaMap(Token.address)).to.bignumber.equal("0");
+        var receipt = await CoFiXCtrl.setCGamma(Token.address, usdt_cgamma, {from: newGovernance});
+        expectEvent(receipt, "NewCGamma", {token: Token.address, gamma: usdt_cgamma.toString()});
+        expect(await CoFiXCtrl.CGammaMap(Token.address)).to.bignumber.equal(usdt_cgamma.toString());
+
+        expect(await CoFiXCtrl.CGammaMap(NEST.address)).to.bignumber.equal("0");
+        receipt = await CoFiXCtrl.setCGamma(NEST.address, nest_cgamma, {from: newGovernance});
+        expectEvent(receipt, "NewCGamma", {token: NEST.address, gamma: nest_cgamma.toString()});
+        expect(await CoFiXCtrl.CGammaMap(NEST.address)).to.bignumber.equal(nest_cgamma.toString());
+    }); 
+
     it("should impactCostForBuyInETH correctly for vol < 500 Ether", async () => {
       const vol = web3.utils.toWei('499', 'ether');
-      const impactCost = await CoFiXCtrl.impactCostForBuyInETH(vol);
+      const impactCost = await CoFiXCtrl.impactCostForBuyInETH(Token.address, vol);
       expect(impactCost).to.bignumber.equal("0");
+
+      const vol2 = web3.utils.toWei('24.95', 'ether');
+      const impactCost2 = await CoFiXCtrl.impactCostForBuyInETH(NEST.address, vol2);
+      expect(impactCost2).to.bignumber.equal("0");
     });
 
     it("should impactCostForSellOutETH correctly for vol < 500 Ether", async () => {
       const vol = web3.utils.toWei('499', 'ether');
-      const impactCost = await CoFiXCtrl.impactCostForSellOutETH(vol);
+      const impactCost = await CoFiXCtrl.impactCostForSellOutETH(Token.address, vol);
       expect(impactCost).to.bignumber.equal("0");
+
+      const vol2 = web3.utils.toWei('24.95', 'ether');
+      const impactCost2 = await CoFiXCtrl.impactCostForSellOutETH(NEST.address, vol2);
+      expect(impactCost2).to.bignumber.equal("0");
     });
 
-    function impactCostForBuyInETH(volAmount) {
+    function impactCostForBuyInETH(cGamma, volAmount) {
       const alpha = 2.570e-05;
       const beta = 8.542e-07;
-      const expectedImpactCost = alpha + beta * volAmount;
+      const expectedImpactCost = (alpha + beta * volAmount) * cGamma;
       return expectedImpactCost;
     }
 
-    function impactCostForSellOutETH(volAmount) {
+    function impactCostForSellOutETH(cGamma, volAmount) {
       const alpha = -1.171e-04;
       const beta = 8.386e-07;
-      const expectedImpactCost = alpha + beta * volAmount;
+      const expectedImpactCost = (alpha + beta * volAmount) * cGamma;
       return expectedImpactCost;
     }    
 
     it("should impactCostForBuyInETH correctly for vol = 500 Ether", async () => {
       const volAmount = "500";
       const vol = web3.utils.toWei('500', 'ether');
-      const impactCost = await CoFiXCtrl.impactCostForBuyInETH(vol);
-      const expectedImpactCost = impactCostForBuyInETH(volAmount);
+      const impactCost = await CoFiXCtrl.impactCostForBuyInETH(NEST.address, vol);
+      const expectedImpactCost = impactCostForBuyInETH(nest_cgamma, volAmount);
       const actualImpactCost = impactCost/1e8;
       const error = calcRelativeDiff(expectedImpactCost.toString(), actualImpactCost.toString());
       if (verbose) {
@@ -227,8 +249,8 @@ contract('CoFiXV2Controller', (accounts) => {
     it("should impactCostForBuyInETH correctly for vol = 501 Ether", async () => {
       const volAmount = "501";
       const vol = web3.utils.toWei('501', 'ether');
-      const impactCost = await CoFiXCtrl.impactCostForBuyInETH(vol);
-      const expectedImpactCost = impactCostForBuyInETH(volAmount);
+      const impactCost = await CoFiXCtrl.impactCostForBuyInETH(NEST.address, vol);
+      const expectedImpactCost = impactCostForBuyInETH(nest_cgamma, volAmount);
       const actualImpactCost = impactCost/1e8;
       const error = calcRelativeDiff(expectedImpactCost.toString(), actualImpactCost.toString());
       if (verbose) {
@@ -240,8 +262,8 @@ contract('CoFiXV2Controller', (accounts) => {
     it("should impactCostForBuyInETH correctly for vol = 5000 Ether", async () => {
       const volAmount = "5000";
       const vol = web3.utils.toWei('5000', 'ether');
-      const impactCost = await CoFiXCtrl.impactCostForBuyInETH(vol);
-      const expectedImpactCost = impactCostForBuyInETH(volAmount);
+      const impactCost = await CoFiXCtrl.impactCostForBuyInETH(NEST.address, vol);
+      const expectedImpactCost = impactCostForBuyInETH(nest_cgamma, volAmount);
       const actualImpactCost = impactCost/1e8;
       const error = calcRelativeDiff(expectedImpactCost.toString(), actualImpactCost.toString());
       if (verbose) {
@@ -253,8 +275,8 @@ contract('CoFiXV2Controller', (accounts) => {
     it("should impactCostForSellOutETH correctly for vol = 500 Ether", async () => {
       const volAmount = "500";
       const vol = web3.utils.toWei('500', 'ether');
-      const impactCost = await CoFiXCtrl.impactCostForSellOutETH(vol);
-      const expectedImpactCost = impactCostForSellOutETH(volAmount);
+      const impactCost = await CoFiXCtrl.impactCostForSellOutETH(NEST.address, vol);
+      const expectedImpactCost = impactCostForSellOutETH(nest_cgamma, volAmount);
       const actualImpactCost = impactCost/1e8;
       const error = calcRelativeDiff(expectedImpactCost.toString(), actualImpactCost.toString());
       if (verbose) {
@@ -266,8 +288,8 @@ contract('CoFiXV2Controller', (accounts) => {
     it("should impactCostForSellOutETH correctly for vol = 5000 Ether", async () => {
       const volAmount = "5000";
       const vol = web3.utils.toWei('5000', 'ether');
-      const impactCost = await CoFiXCtrl.impactCostForSellOutETH(vol);
-      const expectedImpactCost = impactCostForSellOutETH(volAmount);
+      const impactCost = await CoFiXCtrl.impactCostForSellOutETH(NEST.address, vol);
+      const expectedImpactCost = impactCostForSellOutETH(nest_cgamma, volAmount);
       const actualImpactCost = impactCost/1e8;
       const error = calcRelativeDiff(expectedImpactCost.toString(), actualImpactCost.toString());
       if (verbose) {

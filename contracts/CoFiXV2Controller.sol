@@ -30,6 +30,7 @@ contract CoFiXV2Controller is ICoFiXV2Controller {  // ctrl-03: change contract 
     uint256 constant internal C_BUYIN_BETA = 854200000000; // β=8.542e-07*1e18
     uint256 constant internal C_SELLOUT_ALPHA = 117100000000000; // α=-1.171e-04*1e18
     uint256 constant internal C_SELLOUT_BETA = 838600000000; // β=8.386e-07*1e18
+    mapping(address => uint32) public CGammaMap;
 
     int128 constant internal SIGMA_STEP = 0x346DC5D638865; // (0.00005*2**64).toString(16), 0.00005 as 64.64-bit fixed point
     int128 constant internal ZERO_POINT_FIVE = 0x8000000000000000; // (0.5*2**64).toString(16)
@@ -123,6 +124,11 @@ contract CoFiXV2Controller is ICoFiXV2Controller {  // ctrl-03: change contract 
         callerAllowed[caller] = true;
     }
 
+    function setCGamma(address token, uint32 gamma) external override onlyGovernance {
+        CGammaMap[token] = gamma;
+        emit NewCGamma(token, gamma);
+    }
+
     // Calc variance of price and K in CoFiX is very expensive
     // We use expected value of K based on statistical calculations here to save gas
     // In the near future, NEST could provide the variance of price directly. We will adopt it then.
@@ -137,14 +143,14 @@ contract CoFiXV2Controller is ICoFiXV2Controller {  // ctrl-03: change contract 
         } else if (cop == CoFiX_OP.SWAP_FOR_EXACT) {
             revert("disabled experimental feature!"); // ctrl-v2: disable swapForExact function
          } else if (cop == CoFiX_OP.BURN) {
-            impactCost = calcImpactCostFor_BURN(data, _ethAmount, _erc20Amount);
+            impactCost = calcImpactCostFor_BURN(token, data, _ethAmount, _erc20Amount);
         }
         _k = _k.add(impactCost); // ctrl-v2: adjustable K + impactCost is the final K
         _theta = KInfoMap[token][2];
         return (_k, _ethAmount, _erc20Amount, _blockNum, _theta);
     }
 
-    function calcImpactCostFor_BURN(bytes memory data, uint256 ethAmount, uint256 erc20Amount) public view returns (uint256 impactCost) {
+    function calcImpactCostFor_BURN(address token, bytes memory data, uint256 ethAmount, uint256 erc20Amount) public view returns (uint256 impactCost) {
         // bytes memory data = abi.encode(msg.sender, liquidity, initToken1Amount);
         (, uint256 liquidity) = abi.decode(data, (address, uint256));
         (uint256 initToken0Amount, uint256 initToken1Amount) = ICoFiXV2Pair(msg.sender).getInitialAssetRatio(); // pair call controller, msg.sender is pair
@@ -163,57 +169,59 @@ contract CoFiXV2Controller is ICoFiXV2Controller {  // ctrl-03: change contract 
         uint256 sellOutVol = liquidity.mul(navps).mul(initToken1AmountMulEthAmount).div(erc20AmountMulInitToken0Amount).div(NAVPS_BASE);
 
         // buy in ETH, outToken is ETH
-        uint256 impactCostForBuy = impactCostForBuyInETH(buyVol);
+        uint256 impactCostForBuy = impactCostForBuyInETH(token, buyVol);
         // sell out liquidity, outToken is token, take this as sell out ETH and get token
-        uint256 impactCostForSellOut = impactCostForSellOutETH(sellOutVol);
+        uint256 impactCostForSellOut = impactCostForSellOutETH(token, sellOutVol);
 
         return impactCostForBuy.add(impactCostForSellOut);
     }
 
-    function calcImpactCostFor_SWAP_WITH_EXACT(address token, bytes memory data, uint256 ethAmount, uint256 erc20Amount) public pure returns (uint256 impactCost) {
+    function calcImpactCostFor_SWAP_WITH_EXACT(address token, bytes memory data, uint256 ethAmount, uint256 erc20Amount) public view returns (uint256 impactCost) {
         (, address outToken, , uint256 amountIn) = abi.decode(data, (address, address, address, uint256));
         if (outToken != token) {
             // buy in ETH, outToken is ETH, amountIn is token
             // convert to amountIn in ETH
             uint256 vol = uint256(amountIn).mul(ethAmount).div(erc20Amount);
-            return impactCostForBuyInETH(vol);
+            return impactCostForBuyInETH(token, vol);
         }
         // sell out ETH, amountIn is ETH
-        return impactCostForSellOutETH(amountIn);
+        return impactCostForSellOutETH(token, amountIn);
     }
 
-    function calcImpactCostFor_SWAP_FOR_EXACT(address token, bytes memory data, uint256 ethAmount, uint256 erc20Amount) public pure returns (uint256 impactCost) {
+    function calcImpactCostFor_SWAP_FOR_EXACT(address token, bytes memory data, uint256 ethAmount, uint256 erc20Amount) public view returns (uint256 impactCost) {
         (, address outToken, uint256 amountOutExact,) = abi.decode(data, (address, address, uint256, address));
         if (outToken != token) {
             // buy in ETH, outToken is ETH, amountOutExact is ETH
-            return impactCostForBuyInETH(amountOutExact);
+            return impactCostForBuyInETH(token, amountOutExact);
         }
         // sell out ETH, amountIn is ETH, amountOutExact is token
         // convert to amountOutExact in ETH
         uint256 vol = uint256(amountOutExact).mul(ethAmount).div(erc20Amount);
-        return impactCostForSellOutETH(vol);
+        return impactCostForSellOutETH(token, vol);
     }
 
     // impact cost
-    // - C = 0, if VOL < 500
-    // - C = α + β * VOL, if VOL >= 500
+    // - C = 0, if VOL < 500 / γ
+    // - C = (α + β * VOL) * γ, if VOL >= 500 / γ
 
     // α=2.570e-05，β=8.542e-07
-    function impactCostForBuyInETH(uint256 vol) public pure returns (uint256 impactCost) {
-        if (vol < 500 ether) {
+    function impactCostForBuyInETH(address token, uint256 vol) public view returns (uint256 impactCost) {
+        uint32 gamma = CGammaMap[token];
+        if (vol.mul(gamma) < 500 ether) {
             return 0;
         }
         // return C_BUYIN_ALPHA.add(C_BUYIN_BETA.mul(vol).div(1e18)).mul(1e8).div(1e18);
-        return C_BUYIN_ALPHA.add(C_BUYIN_BETA.mul(vol).div(1e18)).div(1e10); // combine mul div
+        return (C_BUYIN_ALPHA.add(C_BUYIN_BETA.mul(vol).div(1e18)).div(1e10)).mul(gamma); // combine mul div
     }
 
     // α=-1.171e-04，β=8.386e-07
-    function impactCostForSellOutETH(uint256 vol) public pure returns (uint256 impactCost) {
-        if (vol < 500 ether) {
+    function impactCostForSellOutETH(address token, uint256 vol) public view returns (uint256 impactCost) {
+        uint32 gamma = CGammaMap[token];
+        if (vol.mul(gamma) < 500 ether) {
             return 0;
         }
         // return (C_SELLOUT_BETA.mul(vol).div(1e18)).sub(C_SELLOUT_ALPHA).mul(1e8).div(1e18);
-        return (C_SELLOUT_BETA.mul(vol).div(1e18)).sub(C_SELLOUT_ALPHA).div(1e10); // combine mul div
+        return ((C_SELLOUT_BETA.mul(vol).div(1e18)).sub(C_SELLOUT_ALPHA).div(1e10)).mul(gamma); // combine mul div
     }
 
     function getKInfo(address token) external override view returns (uint32 k, uint32 updatedAt, uint32 theta) {

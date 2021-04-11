@@ -7,7 +7,6 @@ import "./lib/TransferHelper.sol";
 import "@openzeppelin/contracts/math/Math.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./interface/ICoFiToken.sol";
-import "./interface/ICoFiStakingRewards.sol";
 import "./interface/ICoFiXV2Factory.sol";
 import "./interface/ICoFiXV2Controller.sol";
 import "./interface/ICoFiXV2DAO.sol";
@@ -22,7 +21,6 @@ contract CoFiXV2DAO is ICoFiXV2DAO, ReentrancyGuard {
 
     uint32  public startedBlock;
     uint32  public lastCollectingBlock;
-    uint256 public ethBalance;
     uint32 public lastBlock;
     uint128 public redeemedAmount;
     uint128 public quotaAmount;
@@ -44,8 +42,6 @@ contract CoFiXV2DAO is ICoFiXV2DAO, ReentrancyGuard {
 
     address public cofiToken;
 
-    address public cofiStaking;
-
     address public factory;
 
     address public governance;
@@ -55,9 +51,8 @@ contract CoFiXV2DAO is ICoFiXV2DAO, ReentrancyGuard {
     receive() external payable {
     }
 
-    constructor(address _cofiToken, address _cofiStaking, address _factory) public {
+    constructor(address _cofiToken, address _factory) public {
         cofiToken = _cofiToken;
-        cofiStaking = _cofiStaking;
         factory = _factory;
         governance = msg.sender;
         flag = DAO_FLAG_INITIALIZED;
@@ -107,15 +102,17 @@ contract CoFiXV2DAO is ICoFiXV2DAO, ReentrancyGuard {
     function totalETHRewards()
         external view returns (uint256) 
     {
-       return  ethBalance;
+       return address(this).balance;
     }
 
     function migrateTo(address _newDAO) external onlyGovernance
     {
         require(flag == DAO_FLAG_PAUSED, "CDAO: not paused");
         
-        ICoFiXV2DAO(_newDAO).addETHReward{value: ethBalance}();
-        ethBalance = 0;
+        if(address(this).balance > 0) {
+            TransferHelper.safeTransferETH(_newDAO, address(this).balance);
+        }
+        // ICoFiXV2DAO(_newDAO).addETHReward{value: address(this).balance}();
 
         uint256 _cofiTokenAmount = ICoFiToken(cofiToken).balanceOf(address(this));
         if (_cofiTokenAmount > 0) {
@@ -140,14 +137,12 @@ contract CoFiXV2DAO is ICoFiXV2DAO, ReentrancyGuard {
         override
         external
         payable
-    {
-        ethBalance = ethBalance.add(msg.value);
-    }
+    { }
 
     function redeem(uint256 amount) 
         external payable nonReentrant whenActive
     {
-        require(ethBalance > 0, "CDAO: insufficient balance");
+        require(address(this).balance > 0, "CDAO: insufficient balance");
         require (msg.value == _oracleFee, "CDAO: !oracleFee");
 
         // check the repurchasing quota
@@ -167,14 +162,13 @@ contract CoFiXV2DAO is ICoFiXV2DAO, ReentrancyGuard {
 
         // check if there is sufficient quota for repurchase
         require (amount <= quota, "CDAO: insufficient quota");
-        require (amount.mul(1e18) <= ethBalance.mul(price), "CDAO: insufficient balance2");
+        require (amount.mul(1e18) <= address(this).balance.mul(price), "CDAO: insufficient balance2");
 
         redeemedAmount = uint128(amount.add(redeemedAmount));
         quotaAmount = uint128(quota.sub(amount));
         lastBlock = uint32(block.number);
 
         uint256 amountEthOut = amount.mul(1e18).div(price);
-        ethBalance = ethBalance.sub(amountEthOut);
 
         // transactions
         ICoFiToken(cofiToken).transferFrom(address(msg.sender), address(this), amount);

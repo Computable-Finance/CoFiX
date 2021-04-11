@@ -2,7 +2,6 @@ const { expect } = require('chai');
 require('chai').should();
 const { BN, constants, expectEvent, expectRevert, time } = require('@openzeppelin/test-helpers');
 
-const CoFiStakingRewards = artifacts.require("V2CoFiStakingRewards.sol");
 const CoFiToken = artifacts.require("CoFiToken");
 const TestXToken = artifacts.require("TestXToken");
 const CoFiXFactory = artifacts.require("CoFiXV2Factory");
@@ -36,9 +35,8 @@ contract('CoFiXV2DAO', (accounts) => {
         await CFactory.setController(CoFiXCtrl.address);
         CoFi = await CoFiToken.new({ from: deployer });
         XToken = await TestXToken.new({ from: deployer });
-        StakingRewards = await CoFiStakingRewards.new(WETH.address, CoFi.address, CFactory.address, { from: deployer }); 
 
-        CDAO = await CoFiXDAO.new(CoFi.address, StakingRewards.address, CFactory.address, { from: deployer});
+        CDAO = await CoFiXDAO.new(CoFi.address, CFactory.address, { from: deployer});
         await CoFiXCtrl.addCaller(CDAO.address);
         await CoFi.addMinter(deployer, {from: deployer});
         await CoFi.mint(userB, userInitCofiAmount);
@@ -248,7 +246,7 @@ contract('CoFiXV2DAO', (accounts) => {
     it("should migrateTo new cofixdao correctly", async () => {
         let _ethReward = web3.utils.toWei('0.1', 'ether');
         await CDAO.addETHReward({ value: _ethReward});
-        CDAO2 = await CoFiXDAO.new(CoFi.address, StakingRewards.address, CFactory.address, { from: deployer});
+        CDAO2 = await CoFiXDAO.new(CoFi.address, CFactory.address, { from: deployer});
 
         const dao2CofiBalanceBefore = await CoFi.balanceOf(CDAO2.address);
         const dao2EthBalanceBefore = await CDAO2.totalETHRewards();

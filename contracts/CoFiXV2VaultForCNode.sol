@@ -22,7 +22,7 @@ contract CoFiXV2VaultForCNode is ICoFiXVaultForCNode, ReentrancyGuard {
     address public immutable cofiToken;
     address public immutable factory;
 
-    uint256 public immutable genesisBlock;
+    uint256 public genesisBlock;
 
     // managed by governance
     address public governance;
@@ -36,7 +36,12 @@ contract CoFiXV2VaultForCNode is ICoFiXVaultForCNode, ReentrancyGuard {
         cofiToken = cofi;
         factory = _factory;
         governance = msg.sender;
-        genesisBlock = block.number;
+        genesisBlock = block.number; // set v1 genesisBlock to  genesisBlock later
+    }
+
+    // this is for mainnet
+    function setGenesisBlock() external {
+        genesisBlock = 11040688; // follow v1 
     }
 
     /* setters for protocol governance */

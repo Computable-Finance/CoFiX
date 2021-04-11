@@ -11,7 +11,6 @@ const CoFiXVaultForLP = artifacts.require("CoFiXV2VaultForLP");
 var CoFiXVaultForTrader = artifacts.require("CoFiXV2VaultForTrader");
 const CoFiXVaultForCNode = artifacts.require("CoFiXV2VaultForCNode");
 const CoFiXDAO = artifacts.require("CoFiXV2DAO");
-const CoFiStakingRewards = artifacts.require("V2CoFiStakingRewards");
 var CoFiToken = artifacts.require("CoFiToken");
 var CoFiXNode = artifacts.require("CoFiXNode");
 const CoFiXStakingRewards = artifacts.require("CoFiXV2StakingRewards.sol");
@@ -74,9 +73,6 @@ module.exports = async function (deployer, network) {
     // CoFiXController
     await deployer.deploy(CoFiXController, NestPriceOracle.address, NEST.address, CoFiXFactory.address);
 
-    // CoFiStakingRewards
-    await deployer.deploy(CoFiStakingRewards, WETH9.address, CoFiToken.address, CoFiXFactory.address);
-
     // VaultForLP
     await deployer.deploy(CoFiXVaultForLP, CoFiToken.address, CoFiXFactory.address);
 
@@ -87,7 +83,7 @@ module.exports = async function (deployer, network) {
     await deployer.deploy(CoFiXVaultForCNode, CoFiToken.address, CoFiXFactory.address);
 
     // CoFiXDAO
-    await deployer.deploy(CoFiXDAO, CoFiToken.address, CoFiStakingRewards.address, CoFiXFactory.address);
+    await deployer.deploy(CoFiXDAO, CoFiToken.address, CoFiXFactory.address);
 
     let controller = await CoFiXController.deployed();
 
@@ -116,8 +112,8 @@ module.exports = async function (deployer, network) {
     await factory.setVaultForLP(CoFiXVaultForLP.address);
     await factory.setVaultForTrader(CoFiXVaultForTrader.address);
     await factory.setVaultForCNode(CoFiXVaultForCNode.address);
-    await factory.setFeeReceiver(CoFiStakingRewards.address);
     await factory.setDAO(CoFiXDAO.address);
+    await factory.setFeeReceiver(CoFiXDAO.address);
     
     // allowRouter
     console.log(`start allowRouter`);
@@ -131,6 +127,14 @@ module.exports = async function (deployer, network) {
     await vaultForCNode.setCNodePool(CNodeStakingRewards.address);
     const cnodePool = await vaultForCNode.cnodePool();
     console.log(`setCNodePool, CNodeStakingRewards.address: ${CNodeStakingRewards.address}, cnodePool: ${cnodePool}`);
+
+    // set genesisBlock , follow v1
+    if (network == "mainnet" || network == "mainnet-fork") {
+        console.log(`set genesisBlock`);
+        let valutForLP = await CoFiXVaultForLP.deployed();
+        await valutForLP.setGenesisBlock();
+        await vaultForCNode.setGenesisBlock();
+    }
 
     // set from multi sig gov for mainnet release
     // // set controller in factory
@@ -146,6 +150,11 @@ module.exports = async function (deployer, network) {
         await factory.setTradeMiningStatus(USDT.address, true);
         await factory.setTradeMiningStatus(HBTC.address, true);
         await factory.setTradeMiningStatus(NEST.address, true);
+
+        // set CGamma of token
+        await controller.setCGamma(USDT.address, "1");
+        await controller.setCGamma(HBTC.address, "1");
+        await controller.setCGamma(NEST.address, "20");
 
         // set minter of cofiToken
         let cofiToken = await CoFiToken.deployed();
@@ -193,7 +202,6 @@ module.exports = async function (deployer, network) {
     console.log(`| CoFiXV2VaultForLP | ${CoFiXVaultForLP.address} |`);
     console.log(`| CoFiXV2VaultForTrader | ${CoFiXVaultForTrader.address} |`);
     console.log(`| CoFiXV2VaultForCNode | ${CoFiXVaultForCNode.address} |`);
-    console.log(`| V2CoFiStakingRewards | ${CoFiStakingRewards.address} |`);
 
     console.log(`| V2CNodeStakingRewards CNode | ${CNodeStakingRewards.address} |`);
 

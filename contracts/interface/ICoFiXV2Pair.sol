@@ -31,7 +31,7 @@ interface ICoFiXV2Pair is ICoFiXERC20 {
     function token1() external view returns (address);
     function getReserves() external view returns (uint112 reserve0, uint112 reserve1);
 
-    function mint(address to) external payable returns (uint liquidity, uint oracleFeeChange);
+    function mint(address to, uint amountETH, uint amountToken) external payable returns (uint liquidity, uint oracleFeeChange);
     function burn(address tokenTo, address ethTo) external payable returns (uint amountTokenOut, uint amountETHOut, uint oracleFeeChange);
     function swapWithExact(address outToken, address to) external payable returns (uint amountIn, uint amountOut, uint oracleFeeChange, uint256[5] memory tradeInfo);
     // function swapForExact(address outToken, uint amountOutExact, address to) external payable returns (uint amountIn, uint amountOut, uint oracleFeeChange, uint256[4] memory tradeInfo);

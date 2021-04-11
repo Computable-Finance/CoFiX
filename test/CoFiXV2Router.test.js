@@ -853,6 +853,77 @@ contract('CoFiXV2Router', (accounts) => {
         });
 
     });
+
+    describe('removeLiquidity', function () {
+        it("should remove all liquidity for USDT correctly", async () => {
+            let usdtPairAddr = await CFactory.getPair(USDT.address);
+            let USDTPair = await CoFiXPair.at(usdtPairAddr);
+    
+            // setTheta
+            const theta = new BN(200000);
+            await CoFiXCtrl.setTheta(USDT.address, theta, { from: deployer });
+            let kInfo = await CoFiXCtrl.getKInfo(USDT.address);
+            expect(kInfo.theta).to.bignumber.equal(theta);
+    
+            // setTradeMiningStatus
+            await CFactory.setTradeMiningStatus(USDT.address, true);
+
+            let usdtInUSDTPool = await USDT.balanceOf(usdtPairAddr);
+            let wethInUSDTPool = await WETH.balanceOf(usdtPairAddr);
+            let liquidityUSDTPair = await USDTPair.balanceOf(LP);
+            let ethUserBalance = await web3.utils.fromWei(await web3.eth.getBalance(trader), 'ether')
+            let usdtUserBalance = await USDT.balanceOf(trader);
+            console.log("USDT pool balance USDT:", usdtInUSDTPool.toString());
+            console.log("USDT pool balance WETH:", wethInUSDTPool.toString());
+            console.log("ETH/USDT liquidity of LP:", liquidityUSDTPair.toString());
+            console.log("user balance ETH:", ethUserBalance.toString());
+            console.log("user balance USDT:", usdtUserBalance.toString());
+
+            let p = await ConstOracle.checkPriceNow(USDT.address);
+            let oraclePrice = [p.ethAmount, p.erc20Amount, new BN("0"), new BN("0"), theta];
+            let calcResult = await USDTPair.calcOutTokenAndETHForBurn(liquidityUSDTPair, oraclePrice);
+            console.log(`amountEthOut: ${calcResult.amountEthOut}, amountTokenOut: ${calcResult.amountTokenOut}, fee: ${calcResult.fee}`);
+
+            let _amountIn = "300000000";
+            let _msgValue = web3.utils.toWei('0.01', 'ether');
+            await USDT.approve(CRouter.address, _amountIn, { from: trader, gasPrice: 0 });
+            let result = await CRouter.swapExactTokensForETH(USDT.address, _amountIn, 0, trader, trader, "99999999999", { from: trader, value: _msgValue });
+            console.log("------------swapExactTokensForETH------------");
+            usdtInUSDTPool = await USDT.balanceOf(usdtPairAddr);
+            wethInUSDTPool = await WETH.balanceOf(usdtPairAddr);
+            liquidityUSDTPair = await USDTPair.balanceOf(LP);
+            ethUserBalance = await web3.utils.fromWei(await web3.eth.getBalance(trader), 'ether')
+            usdtUserBalance = await USDT.balanceOf(trader);
+            console.log("receipt.gasUsed:", result.receipt.gasUsed);
+            console.log("USDT pool balance USDT:", usdtInUSDTPool.toString());
+            console.log("USDT pool balance WETH:", wethInUSDTPool.toString());
+            console.log("ETH/USDT liquidity of LP:", liquidityUSDTPair.toString());
+            console.log("user balance ETH:", ethUserBalance.toString());
+            console.log("user balance USDT:", usdtUserBalance.toString());
+    
+            calcResult = await USDTPair.calcOutTokenAndETHForBurn(liquidityUSDTPair, oraclePrice);
+            console.log(`amountEthOut: ${calcResult.amountEthOut}, amountTokenOut: ${calcResult.amountTokenOut}, fee: ${calcResult.fee}`);
+
+            // remove liquidity
+            let liquidityUSDTPairBefore = await USDTPair.balanceOf(LP);
+    
+            await USDTPair.approve(CRouter.address, liquidityUSDTPairBefore, { from: LP, gasPrice: 0 });
+            result = await CRouter.removeLiquidityGetTokenAndETH(USDT.address, liquidityUSDTPairBefore, 0, LP, "99999999999", { from: LP, value: _msgValue });
+            console.log("------------removeLiquidityGetTokenAndETH------------");
+            usdtInUSDTPool = await USDT.balanceOf(usdtPairAddr);
+            wethInUSDTPool = await WETH.balanceOf(usdtPairAddr);
+            liquidityUSDTPair = await USDTPair.balanceOf(LP);
+            ethUserBalance = await web3.utils.fromWei(await web3.eth.getBalance(LP), 'ether')
+            usdtUserBalance = await USDT.balanceOf(LP);
+            console.log("receipt.gasUsed:", result.receipt.gasUsed);
+            console.log("USDT pool balance USDT:", usdtInUSDTPool.toString());
+            console.log("USDT pool balance WETH:", wethInUSDTPool.toString());
+            console.log("ETH/USDT liquidity of LP:", liquidityUSDTPair.toString());
+            console.log("user balance ETH:", ethUserBalance.toString());
+            console.log("user balance USDT:", usdtUserBalance.toString());
+        });
+    });
+
 });
 
 function balanceDiff(after, before) {

@@ -69,7 +69,7 @@ contract CoFiXV2Router is ICoFiXV2Router {
             assert(IWETH(WETH).transfer(pair, amountETH));
         }
         uint256 oracleFeeChange;
-        (liquidity, oracleFeeChange) = ICoFiXV2Pair(pair).mint{value: _oracleFee}(to);
+        (liquidity, oracleFeeChange) = ICoFiXV2Pair(pair).mint{value: _oracleFee}(to, amountETH, amountToken);
         require(liquidity >= liquidityMin, "CRouter: less liquidity than expected");
         // refund oracle fee to msg.sender, if any
         if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
@@ -98,7 +98,7 @@ contract CoFiXV2Router is ICoFiXV2Router {
             assert(IWETH(WETH).transfer(pair, amountETH));
         }
         uint256 oracleFeeChange;
-        (liquidity, oracleFeeChange) = ICoFiXV2Pair(pair).mint{value: _oracleFee}(address(this));
+        (liquidity, oracleFeeChange) = ICoFiXV2Pair(pair).mint{value: _oracleFee}(address(this), amountETH, amountToken);
         require(liquidity >= liquidityMin, "CRouter: less liquidity than expected");
 
         // find the staking rewards pool contract for the liquidity token (pair)

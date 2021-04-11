@@ -21,6 +21,7 @@ const CoFiXController = artifacts.require("CoFiXV2Controller");
 const TestUSDT = artifacts.require("test/USDT");
 const TestHBTC = artifacts.require("test/HBTC");
 const TestNEST = artifacts.require("test/NEST");
+const CoFiXDAO = artifacts.require("CoFiXV2DAO");
 
 const CoFiToken = artifacts.require("CoFiToken");
 const CoFiXVaultForLP = artifacts.require("CoFiXV2VaultForLP");
@@ -97,6 +98,8 @@ contract('CoFiXV2', (accounts) => {
         PriceOracle = await NESTPriceOracleMock.new(NEST.address, { from: deployer });
         CoFiXCtrl = await CoFiXController.new(PriceOracle.address, NEST.address, CFactory.address);
         await CFactory.setController(CoFiXCtrl.address);
+        CDAO = await CoFiXDAO.new(CoFi.address, CFactory.address, { from: deployer});
+        await CFactory.setFeeReceiver(CDAO.address);
         // await CoFiXCtrl.initialize(ConstOracle.address, { from: deployer });
         UFactory = await UniswapV2Factory.new(deployer, { from: deployer });
         URouter = await UniswapV2Router02.new(UFactory.address, WETH.address, { from: deployer })
@@ -126,7 +129,7 @@ contract('CoFiXV2', (accounts) => {
         it("should activate again correctly by governance", async () => {
             await NEST.approve(CoFiXCtrl.address, DESTRUCTION_AMOUNT);
             await PriceOracle.activate(CoFiXCtrl.address);
-            await time.increase(time.duration.minutes(1)); // increase time to make activation be effective
+            await time.increase(time.duration.minutes(2)); // increase time to make activation be effective
         });
 
         // it("K calculation", async () => {
@@ -399,9 +402,9 @@ contract('CoFiXV2', (accounts) => {
             console.log("user balance HBTC:", hbtcUserBalance.toString());
             // check if fee receiver get the fee reward
             let feeReceiver = await CFactory.getFeeReceiver();
-            let wethInFeeReceiver = await WETH.balanceOf(feeReceiver);
-            console.log("WETH balance in feeReceiver:", wethInFeeReceiver.toString(), ", feeReceiver:", feeReceiver);
-            expect(wethInFeeReceiver).to.bignumber.equal("0"); // if not setTradeMiningStatus, the trading fee is kept in pool
+            let ethInFeeReceiver = await web3.eth.getBalance(feeReceiver);
+            console.log("ETH balance in feeReceiver:", ethInFeeReceiver.toString(), ", feeReceiver:", feeReceiver);
+            expect(ethInFeeReceiver).to.bignumber.equal("0"); // if not setTradeMiningStatus, the trading fee is kept in pool
 
             // setTradeMiningStatus
             await CFactory.setTradeMiningStatus(USDT.address, true);
@@ -412,7 +415,7 @@ contract('CoFiXV2', (accounts) => {
             
             // swap again after we setTradeMiningStatus to true
             await CRouter.swapExactTokensForTokens(USDT.address, HBTC.address, _amountIn, 0, trader, trader, "99999999999", { from: trader, value: _msgValue });
-            wethInFeeReceiver = await WETH.balanceOf(feeReceiver); // not zero this time
+            ethInFeeReceiver = await web3.eth.getBalance(feeReceiver); // not zero this time
             kInfo = await CoFiXCtrl.getKInfo(USDT.address);
             let k_base = await CoFiXCtrl.K_BASE(); 
             console.log("kInfo> k:", kInfo.k.toString(), "(", kInfo.k.toString() / k_base.toString(), ")", ", updatedAt:", kInfo.updatedAt.toString());
@@ -423,9 +426,9 @@ contract('CoFiXV2', (accounts) => {
             // console.log(`fee: ${calcOutToken0Result.fee}`);
             const THETA_BASE = "1E8";
             const expectedFee = Decimal(_amountIn).mul(Decimal(p.ethAmount.toString())).mul(Decimal(k_base.toString())).mul(Decimal(theta.toString())).div(Decimal(p.erc20Amount.toString())).div(Decimal(k_base.toString()).add(Decimal(kInfo.k.toString()))).div(Decimal(THETA_BASE));
-            console.log(`expectedFee: ${expectedFee.toString()}, calculatedFee: ${wethInFeeReceiver.toString()}`);
-            let error = calcRelativeDiff(expectedFee, wethInFeeReceiver.toString());
-            console.log(`expected: ${expectedFee}, actual:${wethInFeeReceiver}, error:${error}`);
+            console.log(`expectedFee: ${expectedFee.toString()}, calculatedFee: ${ethInFeeReceiver.toString()}`);
+            let error = calcRelativeDiff(expectedFee, ethInFeeReceiver.toString());
+            console.log(`expected: ${expectedFee}, actual:${ethInFeeReceiver}, error:${error}`);
             assert.isAtMost(error.toNumber(), errorDelta);
 
             // removeLiquidityGetETH

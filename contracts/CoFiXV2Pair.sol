@@ -5,9 +5,11 @@ pragma solidity 0.6.12;
 import "./interface/ICoFiXV2Pair.sol";
 import "./interface/ICoFiXV2Factory.sol";
 import "./interface/ICoFiXV2Controller.sol";
+import "./interface/IWETH.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./CoFiXERC20.sol";
 import "./lib/TransferHelper.sol";
+import "./interface/ICoFiXV2DAO.sol";
 
 // Pair contract for each trading pair, storing assets and handling settlement
 // No owner or governance
@@ -97,7 +99,7 @@ contract CoFiXV2Pair is ICoFiXV2Pair, CoFiXERC20 {
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function mint(address to) external payable override lock returns (uint liquidity, uint oracleFeeChange) {
+    function mint(address to, uint amountETH, uint amountToken) external payable override lock returns (uint liquidity, uint oracleFeeChange) {
         address _token0 = token0;                                // gas savings
         address _token1 = token1;                                // gas savings
         (uint112 _reserve0, uint112 _reserve1) = getReserves(); // gas savings
@@ -106,6 +108,10 @@ contract CoFiXV2Pair is ICoFiXV2Pair, CoFiXERC20 {
         uint amount0 = balance0.sub(_reserve0);
         uint amount1 = balance1.sub(_reserve1);
 
+        require(amountETH <= amount0 && amountToken <= amount1, "CPair: illegal ammount");
+        
+        amount0 = amountETH;
+        amount1 = amountToken;
         require(amount0.mul(initToken1Amount) == amount1.mul(initToken0Amount), "CPair: invalid asset ratio");
         
         uint256 _ethBalanceBefore = address(this).balance;
@@ -162,7 +168,7 @@ contract CoFiXV2Pair is ICoFiXV2Pair, CoFiXERC20 {
         if (fee > 0) {
             if (ICoFiXV2Factory(factory).getTradeMiningStatus(_token1)) {
                 // only transfer fee to protocol feeReceiver when trade mining is enabled for this trading pair
-                _safeSendFeeForCoFiHolder(_token0, fee);
+                _safeSendFeeForDAO(_token0, fee);
             } else {
                 _safeSendFeeForLP(_token0, _token1, fee);
             }
@@ -225,7 +231,7 @@ contract CoFiXV2Pair is ICoFiXV2Pair, CoFiXERC20 {
         if (tradeInfo[0] > 0) {
             if (ICoFiXV2Factory(factory).getTradeMiningStatus(_token1)) {
                 // only transfer fee to protocol feeReceiver when trade mining is enabled for this trading pair
-                _safeSendFeeForCoFiHolder(_token0, tradeInfo[0]);
+                _safeSendFeeForDAO(_token0, tradeInfo[0]);
             } else {
                 _safeSendFeeForLP(_token0, _token1, tradeInfo[0]);
                 tradeInfo[0] = 0; // so router won't go into the trade mining logic (reduce one more call gas cost)
@@ -449,10 +455,9 @@ contract CoFiXV2Pair is ICoFiXV2Pair, CoFiXERC20 {
 
             uint256 amountEthOutLarge = amountEth.mul(THETA_BASE.sub(_op.theta));
             amountEthOut = amountEthOutLarge.div(NAVPS_BASE).div(THETA_BASE);
-            // amountTokenOut = amountEthOutLarge.mul(initToken1Amount).div(NAVPS_BASE).div(initToken0Amount).div(THETA_BASE);
-            amountTokenOut = amountEthOut.mul(initToken1Amount).div(initToken0Amount);
+            amountTokenOut = amountEthOutLarge.mul(initToken1Amount).div(NAVPS_BASE).div(initToken0Amount).div(THETA_BASE);
+            // amountTokenOut = amountEthOut.mul(initToken1Amount).div(initToken0Amount);
         }
-        
 
         if (_op.theta != 0) {
             /*
@@ -466,6 +471,40 @@ contract CoFiXV2Pair is ICoFiXV2Pair, CoFiXERC20 {
                 fee = navps.mul(initToken1AmountMulEthAmount.add(erc20AmountMulInitToken0Amount)).div(erc20AmountMulInitToken0Amount).mul(liquidity).mul(_op.theta).div(THETA_BASE).div(NAVPS_BASE);
             }
         }
+
+        // recalc amountOut when has no enough reserve0 or reserve1 to out in initAssetRatio
+        {
+            if (amountEthOut > reserve0) {
+                // user first, out eth as much as possibile. And may leave over a few amounts of reserve1. 
+                uint256 amountEthInsufficient = amountEthOut - reserve0;
+                uint256 amountTokenEquivalent = amountEthInsufficient.mul(_op.erc20Amount).div(_op.ethAmount);
+                amountTokenOut = amountTokenOut.add(amountTokenEquivalent);
+                if (amountTokenOut > reserve1) {
+                    amountTokenOut = reserve1;
+                }
+                amountEthOut = reserve0;
+
+                // protocol first, eth was firstly used to pay fee. And when reserve0 is enough for fee, the reserves can clear as much as possible.
+                // if (fee > reserve0) {
+                //     fee = reserve0;
+                // }
+                // uint256 amountEthInsufficient = amountEthOut - (reserve0 - fee);
+                // uint256 amountTokenEquivalent = amountEthInsufficient.mul(_op.erc20Amount).div(_op.ethAmount);
+                // amountTokenOut = amountTokenOut.add(amountTokenEquivalent);
+                // if (amountTokenOut > reserve1) {
+                //     amountTokenOut = reserve1;
+                // }
+                // amountEthOut = reserve0 - fee;    
+            } else if (amountTokenOut > reserve1) {
+                uint256 amountTokenInsufficient = amountTokenOut - reserve1;
+                uint256 amountEthEquivalent = amountTokenInsufficient.mul(_op.ethAmount).div(_op.erc20Amount);
+                amountEthOut = amountEthOut.add(amountEthEquivalent);
+                if (amountEthOut > reserve0) {
+                    amountEthOut = reserve0;
+                }
+                amountTokenOut = reserve1;
+            }
+        }   
     }
 
     // get estimated amountOut for token0 (WETH) when swapWithExact
@@ -529,14 +568,29 @@ contract CoFiXV2Pair is ICoFiXV2Pair, CoFiXERC20 {
         return ICoFiXV2Controller(ICoFiXV2Factory(factory).getController()).queryOracle{value: msg.value}(token, uint8(op), data);
     }
 
-    // Safe WETH transfer function, just in case not having enough WETH. CoFi holder will earn these fees.
-    function _safeSendFeeForCoFiHolder(address _token0, uint256 _fee) internal {
+    function _safeSendFeeForDAO(address _token0, uint256 _fee) internal {
         address feeReceiver = ICoFiXV2Factory(factory).getFeeReceiver();
         if (feeReceiver == address(0)) {
             return; // if feeReceiver not set, theta fee keeps in pair pool
         }
-        _safeSendFee(_token0, feeReceiver, _fee); // transfer fee to protocol fee reward pool for CoFi holders
+        uint256 bal = IWETH(_token0).balanceOf(address(this));
+        if (_fee > bal) {
+            _fee = bal;
+        }
+
+        IWETH(_token0).withdraw(_fee);
+        if (_fee > 0) TransferHelper.safeTransferETH(feeReceiver, _fee); // transfer fee to protocol dao for redeem Cofi
+        // ICoFiXV2DAO(dao).addETHReward{value: _fee}(); 
     }
+
+    // // Safe WETH transfer function, just in case not having enough WETH. CoFi holder will earn these fees.
+    // function _safeSendFeeForCoFiHolder(address _token0, uint256 _fee) internal {
+    //     address feeReceiver = ICoFiXV2Factory(factory).getFeeReceiver();
+    //     if (feeReceiver == address(0)) {
+    //         return; // if feeReceiver not set, theta fee keeps in pair pool
+    //     }
+    //     _safeSendFee(_token0, feeReceiver, _fee); // transfer fee to protocol fee reward pool for CoFi holders
+    // }
 
     // Safe WETH transfer function, just in case not having enough WETH. LP will earn these fees.
     function _safeSendFeeForLP(address _token0, address _token1, uint256 _fee) internal {

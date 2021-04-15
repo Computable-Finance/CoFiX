@@ -44,12 +44,9 @@ console.log(`cofiRate=${cofiRate}`);
 ```shell
 StakingRewards = await CoFiStakingRewards.at("0x0061c52768378b84306b2665f098c3e0b2C03308")
 savingAmount = await StakingRewards.pendingSavingAmount()
-# withdraw saving to a intermediateReceiver by gov
-intermediateReceiver = "a trusted address"
-await StakingRewards.withdrawSavingByGov(intermediateReceiver, savingAmount)
-# send saving to CoFiXDAO from intermediateReceiver
-DAO = await CoFiXDAO.at("CoFiXDAO address")
-await DAO.addETHReward({ from: intermediateReceiver, value: savingAmount})
+# withdraw saving to feeReceiver(CoFiXDAO) by gov
+feeReceiver = "CoFiXDAO address"
+await StakingRewards.withdrawSavingByGov(feeReceiver, savingAmount)
 # validate
 daoEthBalance = await CDAO.totalETHRewards();
 console.log(`daoEthBalance=${daoEthBalance}`);

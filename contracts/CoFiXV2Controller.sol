@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./lib/ABDKMath64x64.sol";
 import "./lib/TransferHelper.sol";
 import "./interface/ICoFiXV2Controller.sol";
-import "./interface/INestQuery.sol";
+import "./interface/INestPriceFacade.sol";
 import "./interface/ICoFiXV2Pair.sol";
 import "./interface/ICoFiXV2Factory.sol";
 
@@ -58,7 +58,7 @@ contract CoFiXV2Controller is ICoFiXV2Controller {  // ctrl-03: change contract 
         uint256 T; // time offset
         uint256 avgPrice; // average price
         uint256 theta;
-        int128 sigma;
+        uint256 sigma;
         uint256 tIdx;
         uint256 sigmaIdx;
     }
@@ -236,16 +236,40 @@ contract CoFiXV2Controller is ICoFiXV2Controller {  // ctrl-03: change contract 
         theta = KInfoMap[token][2];
     }
 
+    // babylonian method (https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Babylonian_method)
+    function sqrt(uint y) internal pure returns (uint z) {
+        if (y > 3) {
+            z = y;
+            uint x = y / 2 + 1;
+            while (x < z) {
+                z = x;
+                x = (y / x + x) / 2;
+            }
+        } else if (y != 0) {
+            z = 1;
+        }
+    }
+
     function getLatestPrice(address token) internal returns (uint256 _k, uint256 _ethAmount, uint256 _erc20Amount, uint256 _blockNum) {
         uint256 _balanceBefore = address(this).balance;
         OracleParams memory _op;
-        // query oracle
-        /// ethAmount The amount of ETH in pair (ETH, TOKEN)
-        /// tokenAmount The amount of TOKEN in pair (ETH, TOKEN)
-        /// avgPrice The average of last 50 prices 
-        /// vola The volatility of prices 
-        /// bn The block number when (ETH, TOKEN) takes into effective
-        (_op.ethAmount, _op.erc20Amount, _op.avgPrice, _op.sigma, _op.blockNum) = INestQuery(oracle).queryPriceAvgVola{value: msg.value}(token, address(this));
+        // query oracle    
+        ///  latestPriceBlockNumber The block number of latest price
+        ///  latestPriceValue The token latest price. (1eth equivalent to (price) token)
+        ///  triggeredPriceBlockNumber The block number of triggered price
+        ///  triggeredPriceValue The token triggered price. (1eth equivalent to (price) token)
+        ///  triggeredAvgPrice Average price
+        ///  triggeredSigmaSQ The square of the volatility (18 decimal places).
+        (
+            _op.blockNum, 
+            _op.erc20Amount,
+            /* uint triggeredPriceBlockNumber */,
+            /* uint triggeredPriceValue */,
+            _op.avgPrice,
+            _op.sigma 
+        ) = INestPriceFacade(oracle).latestPriceAndTriggeredPriceInfo{value: msg.value}(token, address(this));
+        _op.sigma = sqrt(_op.sigma);
+        _op.ethAmount = 1 ether;
 
         // validate T
         _op.T = block.number.sub(_op.blockNum).mul(timespan);
@@ -265,7 +289,7 @@ contract CoFiXV2Controller is ICoFiXV2Controller {  // ctrl-03: change contract 
         // K=(0.000026*T+10.205*σ)*γ(σ)
         {
             uint256 gamma = calcGamma(_op.sigma);
-            _k = K_ALPHA.mul(_op.T).mul(1e18).add(K_BETA.mul(uint256(_op.sigma))).mul(gamma).div(K_GAMMA_BASE).div(1e18);
+            _k = K_ALPHA.mul(_op.T).mul(1e18).add(K_BETA.mul(_op.sigma)).mul(gamma).div(K_GAMMA_BASE).div(1e18);
 
             emit NewK(token, _k, _op.sigma, _op.T, _op.ethAmount, _op.erc20Amount, _op.blockNum);
         }
@@ -285,18 +309,19 @@ contract CoFiXV2Controller is ICoFiXV2Controller {  // ctrl-03: change contract 
     
    /**
     * @notice Calc K value
-    * @param vola The volatility of prices
+    * @param vola The square of the volatility (18 decimal places).
     * @param bn The block number when (ETH, TOKEN) price takes into effective
     * @return k The K value
     */
-    function calcK(int128 vola, uint256 bn) external view returns (uint32 k) {
+    function calcK(uint256 vola, uint256 bn) external view returns (uint32 k) {
         uint256 _T = block.number.sub(bn).mul(timespan);
+        vola = sqrt(vola);
         uint256 gamma = calcGamma(vola);
 
-        k = uint32(K_ALPHA.mul(_T).mul(1e18).add(K_BETA.mul(uint256(vola))).mul(gamma).div(K_GAMMA_BASE).div(1e18));
+        k = uint32(K_ALPHA.mul(_T).mul(1e18).add(K_BETA.mul(vola)).mul(gamma).div(K_GAMMA_BASE).div(1e18));
     }
 
-    function calcGamma(int128 vola) public pure returns (uint256 gamma) {
+    function calcGamma(uint256 vola) public pure returns (uint256 gamma) {
         // (0.0003 0.0005) => (300000000000000 500000000000000)
 
         if (vola <= 300000000000000) { // 𝜎 ≤ 0.0003, gamma = 1
@@ -308,13 +333,22 @@ contract CoFiXV2Controller is ICoFiXV2Controller {  // ctrl-03: change contract 
         }
     }
 
-    function getLatestPriceAndAvgVola(address token) public override payable returns (uint256, uint256, uint256, int128) {
+    function getLatestPriceAndAvgVola(address token) public override payable returns (uint256, uint256, uint256, uint256) {
         require(callerAllowed[msg.sender], "CoFiXCtrl: caller not allowed");
 
         uint256 _balanceBefore = address(this).balance;
 
-        (uint256 ethAmount, uint256 erc20Amount, uint256 avg, int128 vola, uint256 bn) = 
-                INestQuery(oracle).queryPriceAvgVola{value: msg.value}(token, address(this));
+        (
+            uint256 bn, 
+            uint256 erc20Amount,
+            /* uint triggeredPriceBlockNumber */,
+            /* uint triggeredPriceValue */,
+            uint256 avg,
+            uint256 triggeredSigmaSQ
+        ) = INestPriceFacade(oracle).latestPriceAndTriggeredPriceInfo{value: msg.value}(token, address(this));
+        uint256 vola = sqrt(triggeredSigmaSQ);
+        // (uint256 ethAmount, uint256 erc20Amount, uint256 avg, int128 vola, uint256 bn) = 
+        //         INestQuery(oracle).queryPriceAvgVola{value: msg.value}(token, address(this));
 
         uint256 _T = block.number.sub(bn).mul(timespan);
         require(_T < T, "CoFiXCtrl: oralce price outdated"); // ctrl-v2: adjustable T
@@ -322,7 +356,7 @@ contract CoFiXV2Controller is ICoFiXV2Controller {  // ctrl-03: change contract 
         uint256 oracleFeeChange = msg.value.sub(_balanceBefore.sub(address(this).balance));
         if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
 
-        return (ethAmount, erc20Amount, avg, vola);
+        return (1 ether, erc20Amount, avg, vola);
     }
 
     // ctrl-v2: remove unused code bellow according to PeckShield's advice

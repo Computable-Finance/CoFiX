@@ -10,7 +10,7 @@ const CoFiXFactory = artifacts.require("CoFiXV2Factory");
 const CoFiXPair = artifacts.require("CoFiXV2Pair");
 const WETH9 = artifacts.require("WETH9");
 // const NEST3PriceOracleMock = artifacts.require("mock/NEST3PriceOracleMock");
-const NESTPriceOracleAutoUpdateConstMock = artifacts.require("NEST35PriceOracleAutoUpdateConstMock");
+const NESTPriceOracleAutoUpdateConstMock = artifacts.require("NEST36PriceOracleAutoUpdateConstMock");
 const CoFiXController = artifacts.require("CoFiXV2Controller");
 const TestUSDT = artifacts.require("test/USDT");
 const TestHBTC = artifacts.require("test/HBTC");
@@ -33,7 +33,7 @@ contract('CoFiXV2Router', (accounts) => {
     let FEE_VAULT = accounts[1];
 
     let ethAmount = new BN("10000000000000000000");
-    let usdtAmount = new BN("3862600000");
+    let usdtPrice = new BN("386260000");
     let usdtAvg = new BN("386260000");
 
     const USDT_INIT_TOKEN0_AMOUNT = web3.utils.toWei('1', 'ether');
@@ -49,7 +49,7 @@ contract('CoFiXV2Router', (accounts) => {
     const DEX_TYPE_COFIX = 0;
     const DEX_TYPE_UNISWAP = 1;
 
-    const vola = new BN("10393072026373223");
+    const vola = new BN("592390136");
 
     before(async () => {
         USDT = await TestUSDT.new({ from: deployer });
@@ -70,7 +70,7 @@ contract('CoFiXV2Router', (accounts) => {
             // for (let i = 0; i < 50; i++) {
             //     await time.advanceBlock();
             // }
-            await ConstOracle.feedPrice(USDT.address, ethAmount, usdtAmount, usdtAvg, vola, { from: deployer });
+            await ConstOracle.feedPrice(USDT.address, usdtPrice, usdtPrice, usdtAvg, vola, { from: deployer });
             await CFactory.createPair(USDT.address, USDT_INIT_TOKEN0_AMOUNT, USDT_INIT_TOKEN1_AMOUNT, { from: deployer});
 
             let _amountETH = web3.utils.toWei('1', 'ether');
@@ -127,9 +127,9 @@ contract('CoFiXV2Router', (accounts) => {
 
     describe('new trading pair: HBTC', function () {
         it("should add liquidity for HBTC correctly", async () => {
-            let hbtcAmount = new BN("339880000000000000");
+            let hbtcPrice = new BN("33988000000000000");
             let hbtcAvg = new BN("33988000000000000");
-            await ConstOracle.feedPrice(HBTC.address, ethAmount, hbtcAmount, hbtcAvg, vola, { from: deployer });
+            await ConstOracle.feedPrice(HBTC.address, hbtcPrice, hbtcPrice, hbtcAvg, vola, { from: deployer });
             await CFactory.createPair(HBTC.address, HBTC_INIT_TOKEN0_AMOUNT, HBTC_INIT_TOKEN1_AMOUNT, {from: deployer});
 
             let _amountETH = web3.utils.toWei('10', 'ether');
@@ -240,8 +240,8 @@ contract('CoFiXV2Router', (accounts) => {
         });
 
         it("should add liquidity for HBTC correctly again", async () => {
-            let hbtcAmount = new BN("339880000000000000");
-            // await ConstOracle.feedPrice(HBTC.address, ethAmount, hbtcAmount, { from: deployer });
+            let hbtcPrice = new BN("339880000000000000");
+            // await ConstOracle.feedPrice(HBTC.address, ethAmount, hbtcPrice, { from: deployer });
             let _amountETH = web3.utils.toWei('10', 'ether');
             let _amountHBTC = web3.utils.toWei('1', 'ether');
             let _msgValue = web3.utils.toWei('10.01', 'ether');
@@ -879,8 +879,15 @@ contract('CoFiXV2Router', (accounts) => {
             console.log("user balance ETH:", ethUserBalance.toString());
             console.log("user balance USDT:", usdtUserBalance.toString());
 
+            // returns (
+            //     uint latestPriceBlockNumber, 
+            //     uint latestPriceValue,
+            //     uint triggeredPriceBlockNumber,
+            //     uint triggeredPriceValue,
+            //     uint triggeredAvgPrice,
+            //     uint triggeredSigmaSQ )
             let p = await ConstOracle.checkPriceNow(USDT.address);
-            let oraclePrice = [p.ethAmount, p.erc20Amount, new BN("0"), new BN("0"), theta];
+            let oraclePrice = [web3.utils.toWei('1', 'ether'), p.latestPriceValue, new BN("0"), new BN("0"), theta];
             let calcResult = await USDTPair.calcOutTokenAndETHForBurn(liquidityUSDTPair, oraclePrice);
             console.log(`amountEthOut: ${calcResult.amountEthOut}, amountTokenOut: ${calcResult.amountTokenOut}, fee: ${calcResult.fee}`);
 

@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 
 interface ICoFiXV2Controller {
 
-    event NewK(address token, uint256 K, int128 sigma, uint256 T, uint256 ethAmount, uint256 erc20Amount, uint256 blockNum);
+    event NewK(address token, uint256 K, uint256 sigma, uint256 T, uint256 ethAmount, uint256 erc20Amount, uint256 blockNum);
     event NewGovernance(address _new);
     event NewOracle(address _priceOracle);
     event NewKTable(address _kTable);
@@ -24,5 +24,5 @@ interface ICoFiXV2Controller {
 
     function getKInfo(address token) external view returns (uint32 k, uint32 updatedAt, uint32 theta);
 
-    function getLatestPriceAndAvgVola(address token) external payable returns (uint256, uint256, uint256, int128);
+    function getLatestPriceAndAvgVola(address token) external payable returns (uint256, uint256, uint256, uint256);
 }

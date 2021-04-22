@@ -6,8 +6,8 @@ const { printKInfoEvent } = require('../lib/print');
 
 const ERC20 = artifacts.require("TestERC20");
 const CoFiXController = artifacts.require("CoFiXV2Controller");
-const NESTPriceOracleMock = artifacts.require("mock/NEST35PriceOracleMock");
-const NESTPriceOracleConstMock = artifacts.require("NEST35PriceOracleConstMock");
+const NESTPriceOracleMock = artifacts.require("mock/NEST36PriceOracleMock");
+const NESTPriceOracleConstMock = artifacts.require("NEST36PriceOracleConstMock");
 const TestUSDT = artifacts.require("test/USDT");
 const TestNEST = artifacts.require("test/NEST");
 const CoFiXFactory = artifacts.require("CoFiXV2Factory");
@@ -39,7 +39,7 @@ contract('CoFiXV2Controller', (accounts) => {
   const usdt_cgamma = 1;
   const nest_cgamma = 20;
   // const vola = new BN("10393072026373223");
-  const vola = new BN("300000000000000");
+  const vola = new BN("592390136");
 
   const DESTRUCTION_AMOUNT = web3.utils.toWei('0', 'ether');
 
@@ -59,20 +59,20 @@ contract('CoFiXV2Controller', (accounts) => {
     it("should revert if not activated", async () => {
       // add caller
       await CoFiXCtrl.addCaller(deployer, { from: deployer });
-      await expectRevert(CoFiXCtrl.queryOracle(Token.address, "0", deployer, { from: deployer, value: _msgValue }), "oracleMock: not activeted yet");
+      // await expectRevert(CoFiXCtrl.queryOracle(Token.address, "0", deployer, { from: deployer, value: _msgValue }), "oracleMock: not activeted yet");
     });
 
-    it("should activate nest oracle correctly", async () => {
-      await NEST.approve(CoFiXCtrl.address, DESTRUCTION_AMOUNT);
-      await Oracle.activate(CoFiXCtrl.address);
-      await time.increase(time.duration.minutes(1)); // increase time to make activation be effective
-    });
+    // it("should activate nest oracle correctly", async () => {
+    //   await NEST.approve(CoFiXCtrl.address, DESTRUCTION_AMOUNT);
+    //   await Oracle.activate(CoFiXCtrl.address);
+    //   await time.increase(time.duration.minutes(1)); // increase time to make activation be effective
+    // });
 
-    it("should activate again correctly by governance", async () => {
-      await NEST.approve(CoFiXCtrl.address, DESTRUCTION_AMOUNT);
-      await Oracle.activate(CoFiXCtrl.address);
-      await time.increase(time.duration.minutes(1)); // increase time to make activation be effective
-    });
+    // it("should activate again correctly by governance", async () => {
+    //   await NEST.approve(CoFiXCtrl.address, DESTRUCTION_AMOUNT);
+    //   await Oracle.activate(CoFiXCtrl.address);
+    //   await time.increase(time.duration.minutes(1)); // increase time to make activation be effective
+    // });
   });
 
   describe('test queryOracle & k calculation', function () {
@@ -81,7 +81,7 @@ contract('CoFiXV2Controller', (accounts) => {
     let tmpController;
 
     let ethAmount = new BN("10000000000000000000");
-    let tokenAmount = new BN("3862600000");
+    let tokenPrice = new BN("386260000");
     let avg = new BN("396260000");
 
     before(async function () {
@@ -98,7 +98,7 @@ contract('CoFiXV2Controller', (accounts) => {
       for (let i = 0; i < 50; i++) {
         await time.advanceBlock();
       }
-      await constOracle.feedPrice(Token.address, ethAmount, tokenAmount, avg, vola,  { from: deployer });
+      await constOracle.feedPrice(Token.address, tokenPrice, tokenPrice, avg, vola,  { from: deployer });
 
       // add caller
       await tmpController.addCaller(deployer, { from: deployer });
@@ -129,7 +129,7 @@ contract('CoFiXV2Controller', (accounts) => {
     });
 
     it("should revert if no new price feeded for a specific time", async () => {
-      await constOracle.feedPrice(Token.address, ethAmount, tokenAmount, avg, vola, { from: deployer });
+      await constOracle.feedPrice(Token.address, tokenPrice, tokenPrice, avg, vola, { from: deployer });
       // k = alpha + beta_one * sigma^2 + beta_two*T
       // (max_k - (alpha))/beta_two
       // let max_interval_block = (max_k - (alpha))/beta_two/block_time;
@@ -153,7 +153,7 @@ contract('CoFiXV2Controller', (accounts) => {
     });
 
     it("should revert if someone not allowed calling queryOracle", async () => {
-      await constOracle.feedPrice(Token.address, ethAmount, tokenAmount, avg, vola, { from: deployer });
+      await constOracle.feedPrice(Token.address, tokenPrice, tokenPrice, avg, vola, { from: deployer });
       await expectRevert(tmpController.queryOracle(Token.address, "0", deployer, { from: callerNotAllowed, value: _msgValue }), "CoFiXCtrl: caller not allowed");
     });
   });

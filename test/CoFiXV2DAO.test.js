@@ -9,7 +9,7 @@ const WETH9 = artifacts.require("WETH9");
 const CoFiXDAO = artifacts.require("CoFiXV2DAO");
 const CoFiXController = artifacts.require("CoFiXV2Controller");
 const TestNEST = artifacts.require("test/NEST");
-const NESTPriceOracleAutoUpdateConstMock = artifacts.require("NEST35PriceOracleAutoUpdateConstMock");
+const NESTPriceOracleAutoUpdateConstMock = artifacts.require("NEST36PriceOracleAutoUpdateConstMock");
 
 const verbose = process.env.VERBOSE;
 
@@ -19,10 +19,10 @@ contract('CoFiXV2DAO', (accounts) => {
     let deployer = owner;
     let userB = accounts[1];
     let ethAmount = web3.utils.toWei('1', 'ether');
-    let cofiAmount = web3.utils.toWei('500', 'ether');
+    let cofiPrice = web3.utils.toWei('500', 'ether');
     let cofiAvg = web3.utils.toWei('500', 'ether');
     let oracleFee = web3.utils.toWei('0.01', 'ether');
-    const vola = new BN("10393072026373223");
+    const vola = new BN("3178364238");
 
     const userInitCofiAmount = web3.utils.toWei('10000', 'ether');
 
@@ -60,7 +60,8 @@ contract('CoFiXV2DAO', (accounts) => {
         let _ethReward = web3.utils.toWei('0.1', 'ether');
         let expected = web3.utils.toWei('0.09', 'ether');
 
-        await ConstOracle.feedPrice(CoFi.address, ethAmount, cofiAmount, cofiAvg, vola, { from: deployer });
+        // feedPrice(address token, uint256 latestPrice, uint256 triggeredPrice, uint256 triggeredAvgPrice, uint256 triggeredSigmaSQ)
+        await ConstOracle.feedPrice(CoFi.address, cofiPrice, cofiPrice, cofiAvg, vola, { from: deployer });
         await CDAO.addETHReward({ value: _ethReward});
 
         const userEthBalanceBefore = await web3.eth.getBalance(userB);
@@ -111,10 +112,10 @@ contract('CoFiXV2DAO', (accounts) => {
         await CDAO.addETHReward({from: userB, value: _ethReward});
         await expectRevert(CDAO.redeem(_cofiAmount, {from: userB, value: 0, gasPrice: 0}), "CDAO: !oracleFee");
 
-        await ConstOracle.feedPrice(CoFi.address, ethAmount, cofiAmount, _cofiAvg, vola, { from: deployer });
+        await ConstOracle.feedPrice(CoFi.address, cofiPrice, cofiPrice, _cofiAvg, vola, { from: deployer });
         await expectRevert(CDAO.redeem(_cofiAmount, {from: userB, value: oracleFee, gasPrice: 0}), "CDAO: price deviation");
         
-        await ConstOracle.feedPrice(CoFi.address, ethAmount, cofiAmount, cofiAvg, vola, { from: deployer });
+        await ConstOracle.feedPrice(CoFi.address, cofiPrice, cofiPrice, cofiAvg, vola, { from: deployer });
         // flag = DAO_FLAG_PAUSED;
         await CDAO.pause({from: deployer});
         
@@ -133,7 +134,7 @@ contract('CoFiXV2DAO', (accounts) => {
             console.log(`ethBalance: ${ethBalance}`);
         }
 
-        const withdrawAmount = (new BN(_ethReward.toString())).mul(new BN(cofiAmount.toString())).div(new BN(ethAmount.toString())).mul(new BN("2"));
+        const withdrawAmount = (new BN(_ethReward.toString())).mul(new BN(cofiPrice.toString())).div(new BN(ethAmount.toString())).mul(new BN("2"));
         if (verbose) {
             console.log(`withdrawAmount: ${withdrawAmount}`);
         }
@@ -153,7 +154,7 @@ contract('CoFiXV2DAO', (accounts) => {
         let _ethReward = web3.utils.toWei('0.1', 'ether');
         let _oracleFee = web3.utils.toWei('0.01', 'ether'); 
 
-        await ConstOracle.feedPrice(CoFi.address, ethAmount, cofiAmount, cofiAvg, vola, { from: deployer });
+        await ConstOracle.feedPrice(CoFi.address, cofiPrice, cofiPrice, cofiAvg, vola, { from: deployer });
         await CDAO.addETHReward({ value: _ethReward});
 
         const userEthBalanceBefore = await web3.eth.getBalance(userB);
@@ -203,7 +204,7 @@ contract('CoFiXV2DAO', (accounts) => {
             console.log(`quotaDiff: ${quotaDiff}`); 
         }
 
-        const expectEthOut = (new BN(_cofiAmount.toString())).mul(new BN(ethAmount.toString())).div(new BN(cofiAmount.toString()));
+        const expectEthOut = (new BN(_cofiAmount.toString())).mul(new BN(ethAmount.toString())).div(new BN(cofiPrice.toString()));
         const userEthDiffPlusFee = (new BN(userEthDiff.toString())).add(new BN(oracleFee.toString()));
         if (verbose) {
             console.log(`expectEthOut: ${expectEthOut}`);

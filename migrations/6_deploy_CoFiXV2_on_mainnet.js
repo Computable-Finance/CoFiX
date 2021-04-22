@@ -2,7 +2,7 @@ var USDT = artifacts.require("test/USDT");
 var HBTC = artifacts.require("test/HBTC");
 var NEST = artifacts.require("test/NEST");
 var WETH9 = artifacts.require("test/WETH9");
-var NestPriceOracle = artifacts.require("mock/NEST35PriceOracleAutoUpdateConstMock");
+var NestPriceOracle = artifacts.require("mock/NEST36PriceOracleAutoUpdateConstMock");
 var CoFiXFactory = artifacts.require("CoFiXV2Factory");
 var CoFiXController = artifacts.require("CoFiXV2Controller");
 var CoFiXPair = artifacts.require("CoFiXV2Pair");
@@ -32,31 +32,31 @@ module.exports = async function (deployer, network) {
         HBTC = await HBTC.at("0x0316EB71485b0Ab14103307bf65a021042c6d380");
         NEST = await NEST.at("0x04abEdA201850aC0124161F037Efd70c74ddC74C");
         WETH9 = await WETH9.at("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2");
-        NestPriceOracle = await NestPriceOracle.at("0x3bf046c114385357838D9cAE9509C6fBBfE306d2"); // nest 3.5: NestQuery
+        NestPriceOracle = await NestPriceOracle.at("0x3bf046c114385357838D9cAE9509C6fBBfE306d2"); // nest 3.6: NestPriceFacade 
         CoFiToken = await CoFiToken.at("0x1a23a6BfBAdB59fa563008c0fB7cf96dfCF34Ea1");
         // https://uniswap.org/docs/v2/smart-contracts/factory/
         UniswapFactory = "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f";
         CoFiXNode = await CoFiXNode.at("0x558201DC4741efc11031Cdc3BC1bC728C23bF512");
     } else if (network == "ropsten" || network == "ropsten-fork") {
-        USDT = await USDT.at("0x200506568C2980B4943B5EaA8713A5740eb2c98A");
-        HBTC = await HBTC.at("0xA674f71ce49CE7F298aea2F23D918d114965eb40");
-        NEST = await NEST.at("0xD287Bc43eCD3D892204aA3792165fe8728636E29");
+        USDT = await USDT.at("0xc82C867f9e25303C766e2ba83d512419223d4574");
+        HBTC = await HBTC.at("0xe089A4d2CBC409f30eb4E6c6661502ceDD5510b5");
+        NEST = await NEST.at("0x2CFa7278ecf2DB7f6f97C07EefaC4aAD19b81d80");
         WETH9 = await WETH9.at("0x59b8881812Ac484Ab78b8fc7c10b2543e079a6C3");
-        // NestPriceOracle = await NestPriceOracle.at("xxx");
-        await deployer.deploy(NestPriceOracle);
-        console.log(`feedPrice to new Nest Price Oarcle: ${NestPriceOracle.address}`);
-        const nestQuery = await NestPriceOracle.deployed();
-        // function feedPrice(address token, uint256 ethAmount, uint256 erc20Amount, uint128 avgPrice, int128 vola) external {
-        await nestQuery.feedPrice(USDT.address, "30000000000000000000", "39010500000", "1320675549", "7511686039347830");
-        await nestQuery.feedPrice(HBTC.address, "30000000000000000000", "1129440000000000000", "38071631665285588", "5441325017383007");
-        await nestQuery.feedPrice(NEST.address, "30000000000000000000", "1149043740265046089421137", "38301458008834869647371", "6231125516313609");
+        NestPriceOracle = await NestPriceOracle.at("0x406C82f4F116F4FAD75bb47A142C9B5Fb213133C");
+        // await deployer.deploy(NestPriceOracle);
+        // console.log(`feedPrice to new Nest Price Oarcle: ${NestPriceOracle.address}`);
+        // const nestQuery = await NestPriceOracle.deployed();
+        // // function feedPrice(address token, uint256 ethAmount, uint256 erc20Amount, uint128 avgPrice, int128 vola) external {
+        // await nestQuery.feedPrice(USDT.address, "30000000000000000000", "39010500000", "1320675549", "7511686039347830");
+        // await nestQuery.feedPrice(HBTC.address, "30000000000000000000", "1129440000000000000", "38071631665285588", "5441325017383007");
+        // await nestQuery.feedPrice(NEST.address, "30000000000000000000", "1149043740265046089421137", "38301458008834869647371", "6231125516313609");
 
-        const pUSDT = await nestQuery.latestPrice(USDT.address);
-        const pHBTC = await nestQuery.latestPrice(HBTC.address);
-        const pNEST = await nestQuery.latestPrice(NEST.address);
-        console.log(`pUSDT: ${USDT.address}, ethAmount: ${pUSDT.ethAmount.toString()}, erc20Amount: ${pUSDT.tokenAmount.toString()}, avgPrice: ${pUSDT.avgPrice.toString()}, vola: ${pUSDT.vola.toString()}, bn: ${pUSDT.bn.toString()}`);
-        console.log(`pHBTC: ${USDT.address}, ethAmount: ${pHBTC.ethAmount.toString()}, erc20Amount: ${pHBTC.tokenAmount.toString()}, avgPrice: ${pHBTC.avgPrice.toString()}, vola: ${pHBTC.vola.toString()}, bn: ${pHBTC.bn.toString()}`);
-        console.log(`pNEST: ${NEST.address}, ethAmount: ${pNEST.ethAmount.toString()}, erc20Amount: ${pNEST.tokenAmount.toString()}, avgPrice: ${pNEST.avgPrice.toString()}, vola: ${pNEST.vola.toString()}, bn: ${pNEST.bn.toString()}`);
+        // const pUSDT = await nestQuery.latestPrice(USDT.address);
+        // const pHBTC = await nestQuery.latestPrice(HBTC.address);
+        // const pNEST = await nestQuery.latestPrice(NEST.address);
+        // console.log(`pUSDT: ${USDT.address}, ethAmount: ${pUSDT.ethAmount.toString()}, erc20Amount: ${pUSDT.tokenAmount.toString()}, avgPrice: ${pUSDT.avgPrice.toString()}, vola: ${pUSDT.vola.toString()}, bn: ${pUSDT.bn.toString()}`);
+        // console.log(`pHBTC: ${USDT.address}, ethAmount: ${pHBTC.ethAmount.toString()}, erc20Amount: ${pHBTC.tokenAmount.toString()}, avgPrice: ${pHBTC.avgPrice.toString()}, vola: ${pHBTC.vola.toString()}, bn: ${pHBTC.bn.toString()}`);
+        // console.log(`pNEST: ${NEST.address}, ethAmount: ${pNEST.ethAmount.toString()}, erc20Amount: ${pNEST.tokenAmount.toString()}, avgPrice: ${pNEST.avgPrice.toString()}, vola: ${pNEST.vola.toString()}, bn: ${pNEST.bn.toString()}`);
         UniswapFactory = "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f";
         // CoFiToken = await CoFiToken.at("0x72Fd35b1dB364db812A8E726891685A25a9135D3");
         await deployer.deploy(CoFiToken);
@@ -87,13 +87,6 @@ module.exports = async function (deployer, network) {
 
     let controller = await CoFiXController.deployed();
 
-    // activate oracle
-    if (network == "mainnet" || network == "mainnet-fork") {
-        console.log(`approving nest to controller ${controller.address}`);
-        await NEST.approve(NestPriceOracle.address, "0");
-        console.log(`activating controller ${controller.address}`);
-        await NestPriceOracle.activate(controller.address);
-    }
     // add caller
     await controller.addCaller(CoFiXDAO.address);
 

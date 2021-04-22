@@ -16,7 +16,7 @@ const CoFiXRouter = artifacts.require("CoFiXV2Router");
 const CoFiXFactory = artifacts.require("CoFiXV2Factory");
 const CoFiXPair = artifacts.require("CoFiXV2Pair");
 const WETH9 = artifacts.require("WETH9");
-const NESTPriceOracleMock = artifacts.require("mock/NEST35PriceOracleMock");
+const NESTPriceOracleMock = artifacts.require("mock/NEST36PriceOracleMock");
 const CoFiXController = artifacts.require("CoFiXV2Controller");
 const TestUSDT = artifacts.require("test/USDT");
 const TestHBTC = artifacts.require("test/HBTC");
@@ -120,17 +120,17 @@ contract('CoFiXV2', (accounts) => {
 
     describe('CoFiXController', function () {  
 
-        it("should activate nest oracle correctly", async () => {
-            await NEST.approve(CoFiXCtrl.address, DESTRUCTION_AMOUNT);
-            await PriceOracle.activate(CoFiXCtrl.address);
-            await time.increase(time.duration.minutes(1)); // increase time to make activation be effective
-        });
+        // it("should activate nest oracle correctly", async () => {
+        //     await NEST.approve(CoFiXCtrl.address, DESTRUCTION_AMOUNT);
+        //     await PriceOracle.activate(CoFiXCtrl.address);
+        //     await time.increase(time.duration.minutes(1)); // increase time to make activation be effective
+        // });
 
-        it("should activate again correctly by governance", async () => {
-            await NEST.approve(CoFiXCtrl.address, DESTRUCTION_AMOUNT);
-            await PriceOracle.activate(CoFiXCtrl.address);
-            await time.increase(time.duration.minutes(2)); // increase time to make activation be effective
-        });
+        // it("should activate again correctly by governance", async () => {
+        //     await NEST.approve(CoFiXCtrl.address, DESTRUCTION_AMOUNT);
+        //     await PriceOracle.activate(CoFiXCtrl.address);
+        //     await time.increase(time.duration.minutes(2)); // increase time to make activation be effective
+        // });
 
         // it("K calculation", async () => {
             // console.log("======================CoFiXController TEST START======================");
@@ -210,14 +210,14 @@ contract('CoFiXV2', (accounts) => {
 
 
             let ethAmount = new BN("10000000000000000000");
-            let usdtAmount = new BN("5000000000");
-            let hbtcAmount = new BN("339880000000000000");
+            let usdtPrice = new BN("500000000");
+            let hbtcPrice = new BN("33988000000000000");
             let usdtAvg = new BN("500000000");
             let hbtcAvg = new BN("33988000000000000");
 
-            await PriceOracle.feedPrice(USDT.address, ethAmount, usdtAmount, usdtAvg, vola, { from: deployer });
+            await PriceOracle.feedPrice(USDT.address, usdtPrice, usdtPrice, usdtAvg, vola, { from: deployer });
             await CFactory.createPair(USDT.address, USDT_INIT_TOKEN0_AMOUNT, USDT_INIT_TOKEN1_AMOUNT, { from: deployer})
-            await PriceOracle.feedPrice(HBTC.address, ethAmount, hbtcAmount, hbtcAvg, vola, { from: deployer });
+            await PriceOracle.feedPrice(HBTC.address, hbtcPrice, hbtcPrice, hbtcAvg, vola, { from: deployer });
             await CFactory.createPair(HBTC.address, HBTC_INIT_TOKEN0_AMOUNT, HBTC_INIT_TOKEN1_AMOUNT, {from: deployer});
 
             // addLiquidity (create pair included)
@@ -264,8 +264,8 @@ contract('CoFiXV2', (accounts) => {
                 }
             }
 
-            await PriceOracle.feedPrice(USDT.address, ethAmount, usdtAmount, usdtAvg, vola, { from: deployer });
-            await PriceOracle.feedPrice(HBTC.address, ethAmount, hbtcAmount, hbtcAvg, vola, { from: deployer });
+            await PriceOracle.feedPrice(USDT.address, usdtPrice, usdtPrice, usdtAvg, vola, { from: deployer });
+            await PriceOracle.feedPrice(HBTC.address, hbtcPrice, hbtcPrice, hbtcAvg, vola, { from: deployer });
 
             // add liquidity for HBTC
             // approve HBTC to router
@@ -377,7 +377,7 @@ contract('CoFiXV2', (accounts) => {
             _msgValue = web3.utils.toWei('0.1', 'ether');
             // get price now from NEST3PriceOracleMock Contract
             let p = await PriceOracle.checkPriceNow(USDT.address);
-            console.log("price now> ethAmount:", p.ethAmount.toString(), ", erc20Amount:", p.erc20Amount.toString(), p.erc20Amount.mul(new BN(web3.utils.toWei('1', 'ether'))).div(p.ethAmount).div(new BN('1000000')).toString(), "USDT/ETH");
+            console.log("price now>  erc20Amount:", p.latestPriceValue.toString(), p.latestPriceValue.div(new BN('1000000')).toString(), "USDT/ETH");
             result = await CRouter.swapExactTokensForTokens(USDT.address, HBTC.address, _amountIn, 0, trader, trader, "99999999999", { from: trader, value: _msgValue });
             console.log("------------swapExactTokensForTokens------------");
             usdtInUSDTPool = await USDT.balanceOf(usdtPairAddr);
@@ -409,8 +409,8 @@ contract('CoFiXV2', (accounts) => {
             // setTradeMiningStatus
             await CFactory.setTradeMiningStatus(USDT.address, true);
 
-            await PriceOracle.feedPrice(USDT.address, ethAmount, usdtAmount, usdtAvg, vola, { from: deployer });
-            await PriceOracle.feedPrice(HBTC.address, ethAmount, hbtcAmount, hbtcAvg, vola, { from: deployer });
+            await PriceOracle.feedPrice(USDT.address, usdtPrice, usdtPrice, usdtAvg, vola, { from: deployer });
+            await PriceOracle.feedPrice(HBTC.address, hbtcPrice, hbtcPrice, hbtcAvg, vola, { from: deployer });
             p = await PriceOracle.checkPriceNow(USDT.address);
             
             // swap again after we setTradeMiningStatus to true
@@ -425,7 +425,7 @@ contract('CoFiXV2', (accounts) => {
             // let calcOutToken0Result = await USDTPair.calcOutToken0(_amountIn, oraclePrice);
             // console.log(`fee: ${calcOutToken0Result.fee}`);
             const THETA_BASE = "1E8";
-            const expectedFee = Decimal(_amountIn).mul(Decimal(p.ethAmount.toString())).mul(Decimal(k_base.toString())).mul(Decimal(theta.toString())).div(Decimal(p.erc20Amount.toString())).div(Decimal(k_base.toString()).add(Decimal(kInfo.k.toString()))).div(Decimal(THETA_BASE));
+            const expectedFee = Decimal(_amountIn).mul(Decimal(web3.utils.toWei('1', 'ether').toString())).mul(Decimal(k_base.toString())).mul(Decimal(theta.toString())).div(Decimal(p.latestPriceValue.toString())).div(Decimal(k_base.toString()).add(Decimal(kInfo.k.toString()))).div(Decimal(THETA_BASE));
             console.log(`expectedFee: ${expectedFee.toString()}, calculatedFee: ${ethInFeeReceiver.toString()}`);
             let error = calcRelativeDiff(expectedFee, ethInFeeReceiver.toString());
             console.log(`expected: ${expectedFee}, actual:${ethInFeeReceiver}, error:${error}`);
@@ -561,10 +561,10 @@ contract('CoFiXV2', (accounts) => {
 
             // get price now from NEST3PriceOracleMock Contract
             let p = await PriceOracle.checkPriceNow(USDT.address);
-            console.log("price now> ethAmount:", p.ethAmount.toString(), ", erc20Amount:", p.erc20Amount.toString(), p.erc20Amount.mul(new BN(web3.utils.toWei('1', 'ether'))).div(p.ethAmount).div(new BN('1000000')).toString(), "USDT/ETH");
+            console.log("price now> ethAmount:", web3.utils.toWei('1', 'ether').toString(), ", erc20Amount:", p.latestPriceValue.toString(), p.latestPriceValue.div(new BN('1000000')).toString(), "USDT/ETH");
 
             // get Net Asset Value Per Share for USDTPair contract
-            let oraclePrice = [p.ethAmount, p.erc20Amount, new BN("0"), kInfo.k, new BN("0")];
+            let oraclePrice = [ web3.utils.toWei('1', 'ether'), p.latestPriceValue, new BN("0"), kInfo.k, new BN("0")];
 
             let navpsForMint = await USDTPair.getNAVPerShareForMint(oraclePrice);
 

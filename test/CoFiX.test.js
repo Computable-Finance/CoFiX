@@ -15,14 +15,14 @@ const CoFiXRouter = artifacts.require("CoFiXRouter");
 const CoFiXFactory = artifacts.require("CoFiXFactory");
 const CoFiXPair = artifacts.require("CoFiXPair");
 const WETH9 = artifacts.require("WETH9");
-const NEST3PriceOracleMock = artifacts.require("mock/NEST3PriceOracleMock");
-const CoFiXController = artifacts.require("CoFiXController02");
+const NESTPriceOracleMock = artifacts.require("mock/NEST36PriceOracleMock");
+const CoFiXController = artifacts.require("CoFiXController04");
 const CoFiXKTable = artifacts.require("CoFiXKTable");
 const TestUSDT = artifacts.require("test/USDT");
 const TestHBTC = artifacts.require("test/HBTC");
 const TestNEST = artifacts.require("test/NEST");
 
-const NEST3VoteFactoryMock = artifacts.require("NEST3VoteFactoryMock");
+// const NEST3VoteFactoryMock = artifacts.require("NEST3VoteFactoryMock");
 
 const CoFiToken = artifacts.require("CoFiToken");
 const CoFiXVaultForLP = artifacts.require("CoFiXVaultForLP");
@@ -46,7 +46,8 @@ contract('CoFiX', (accounts) => {
     // let totalSupply_ = "10000000000000000";
     const USDTTotalSupply_ = new BN("10000000000000000");
     const HBTCTotalSupply_ = new BN("100000000000000000000000000");
-
+    // const vola = new BN("960400000000");
+    const vola = new BN("99999999999999");
     const DESTRUCTION_AMOUNT = web3.utils.toWei('0', 'ether');
 
     // enum POOL_STATE {INVALID, ENABLED, DISABLED}
@@ -58,7 +59,7 @@ contract('CoFiX', (accounts) => {
         // change to openzeppelin/test-environment if it has better support for test coverage and gas cost measure
         // USDT = await ERC20.new("10000000000000000", "USDT Test Token", "USDT", 6, { from: deployer });
         // WETH = await WETH9.new();
-        // PriceOracle = await NEST3PriceOracleMock.new();
+        // PriceOracle = await NESTPriceOracleMock.new();
         // CoFiXCtrl = await CoFiXController.new(PriceOracle.address);
         // CFactory = await CoFiXFactory.new(CoFiXCtrl.address, WETH.address)
         // CRouter = await CoFiXRouter.new(CFactory.address, WETH.address);
@@ -68,7 +69,7 @@ contract('CoFiX', (accounts) => {
         HBTC = await TestHBTC.new();
         // WETH = await WETH9.deployed();
         // NEST = await TestNEST.deployed()
-        // PriceOracle = await NEST3PriceOracleMock.deployed();
+        // PriceOracle = await NESTPriceOracleMock.deployed();
         // CoFiXCtrl = await CoFiXController.deployed();
         // // CoFiXCtrl.initialize(PriceOracle.address, { from: deployer });
         // CFactory = await CoFiXFactory.deployed();
@@ -80,10 +81,9 @@ contract('CoFiX', (accounts) => {
         CFactory = await CoFiXFactory.new(WETH.address, { from: deployer });
         VaultForLP = await CoFiXVaultForLP.new(CoFi.address, CFactory.address, { from: deployer });
         await CFactory.setVaultForLP(VaultForLP.address);
-        PriceOracle = await NEST3PriceOracleMock.new(NEST.address, { from: deployer });
-        NEST3VoteFactory = await NEST3VoteFactoryMock.new(PriceOracle.address);
+        PriceOracle = await NESTPriceOracleMock.new(NEST.address, { from: deployer });
         KTable = await CoFiXKTable.new({ from: deployer });
-        CoFiXCtrl = await CoFiXController.new(NEST3VoteFactory.address, NEST.address, CFactory.address, KTable.address);
+        CoFiXCtrl = await CoFiXController.new(PriceOracle.address, NEST.address, CFactory.address, KTable.address);
         await CFactory.setController(CoFiXCtrl.address);
         // await CoFiXCtrl.initialize(ConstOracle.address, { from: deployer });
         CRouter = await CoFiXRouter.new(CFactory.address, WETH.address, { from: deployer });
@@ -103,91 +103,91 @@ contract('CoFiX', (accounts) => {
 
     describe('CoFiXController', function () {  
 
-        it("should activate nest oracle correctly", async () => {
-            await NEST.approve(CoFiXCtrl.address, DESTRUCTION_AMOUNT);
-            await CoFiXCtrl.activate();
-            await time.increase(time.duration.minutes(1)); // increase time to make activation be effective
-        });
+        // it("should activate nest oracle correctly", async () => {
+        //     await NEST.approve(CoFiXCtrl.address, DESTRUCTION_AMOUNT);
+        //     await CoFiXCtrl.activate();
+        //     await time.increase(time.duration.minutes(1)); // increase time to make activation be effective
+        // });
 
-        it("should activate again correctly by governance", async () => {
-            await NEST.approve(CoFiXCtrl.address, DESTRUCTION_AMOUNT);
-            await CoFiXCtrl.activate();
-            await time.increase(time.duration.minutes(1)); // increase time to make activation be effective
-        });
+        // it("should activate again correctly by governance", async () => {
+        //     await NEST.approve(CoFiXCtrl.address, DESTRUCTION_AMOUNT);
+        //     await CoFiXCtrl.activate();
+        //     await time.increase(time.duration.minutes(1)); // increase time to make activation be effective
+        // });
 
-        it("K calculation", async () => {
-            console.log("======================CoFiXController TEST START======================");
-            _msgValue = web3.utils.toWei('0.01', 'ether');
+        // it("K calculation", async () => {
+        //     console.log("======================CoFiXController TEST START======================");
+        //     _msgValue = web3.utils.toWei('0.01', 'ether');
 
-            // add enough prices in NEST3PriceOracleMock
-            let ethAmount = new BN("10000000000000000000");
-            let usdtAmount = new BN("3255000000");
+        //     // add enough prices in NESTPriceOracleMock
+        //     let ethAmount = new BN("10000000000000000000");
+        //     let usdtAmount = new BN("3255000000");
 
-            for (let i = 0; i < 50; i++) {
-                await PriceOracle.addPriceToList(USDT.address, ethAmount, usdtAmount, "0", { from: deployer });
-                usdtAmount = usdtAmount.mul(new BN("100")).div(new BN("100")); // very stable price
-            }
-            let priceLen = await PriceOracle.getPriceLength(USDT.address);
-            console.log("USDT>priceLen:", priceLen.toString(), ", tokenAmount:", usdtAmount.toString());
-            expect(priceLen).to.bignumber.equal(new BN("50"));
+        //     for (let i = 0; i < 50; i++) {
+        //         await PriceOracle.addPriceToList(USDT.address, ethAmount, usdtAmount, "0", { from: deployer });
+        //         usdtAmount = usdtAmount.mul(new BN("100")).div(new BN("100")); // very stable price
+        //     }
+        //     let priceLen = await PriceOracle.getPriceLength(USDT.address);
+        //     console.log("USDT>priceLen:", priceLen.toString(), ", tokenAmount:", usdtAmount.toString());
+        //     expect(priceLen).to.bignumber.equal(new BN("50"));
 
-            // add caller
-            await CoFiXCtrl.addCaller(deployer, { from: deployer });
+        //     // add caller
+        //     await CoFiXCtrl.addCaller(deployer, { from: deployer });
 
-            // let gas = await CoFiXCtrl.methods['queryOracle(address,address)'].estimateGas(USDT.address, deployer, { from: deployer })
-            // console.log("estimateGas:", gas.toString())
-            let result = await CoFiXCtrl.queryOracle(USDT.address, "0", deployer, { from: deployer, value: _msgValue });
-            console.log("USDT>receipt.gasUsed:", result.receipt.gasUsed); // 494562
-            // let evtArgs0 = result.receipt.logs[0].args;
-            // printKInfoEvent(evtArgs0);
-            // console.log("USDT>evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString());
-            // K = -0.016826326, when sigma equals to zero
+        //     // let gas = await CoFiXCtrl.methods['queryOracle(address,address)'].estimateGas(USDT.address, deployer, { from: deployer })
+        //     // console.log("estimateGas:", gas.toString())
+        //     let result = await CoFiXCtrl.queryOracle(USDT.address, "0", deployer, { from: deployer, value: _msgValue });
+        //     console.log("USDT>receipt.gasUsed:", result.receipt.gasUsed); // 494562
+        //     // let evtArgs0 = result.receipt.logs[0].args;
+        //     // printKInfoEvent(evtArgs0);
+        //     // console.log("USDT>evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString());
+        //     // K = -0.016826326, when sigma equals to zero
 
-            // add more prices
-            for (let i = 0; i < 50; i++) {
-                await PriceOracle.addPriceToList(USDT.address, ethAmount, usdtAmount, "0", { from: deployer });
-                usdtAmount = usdtAmount.mul(new BN("101")).div(new BN("100")); // eth price rising
-            }
-            priceLen = await PriceOracle.getPriceLength(USDT.address);
-            console.log("USDT>priceLen:", priceLen.toString(), ", tokenAmount:", usdtAmount.toString());
-            expect(priceLen).to.bignumber.equal(new BN("100"));
-            result = await CoFiXCtrl.queryOracle(USDT.address, "0", deployer, { from: deployer, value: _msgValue });
-            console.log("USDT>receipt.gasUsed:", result.receipt.gasUsed); // 544914
-            if (result.receipt.logs[0]) {
-                evtArgs0 = result.receipt.logs[0].args;
-                printKInfoEvent(evtArgs0);
-            }
+        //     // add more prices
+        //     for (let i = 0; i < 50; i++) {
+        //         await PriceOracle.addPriceToList(USDT.address, ethAmount, usdtAmount, "0", { from: deployer });
+        //         usdtAmount = usdtAmount.mul(new BN("101")).div(new BN("100")); // eth price rising
+        //     }
+        //     priceLen = await PriceOracle.getPriceLength(USDT.address);
+        //     console.log("USDT>priceLen:", priceLen.toString(), ", tokenAmount:", usdtAmount.toString());
+        //     expect(priceLen).to.bignumber.equal(new BN("100"));
+        //     result = await CoFiXCtrl.queryOracle(USDT.address, "0", deployer, { from: deployer, value: _msgValue });
+        //     console.log("USDT>receipt.gasUsed:", result.receipt.gasUsed); // 544914
+        //     if (result.receipt.logs[0]) {
+        //         evtArgs0 = result.receipt.logs[0].args;
+        //         printKInfoEvent(evtArgs0);
+        //     }
 
-            // console.log("USDT>evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString())
-            // python result, K=-0.009217843036355746, sigma=0.0004813196086030222
-            // contract result, K=-170039189510192419/(2**64)=-0.00921784293373125, sigma=8878779697438274/(2**64)=0.0004813196118491383
+        //     // console.log("USDT>evtArgs0> K:", evtArgs0.K.toString(), ", sigma:", evtArgs0.sigma.toString(), ", T:", evtArgs0.T.toString(), ", ethAmount:", evtArgs0.ethAmount.toString(), ", erc20Amount:", evtArgs0.erc20Amount.toString())
+        //     // python result, K=-0.009217843036355746, sigma=0.0004813196086030222
+        //     // contract result, K=-170039189510192419/(2**64)=-0.00921784293373125, sigma=8878779697438274/(2**64)=0.0004813196118491383
 
-            // debug
-            let p = await PriceOracle.priceInfoList_(USDT.address, 99);
-            console.log("debug>USDT>p:", p.ethAmount.toString(), p.erc20Amount.toString(), p.blockNum.toString());
-            let c = await PriceOracle.checkPriceList(USDT.address, 50);
-            console.log("debug>USDT>c:", c[0].toString(), c[1].toString(), c[2].toString(), c[3].toString(), c[4].toString());
-            console.log("======================CoFiXController STATS END======================");
+        //     // debug
+        //     let p = await PriceOracle.priceInfoList_(USDT.address, 99);
+        //     console.log("debug>USDT>p:", p.ethAmount.toString(), p.erc20Amount.toString(), p.blockNum.toString());
+        //     let c = await PriceOracle.checkPriceList(USDT.address, 50);
+        //     console.log("debug>USDT>c:", c[0].toString(), c[1].toString(), c[2].toString(), c[3].toString(), c[4].toString());
+        //     console.log("======================CoFiXController STATS END======================");
 
-            // add price for HBTC
-            let hbtcAmount = new BN("339880000000000000");
-            for (let i = 0; i < 50; i++) {
-                await PriceOracle.addPriceToList(HBTC.address, ethAmount, hbtcAmount, "0", { from: deployer });
-                hbtcAmount = hbtcAmount.mul(new BN("100")).div(new BN("100")); // very stable price
-            }
-            let priceLenBTC = await PriceOracle.getPriceLength(HBTC.address);
-            console.log("HBTC>priceLen:", priceLenBTC.toString(), ", tokenAmount:", hbtcAmount.toString());
-            expect(priceLenBTC).to.bignumber.equal(new BN("50"));
-        })
+        //     // add price for HBTC
+        //     let hbtcAmount = new BN("339880000000000000");
+        //     for (let i = 0; i < 50; i++) {
+        //         await PriceOracle.addPriceToList(HBTC.address, ethAmount, hbtcAmount, "0", { from: deployer });
+        //         hbtcAmount = hbtcAmount.mul(new BN("100")).div(new BN("100")); // very stable price
+        //     }
+        //     let priceLenBTC = await PriceOracle.getPriceLength(HBTC.address);
+        //     console.log("HBTC>priceLen:", priceLenBTC.toString(), ", tokenAmount:", hbtcAmount.toString());
+        //     expect(priceLenBTC).to.bignumber.equal(new BN("50"));
+        // })
     });
 
     describe('Main flow', function () {
         it("should run correctly", async () => {
-            let priceLenUSDT = await PriceOracle.getPriceLength(USDT.address);
-            console.log("USDT priceLen:", priceLenUSDT.toString());
+            // let priceLenUSDT = await PriceOracle.getPriceLength(USDT.address);
+            // console.log("USDT priceLen:", priceLenUSDT.toString());
 
-            let priceLenHBTC = await PriceOracle.getPriceLength(HBTC.address);
-            console.log("HBTC priceLen:", priceLenHBTC.toString());
+            // let priceLenHBTC = await PriceOracle.getPriceLength(HBTC.address);
+            // console.log("HBTC priceLen:", priceLenHBTC.toString());
 
             // approve USDT to router
             await USDT.approve(CRouter.address, USDTTotalSupply_, { from: LP });
@@ -197,20 +197,15 @@ contract('CoFiX', (accounts) => {
             console.log("allowanceUSDT: ", allowance.toString());
             expect(allowance).to.bignumber.equal(USDTTotalSupply_);
 
-
             let ethAmount = new BN("10000000000000000000");
-            let usdtAmount = new BN("3255000000");
-            let hbtcAmount = new BN("339880000000000000");
-            for (let i = 0; i < 50; i++) {
-                await PriceOracle.addPriceToList(USDT.address, ethAmount, usdtAmount, "0", { from: deployer });
-            }
-            for (let i = 0; i < 50; i++) {
-                await PriceOracle.addPriceToList(HBTC.address, ethAmount, hbtcAmount, "0", { from: deployer });
-            }
+            let usdtPrice = new BN("500000000");
+            let hbtcPrice = new BN("33988000000000000");
+            let usdtAvg = new BN("500000000");
+            let hbtcAvg = new BN("33988000000000000");
 
-            for (let i = 0; i < 1; i++) {
-                await PriceOracle.addPriceToList(USDT.address, ethAmount, usdtAmount, "0", { from: deployer });
-            }
+            await PriceOracle.feedPrice(USDT.address, usdtPrice, usdtPrice, usdtAvg, vola, { from: deployer });
+            await PriceOracle.feedPrice(HBTC.address, hbtcPrice, hbtcPrice, hbtcAvg, vola, { from: deployer });
+
 
             // addLiquidity (create pair included)
             //  - address token,
@@ -257,12 +252,8 @@ contract('CoFiX', (accounts) => {
             }
 
             // refresh price list
-            for (let i = 0; i < 1; i++) {
-                await PriceOracle.addPriceToList(USDT.address, ethAmount, usdtAmount, "0", { from: deployer });
-            }
-            for (let i = 0; i < 1; i++) {
-                await PriceOracle.addPriceToList(HBTC.address, ethAmount, hbtcAmount, "0", { from: deployer });
-            }
+            await PriceOracle.feedPrice(USDT.address, usdtPrice, usdtPrice, usdtAvg, vola, { from: deployer });
+            await PriceOracle.feedPrice(HBTC.address, hbtcPrice, hbtcPrice, hbtcAvg, vola, { from: deployer });
 
             // add liquidity for HBTC
             // approve HBTC to router
@@ -372,9 +363,9 @@ contract('CoFiX', (accounts) => {
             // USDT -> HBTC
             _amountIn = "100000000";
             _msgValue = web3.utils.toWei('0.1', 'ether');
-            // get price now from NEST3PriceOracleMock Contract
+            // get price now from NESTPriceOracleMock Contract
             let p = await PriceOracle.checkPriceNow(USDT.address);
-            console.log("price now> ethAmount:", p.ethAmount.toString(), ", erc20Amount:", p.erc20Amount.toString(), p.erc20Amount.mul(new BN(web3.utils.toWei('1', 'ether'))).div(p.ethAmount).div(new BN('1000000')).toString(), "USDT/ETH");
+            console.log("price now>  erc20Amount:", p.latestPriceValue.toString(), p.latestPriceValue.div(new BN('1000000')).toString(), "USDT/ETH");
             result = await CRouter.swapExactTokensForTokens(USDT.address, HBTC.address, _amountIn, 0, trader, trader, "99999999999", { from: trader, value: _msgValue });
             console.log("------------swapExactTokensForTokens------------");
             usdtInUSDTPool = await USDT.balanceOf(usdtPairAddr);
@@ -406,6 +397,14 @@ contract('CoFiX', (accounts) => {
             // setTradeMiningStatus
             await CFactory.setTradeMiningStatus(USDT.address, true);
 
+            for (let i = 0; i < 90; i++) {
+                await KTable.setK0(new BN(i), new BN("10"), new BN("306699029353446336"));
+            }
+
+            await PriceOracle.feedPrice(USDT.address, usdtPrice, usdtPrice, usdtAvg, vola, { from: deployer });
+            await PriceOracle.feedPrice(HBTC.address, hbtcPrice, hbtcPrice, hbtcAvg, vola, { from: deployer });
+            p = await PriceOracle.checkPriceNow(USDT.address);
+
             // swap again after we setTradeMiningStatus to true
             await CRouter.swapExactTokensForTokens(USDT.address, HBTC.address, _amountIn, 0, trader, trader, "99999999999", { from: trader, value: _msgValue });
             wethInFeeReceiver = await WETH.balanceOf(feeReceiver); // not zero this time
@@ -415,7 +414,7 @@ contract('CoFiX', (accounts) => {
             // get the latest k info from CoFiXController contract, including k value & last updated time
             // fee = amountIn.mul(_op.ethAmount).mul(K_BASE).mul(_op.theta).div(_op.erc20Amount).div(K_BASE.add(_op.K)).div(THETA_BASE);
             const THETA_BASE = "1E8";
-            const expectedFee = Decimal(_amountIn).mul(Decimal(p.ethAmount.toString())).mul(Decimal(k_base.toString())).mul(Decimal(theta.toString())).div(Decimal(p.erc20Amount.toString())).div(Decimal(k_base.toString()).add(Decimal(kInfo.k.toString()))).div(Decimal(THETA_BASE));
+            const expectedFee = Decimal(_amountIn).mul(Decimal(web3.utils.toWei('1', 'ether').toString())).mul(Decimal(k_base.toString())).mul(Decimal(theta.toString())).div(Decimal(p.latestPriceValue.toString())).div(Decimal(k_base.toString()).add(Decimal(kInfo.k.toString()))).div(Decimal(THETA_BASE));
             console.log(`expectedFee: ${expectedFee.toString()}, calculatedFee: ${wethInFeeReceiver.toString()}`);
             let error = calcRelativeDiff(expectedFee, wethInFeeReceiver.toString());
             console.log(`expected: ${expectedFee}, actual:${wethInFeeReceiver}, error:${error}`);
@@ -549,12 +548,12 @@ contract('CoFiX', (accounts) => {
             let kInfo = await CoFiXCtrl.getKInfo(USDT.address);
             console.log("kInfo> k:", kInfo.k.toString(), "(", kInfo.k.toString() / k_base.toString(), ")", ", updatedAt:", kInfo.updatedAt.toString());
 
-            // get price now from NEST3PriceOracleMock Contract
+            // get price now from NESTPriceOracleMock Contract
             let p = await PriceOracle.checkPriceNow(USDT.address);
-            console.log("price now> ethAmount:", p.ethAmount.toString(), ", erc20Amount:", p.erc20Amount.toString(), p.erc20Amount.mul(new BN(web3.utils.toWei('1', 'ether'))).div(p.ethAmount).div(new BN('1000000')).toString(), "USDT/ETH");
+            console.log("price now> ethAmount:", web3.utils.toWei('1', 'ether').toString(), ", erc20Amount:", p.latestPriceValue.toString(), p.latestPriceValue.div(new BN('1000000')).toString(), "USDT/ETH");
 
             // get Net Asset Value Per Share for USDTPair contract
-            let oraclePrice = [p.ethAmount, p.erc20Amount, new BN("0"), kInfo.k, new BN("0")];
+            let oraclePrice = [web3.utils.toWei('1', 'ether'), p.latestPriceValue, new BN("0"), kInfo.k, new BN("0")];
 
             let navpsForMint = await USDTPair.getNAVPerShareForMint(oraclePrice);
 

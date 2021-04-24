@@ -56,7 +56,7 @@ contract('CoFiXV2', (accounts) => {
     const HBTC_INIT_TOKEN0_AMOUNT = web3.utils.toWei('1', 'ether');
     const HBTC_INIT_TOKEN1_AMOUNT =  web3.utils.toWei('0.1', 'ether');
 
-    const vola = new BN("18077809192235360");
+    const vola = new BN("99999999999999");
 
     const DESTRUCTION_AMOUNT = web3.utils.toWei('0', 'ether');
 

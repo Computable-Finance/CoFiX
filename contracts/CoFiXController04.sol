@@ -3,15 +3,16 @@ pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./lib/ABDKMath64x64.sol";
+import "./interface/ICoFiXKTable.sol";
 import "./lib/TransferHelper.sol";
-import "./interface/ICoFiXV2Controller.sol";
+import "./interface/ICoFiXController.sol";
 import "./interface/INestPriceFacade.sol";
-import "./interface/ICoFiXV2Pair.sol";
-import "./interface/ICoFiXV2Factory.sol";
+import "./interface/ICoFiXPair.sol";
+import "./interface/ICoFiXFactory.sol";
 
 // Controller contract to call NEST Oracle for prices, managed by governance
 // Governance role of this contract should be the `Timelock` contract, which is further managed by a multisig contract
-contract CoFiXV2Controller is ICoFiXV2Controller {  // ctrl-03: change contract name to avoid truffle complaint
+contract CoFiXController04 is ICoFiXController {  // ctrl-03: change contract name to avoid truffle complaint
 
     using SafeMath for uint256;
 
@@ -19,10 +20,7 @@ contract CoFiXV2Controller is ICoFiXV2Controller {  // ctrl-03: change contract 
 
     uint256 constant public AONE = 1 ether;
     uint256 constant public K_BASE = 1E8;
-    uint256 constant public K_GAMMA_BASE = 10;
     uint256 constant public NAVPS_BASE = 1E18; // NAVPS (Net Asset Value Per Share), need accuracy
-    uint256 constant internal K_ALPHA = 2600; // α=2.6e-05*1e8
-    uint256 constant internal K_BETA = 1020500000; // β=10.205*1e8
     uint256 internal T = 600; // ctrl-v2: V1 (900) -> V2 (600)
     uint256 internal K_EXPECTED_VALUE = 0.005*1E8; // ctrl-v2: V1 (0.0025) -> V2 (0.005)
     // impact cost params
@@ -30,7 +28,6 @@ contract CoFiXV2Controller is ICoFiXV2Controller {  // ctrl-03: change contract 
     uint256 constant internal C_BUYIN_BETA = 854200000000; // β=8.542e-07*1e18
     uint256 constant internal C_SELLOUT_ALPHA = 117100000000000; // α=-1.171e-04*1e18
     uint256 constant internal C_SELLOUT_BETA = 838600000000; // β=8.386e-07*1e18
-    mapping(address => uint32) public CGammaMap;
 
     int128 constant internal SIGMA_STEP = 0x346DC5D638865; // (0.00005*2**64).toString(16), 0.00005 as 64.64-bit fixed point
     int128 constant internal ZERO_POINT_FIVE = 0x8000000000000000; // (0.5*2**64).toString(16)
@@ -44,6 +41,7 @@ contract CoFiXV2Controller is ICoFiXV2Controller {  // ctrl-03: change contract 
     address public immutable oracle;
     address public immutable nestToken;
     address public immutable factory;
+    address public kTable;
     uint256 public timespan = 14;
     uint256 public kRefreshInterval = 5 minutes;
     uint256 public DESTRUCTION_AMOUNT = 0 ether; // from nest oracle
@@ -68,14 +66,15 @@ contract CoFiXV2Controller is ICoFiXV2Controller {  // ctrl-03: change contract 
         _;
     }
 
-    constructor(address _oracle, address _nest, address _factory) public {
+    constructor(address _oracle, address _nest, address _factory, address _kTable) public {
         governance = msg.sender;
         oracle = _oracle;
         nestToken = _nest;
         factory = _factory;
+        kTable = _kTable;
 
         // add previous pair as caller
-        ICoFiXV2Factory cFactory = ICoFiXV2Factory(_factory);
+        ICoFiXFactory cFactory = ICoFiXFactory(_factory);
         uint256 pairCnt = cFactory.allPairsLength();
         for (uint256 i = 0; i < pairCnt; i++) {
             address pair = cFactory.allPairs(i);
@@ -89,7 +88,12 @@ contract CoFiXV2Controller is ICoFiXV2Controller {  // ctrl-03: change contract 
     function setGovernance(address _new) external onlyGovernance {
         governance = _new;
         emit NewGovernance(_new);
-    }  
+    }
+
+    function setKTable(address _kTable) external onlyGovernance {
+        kTable = _kTable;
+        emit NewKTable(_kTable);
+    }    
 
     function setTimespan(uint256 _timeSpan) external onlyGovernance {
         timespan = _timeSpan;
@@ -124,11 +128,6 @@ contract CoFiXV2Controller is ICoFiXV2Controller {  // ctrl-03: change contract 
         callerAllowed[caller] = true;
     }
 
-    function setCGamma(address token, uint32 gamma) external override onlyGovernance {
-        CGammaMap[token] = gamma;
-        emit NewCGamma(token, gamma);
-    }
-
     // Calc variance of price and K in CoFiX is very expensive
     // We use expected value of K based on statistical calculations here to save gas
     // In the near future, NEST could provide the variance of price directly. We will adopt it then.
@@ -151,80 +150,66 @@ contract CoFiXV2Controller is ICoFiXV2Controller {  // ctrl-03: change contract 
     }
 
     function calcImpactCostFor_BURN(address token, bytes memory data, uint256 ethAmount, uint256 erc20Amount) public view returns (uint256 impactCost) {
-        // bytes memory data = abi.encode(msg.sender, liquidity, initToken1Amount);
-        (, uint256 liquidity) = abi.decode(data, (address, uint256));
-        (uint256 initToken0Amount, uint256 initToken1Amount) = ICoFiXV2Pair(msg.sender).getInitialAssetRatio(); // pair call controller, msg.sender is pair
+        // bytes memory data = abi.encode(msg.sender, outToken, to, liquidity);
+        (, address outToken, , uint256 liquidity) = abi.decode(data, (address, address, address, uint256));
         // calc real vol by liquidity * np
-        uint256 navps = ICoFiXV2Pair(msg.sender).getNAVPerShare(ethAmount, erc20Amount); // pair call controller, msg.sender is pair
-
-        // ethOut
-        uint256 buyVol = liquidity.mul(navps).div(NAVPS_BASE);
-
-        /*
-            tokenOut = liquidity * navps * \frac{k_0}{P_t}\\\\
-                    = liquidity * navps * \frac{initToken1Amount * ethAmount}{initToken0Amount * erc20Amount * NAVPS\_BASE}
-        */
-        uint256 initToken1AmountMulEthAmount = initToken1Amount.mul(ethAmount);
-        uint256 erc20AmountMulInitToken0Amount = erc20Amount.mul(initToken0Amount);
-        uint256 sellOutVol = liquidity.mul(navps).mul(initToken1AmountMulEthAmount).div(erc20AmountMulInitToken0Amount).div(NAVPS_BASE);
-
-        // buy in ETH, outToken is ETH
-        uint256 impactCostForBuy = impactCostForBuyInETH(token, buyVol);
+        uint256 navps = ICoFiXPair(msg.sender).getNAVPerShare(ethAmount, erc20Amount); // pair call controller, msg.sender is pair
+        uint256 vol = liquidity.mul(navps).div(NAVPS_BASE);
+        if (outToken != token) {
+            // buy in ETH, outToken is ETH
+            return impactCostForBuyInETH(vol);
+        }
         // sell out liquidity, outToken is token, take this as sell out ETH and get token
-        uint256 impactCostForSellOut = impactCostForSellOutETH(token, sellOutVol);
-
-        return impactCostForBuy.add(impactCostForSellOut);
+        return impactCostForSellOutETH(vol);
     }
 
-    function calcImpactCostFor_SWAP_WITH_EXACT(address token, bytes memory data, uint256 ethAmount, uint256 erc20Amount) public view returns (uint256 impactCost) {
+    function calcImpactCostFor_SWAP_WITH_EXACT(address token, bytes memory data, uint256 ethAmount, uint256 erc20Amount) public pure returns (uint256 impactCost) {
         (, address outToken, , uint256 amountIn) = abi.decode(data, (address, address, address, uint256));
         if (outToken != token) {
             // buy in ETH, outToken is ETH, amountIn is token
             // convert to amountIn in ETH
             uint256 vol = uint256(amountIn).mul(ethAmount).div(erc20Amount);
-            return impactCostForBuyInETH(token, vol);
+            return impactCostForBuyInETH(vol);
         }
         // sell out ETH, amountIn is ETH
-        return impactCostForSellOutETH(token, amountIn);
+        return impactCostForSellOutETH(amountIn);
     }
 
-    function calcImpactCostFor_SWAP_FOR_EXACT(address token, bytes memory data, uint256 ethAmount, uint256 erc20Amount) public view returns (uint256 impactCost) {
+    function calcImpactCostFor_SWAP_FOR_EXACT(address token, bytes memory data, uint256 ethAmount, uint256 erc20Amount) public pure returns (uint256 impactCost) {
         (, address outToken, uint256 amountOutExact,) = abi.decode(data, (address, address, uint256, address));
         if (outToken != token) {
             // buy in ETH, outToken is ETH, amountOutExact is ETH
-            return impactCostForBuyInETH(token, amountOutExact);
+            return impactCostForBuyInETH(amountOutExact);
         }
         // sell out ETH, amountIn is ETH, amountOutExact is token
         // convert to amountOutExact in ETH
         uint256 vol = uint256(amountOutExact).mul(ethAmount).div(erc20Amount);
-        return impactCostForSellOutETH(token, vol);
+        return impactCostForSellOutETH(vol);
     }
 
     // impact cost
-    // - C = 0, if VOL < 500 / γ
-    // - C = (α + β * VOL) * γ, if VOL >= 500 / γ
+    // - C = 0, if VOL < 500
+    // - C = α + β * VOL, if VOL >= 500
 
     // α=2.570e-05，β=8.542e-07
-    function impactCostForBuyInETH(address token, uint256 vol) public view returns (uint256 impactCost) {
-        uint32 gamma = CGammaMap[token];
-        if (vol.mul(gamma) < 500 ether) {
+    function impactCostForBuyInETH(uint256 vol) public pure returns (uint256 impactCost) {
+        if (vol < 500 ether) {
             return 0;
         }
         // return C_BUYIN_ALPHA.add(C_BUYIN_BETA.mul(vol).div(1e18)).mul(1e8).div(1e18);
-        return (C_BUYIN_ALPHA.add(C_BUYIN_BETA.mul(vol).div(1e18)).div(1e10)).mul(gamma); // combine mul div
+        return C_BUYIN_ALPHA.add(C_BUYIN_BETA.mul(vol).div(1e18)).div(1e10); // combine mul div
     }
 
     // α=-1.171e-04，β=8.386e-07
-    function impactCostForSellOutETH(address token, uint256 vol) public view returns (uint256 impactCost) {
-        uint32 gamma = CGammaMap[token];
-        if (vol.mul(gamma) < 500 ether) {
+    function impactCostForSellOutETH(uint256 vol) public pure returns (uint256 impactCost) {
+        if (vol < 500 ether) {
             return 0;
         }
         // return (C_SELLOUT_BETA.mul(vol).div(1e18)).sub(C_SELLOUT_ALPHA).mul(1e8).div(1e18);
-        return ((C_SELLOUT_BETA.mul(vol).div(1e18)).sub(C_SELLOUT_ALPHA).div(1e10)).mul(gamma); // combine mul div
+        return (C_SELLOUT_BETA.mul(vol).div(1e18)).sub(C_SELLOUT_ALPHA).div(1e10); // combine mul div
     }
 
-    function getKInfo(address token) external override view returns (uint32 k, uint32 updatedAt, uint32 theta) {
+    function getKInfo(address token) external view returns (uint32 k, uint32 updatedAt, uint32 theta) {
         // ctrl-v3: load from storage instead of constant value
         uint32 kStored = KInfoMap[token][0];
         if (kStored != 0) {
@@ -253,7 +238,7 @@ contract CoFiXV2Controller is ICoFiXV2Controller {  // ctrl-03: change contract 
     function getLatestPrice(address token) internal returns (uint256 _k, uint256 _ethAmount, uint256 _erc20Amount, uint256 _blockNum) {
         uint256 _balanceBefore = address(this).balance;
         OracleParams memory _op;
-        // query oracle    
+        // query oracle
         ///  latestPriceBlockNumber The block number of latest price
         ///  latestPriceValue The token latest price. (1eth equivalent to (price) token)
         ///  triggeredPriceBlockNumber The block number of triggered price
@@ -270,7 +255,7 @@ contract CoFiXV2Controller is ICoFiXV2Controller {  // ctrl-03: change contract 
         ) = INestPriceFacade(oracle).latestPriceAndTriggeredPriceInfo{value: msg.value}(token, address(this));
         _op.sigma = sqrt(_op.sigma.mul(1e18));
         _op.ethAmount = 1 ether;
-
+        
         // validate T
         _op.T = block.number.sub(_op.blockNum).mul(timespan);
         require(_op.T < T, "CoFiXCtrl: oralce price outdated"); // ctrl-v2: adjustable T
@@ -286,13 +271,36 @@ contract CoFiXV2Controller is ICoFiXV2Controller {  // ctrl-03: change contract 
         }
 
         // calc K
-        // K=(0.000026*T+10.205*σ)*γ(σ)
-        {
-            uint256 gamma = calcGamma(_op.sigma);
-            _k = K_ALPHA.mul(_op.T).mul(1e18).add(K_BETA.mul(_op.sigma)).mul(gamma).div(K_GAMMA_BASE).div(1e18);
+        // int128 K0; // K0AndK[0]
+        // int128 K; // K0AndK[1]
+        int128[2] memory K0AndK;
 
-            emit NewK(token, _k, _op.sigma, _op.T, _op.ethAmount, _op.erc20Amount, _op.blockNum);
+        {
+            _op.tIdx = (_op.T.add(5)).div(10); // rounding to the nearest
+            _op.sigmaIdx = ABDKMath64x64.toUInt(
+                        ABDKMath64x64.add(
+                            ABDKMath64x64.div(int128(_op.sigma), SIGMA_STEP), // _sigma / 0.00005, e.g. (0.00098/0.00005)=9.799 => 9
+                            ZERO_POINT_FIVE // e.g. (0.00098/0.00005)+0.5=20.0999 => 20
+                        )
+                    );
+            if (_op.sigmaIdx > 0) {
+                _op.sigmaIdx = _op.sigmaIdx.sub(1);
+            }
+
+            // getK0(uint256 tIdx, uint256 sigmaIdx)
+            // K0 is K0AndK[0]
+            K0AndK[0] = ICoFiXKTable(kTable).getK0(
+                _op.tIdx, 
+                _op.sigmaIdx
+            );
+
+            // K = gamma * K0
+            K0AndK[1] = ABDKMath64x64.mul(GAMMA, K0AndK[0]);
+
+            emit NewK(token, K0AndK[1], int128(_op.sigma), _op.T, _op.ethAmount, _op.erc20Amount, _op.blockNum, _op.tIdx, _op.sigmaIdx, K0AndK[0]);
         }
+
+        require(K0AndK[0] <= MAX_K0, "CoFiXCtrl: K0");
 
         {
             // return oracle fee change
@@ -300,8 +308,9 @@ contract CoFiXV2Controller is ICoFiXV2Controller {  // ctrl-03: change contract 
             // TransferHelper.safeTransferETH(payback, msg.value.sub(_balanceBefore.sub(address(this).balance)));
             uint256 oracleFeeChange = msg.value.sub(_balanceBefore.sub(address(this).balance));
             if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
-            
-            KInfoMap[token][0] = uint32(_k); 
+            _k = ABDKMath64x64.toUInt(ABDKMath64x64.mul(K0AndK[1], ABDKMath64x64.fromUInt(K_BASE)));
+
+            KInfoMap[token][0] = uint32(_k); // k < MAX_K << uint32(-1)
             KInfoMap[token][1] = uint32(block.timestamp); // 2106
             return (_k, _op.ethAmount, _op.erc20Amount, _op.blockNum);
         }
@@ -314,49 +323,34 @@ contract CoFiXV2Controller is ICoFiXV2Controller {  // ctrl-03: change contract 
     * @return k The K value
     */
     function calcK(uint256 vola, uint256 bn) external view returns (uint32 k) {
-        uint256 _T = block.number.sub(bn).mul(timespan);
+        // int128 K0; // K0AndK[0]
+        // int128 K; // K0AndK[1]
         vola = sqrt(vola.mul(1e18));
-        uint256 gamma = calcGamma(vola);
-
-        k = uint32(K_ALPHA.mul(_T).mul(1e18).add(K_BETA.mul(vola)).mul(gamma).div(K_GAMMA_BASE).div(1e18));
-    }
-
-    function calcGamma(uint256 vola) public pure returns (uint256 gamma) {
-        // (0.0003 0.0005) => (300000000000000 500000000000000)
-
-        if (vola <= 300000000000000) { // 𝜎 ≤ 0.0003, gamma = 1
-            return 10;
-        } else if (vola > 500000000000000) { // 𝜎 > 0.0005, gamma = 2
-            return 20;
-        } else { // 0.0003 < 𝜎 ≤ 0.0005, gamma = 1.5
-            return 15;
-        }
-    }
-
-    function getLatestPriceAndAvgVola(address token) public override payable returns (uint256, uint256, uint256, uint256) {
-        require(callerAllowed[msg.sender], "CoFiXCtrl: caller not allowed");
-
-        uint256 _balanceBefore = address(this).balance;
-
-        (
-            uint256 bn, 
-            uint256 erc20Amount,
-            /* uint triggeredPriceBlockNumber */,
-            /* uint triggeredPriceValue */,
-            uint256 avg,
-            uint256 triggeredSigmaSQ
-        ) = INestPriceFacade(oracle).latestPriceAndTriggeredPriceInfo{value: msg.value}(token, address(this));
-        uint256 vola = sqrt(triggeredSigmaSQ);
-        // (uint256 ethAmount, uint256 erc20Amount, uint256 avg, int128 vola, uint256 bn) = 
-        //         INestQuery(oracle).queryPriceAvgVola{value: msg.value}(token, address(this));
-
+        int128[2] memory K0AndK;
         uint256 _T = block.number.sub(bn).mul(timespan);
-        require(_T < T, "CoFiXCtrl: oralce price outdated"); // ctrl-v2: adjustable T
 
-        uint256 oracleFeeChange = msg.value.sub(_balanceBefore.sub(address(this).balance));
-        if (oracleFeeChange > 0) TransferHelper.safeTransferETH(msg.sender, oracleFeeChange);
+        uint256 tIdx = (_T.add(5)).div(10); // rounding to the nearest
+        uint256 sigmaIdx = ABDKMath64x64.toUInt(
+                    ABDKMath64x64.add(
+                        ABDKMath64x64.div(int128(vola), SIGMA_STEP), // _sigma / 0.00005, e.g. (0.00098/0.00005)=9.799 => 9
+                        ZERO_POINT_FIVE // e.g. (0.00098/0.00005)+0.5=20.0999 => 20
+                    )
+                );
+        if (sigmaIdx > 0) {
+            sigmaIdx = sigmaIdx.sub(1);
+        }
 
-        return (1 ether, erc20Amount, avg, vola);
+        // getK0(uint256 tIdx, uint256 sigmaIdx)
+        // K0 is K0AndK[0]
+        K0AndK[0] = ICoFiXKTable(kTable).getK0(
+            tIdx, 
+            sigmaIdx
+        );
+
+        // K = gamma * K0
+        K0AndK[1] = ABDKMath64x64.mul(GAMMA, K0AndK[0]);
+
+        k = uint32(ABDKMath64x64.toUInt(ABDKMath64x64.mul(K0AndK[1], ABDKMath64x64.fromUInt(K_BASE))));
     }
 
     // ctrl-v2: remove unused code bellow according to PeckShield's advice
